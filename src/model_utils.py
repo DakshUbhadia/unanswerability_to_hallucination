@@ -1,6 +1,9 @@
 # src/model_utils.py
 """Stage 0: runtime contract checks, fp16-safe intervention operators, nnsight==0.3.7 wrappers."""
 import gc
+import json
+import platform
+import subprocess
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -198,17 +201,23 @@ def forward_with_intervention(
 @torch.no_grad()
 def assert_all_layer_activations_finite(
     llm: LanguageModel, is_layer_output_tuple: bool, inputs: Any, k_suffix: int
-) -> bool:
+) -> List[float]:
     n_layers = _n_layers(llm)
     saved = []
     with llm.trace(inputs):
         for l_idx in range(n_layers):
             resid = _read_layer_resid_envoy(llm.model.layers[l_idx], is_layer_output_tuple)
-            saved.append(resid[:, -k_suffix:, :].save())
+            saved.append(resid.save())
         saved_logits = llm.lm_head.output[:, -1, :].save()
+    maxima = []
+    mask = inputs["attention_mask"].bool()
     for l_idx, p in enumerate(saved):
         v = _deref_saved(p)
-        assert torch.isfinite(v).all(), f"NaN/Inf at layer {l_idx} residual stream ({v.dtype})!"
+        active = v[mask]
+        assert torch.isfinite(active).all(), f"NaN/Inf at layer {l_idx} residual stream ({v.dtype})!"
+        maximum = float(active.float().abs().max().item())
+        assert maximum < 60000, f"Activation headroom exceeded at layer {l_idx}: {maximum}"
+        maxima.append(maximum)
     assert torch.isfinite(_deref_saved(saved_logits)).all(), "NaN/Inf in output logits!"
     return True
 
@@ -229,9 +238,11 @@ def verify_low_precision_against_fp32(
 
     lp = low_prec_logits.detach().cpu().float()
     cos_sim = float(F.cosine_similarity(lp, fp32_logits, dim=-1).mean().item())
-    p_ref = F.softmax(fp32_logits, dim=-1).clamp(min=1e-8)
-    kl = float(torch.sum(p_ref * (F.log_softmax(fp32_logits, dim=-1) - F.log_softmax(lp, dim=-1)),
-                         dim=-1).mean().item())
+    log_lp = F.log_softmax(lp.double(), dim=-1)
+    log_ref = F.log_softmax(fp32_logits.double(), dim=-1)
+    kl_tensor = F.kl_div(log_lp, log_ref, log_target=True, reduction="batchmean")
+    kl = float(kl_tensor.item())
+    assert kl >= -1e-9, f"KL divergence must be nonnegative, got {kl}"
     top1 = float((lp.argmax(-1) == fp32_logits.argmax(-1)).float().mean().item())
     print(f"[Stage 0] low-prec vs fp32: cos={cos_sim:.6f} KL={kl:.6f} nats top1={top1:.2f}", flush=True)
 
@@ -249,6 +260,39 @@ PROBE_QUESTIONS = [
     "Profile: Mara Vance is a botanist born in 1984 in Seattle.\nQuestion: In what year was Mara Vance born?",
     "Profile: Mara Vance is a botanist born in 1984 in Seattle.\nQuestion: What is Mara Vance's childhood pet's name?",
 ]
+
+
+def load_fidelity_prompts(tokenizer: Any) -> Tuple[List[str], List[str]]:
+    """Return 12 chat prompts (4 fixed + 8 train pairs) and four raw WikiText paragraphs."""
+    prompts = list(PROBE_QUESTIONS)
+    pair_path = CONFIG.data_dir / "pairs.jsonl"
+    if pair_path.exists():
+        with pair_path.open(encoding="utf-8") as f:
+            for line in f:
+                pair = json.loads(line)
+                if pair.get("split") == "train":
+                    prompts.extend((pair["ans_prompt"], pair["unans_prompt"]))
+                    if len(prompts) >= 12:
+                        break
+    if len(prompts) < 12:
+        raise RuntimeError("Stage 0 fidelity probe requires 8 train pairs in data/pairs.jsonl")
+    chat = [tokenizer.apply_chat_template(
+        [{"role": "system", "content": CONFIG.system_prompt}, {"role": "user", "content": q}],
+        tokenize=False, add_generation_prompt=True) for q in prompts]
+    from datasets import load_dataset
+    ds = load_dataset("Salesforce/wikitext", "wikitext-2-raw-v1", split="test")
+    raw = []
+    for row in ds:
+        if len(row["text"].split()) < 64:
+            continue
+        ids = tokenizer.encode(row["text"], add_special_tokens=False)[:CONFIG.len_wikitext_tokens]
+        if len(ids) == CONFIG.len_wikitext_tokens:
+            raw.append(tokenizer.decode(ids, skip_special_tokens=True))
+            if len(raw) == 4:
+                break
+    if len(raw) != 4:
+        raise RuntimeError("Could not load four WikiText-2 test paragraphs with 256 tokens")
+    return chat, raw
 
 
 def load_model_and_verify_runtime(
@@ -276,20 +320,18 @@ def load_model_and_verify_runtime(
     print(f"[Stage 0] is_layer_output_tuple={is_tuple} k_suffix={k_suffix} unknown_id={unk_ns}", flush=True)
 
     # Probe batch (chat-templated)
-    prompts = [
-        tokenizer.apply_chat_template(
-            [{"role": "system", "content": CONFIG.system_prompt}, {"role": "user", "content": q}],
-            tokenize=False, add_generation_prompt=True)
-        for q in PROBE_QUESTIONS
-    ]
-    probe_inputs = tokenizer(prompts, return_tensors="pt", padding=True).to(device)
-    for row in range(probe_inputs["input_ids"].shape[0]):
+    chat_prompts, raw_prompts = load_fidelity_prompts(tokenizer)
+    prompts = chat_prompts + raw_prompts
+    probe_inputs = tokenizer(prompts, return_tensors="pt", padding=True, truncation=True, add_special_tokens=False,
+                             max_length=CONFIG.len_wikitext_tokens + 128).to(device)
+    for row in range(len(chat_prompts)):
         tail = probe_inputs["input_ids"][row, -k_suffix:].tolist()
         assert tail == suffix_ids, f"Prompt {row} tail {tail} != expected suffix {suffix_ids}"
 
     # 4: nnsight wrapper + finite check
     llm = LanguageModel(raw_model, tokenizer=tokenizer)
-    all_finite = assert_all_layer_activations_finite(llm, is_tuple, probe_inputs, k_suffix)
+    max_abs_activation_per_layer = assert_all_layer_activations_finite(llm, is_tuple, probe_inputs, k_suffix)
+    all_finite = True
 
     # 5: native baseline + timing, then ACTIVE zero-intervention hook (alpha=1.0 on r=0)
     if device.startswith("cuda"):
@@ -329,12 +371,27 @@ def load_model_and_verify_runtime(
         "k_suffix": int(k_suffix),
         "suffix_token_ids": [int(x) for x in suffix_ids],
         "all_layer_activations_finite": bool(all_finite),
+        "max_abs_activation_per_layer": max_abs_activation_per_layer,
         "zero_intervention_max_abs_diff": float(max_abs_diff),
         "fp32_logit_cosine_sim": float(fid["fp32_logit_cosine_sim"]),
         "fp32_logit_mean_kl_nats": float(fid["fp32_logit_mean_kl_nats"]),
         "fp32_top1_agreement": float(fid["fp32_top1_agreement"]),
-        "sec_per_4_prompt_forward": round(sec_per_4, 4),
-        "estimated_project_gpu_hours": round((sec_per_4 / 4.0) * 180000.0 / 3600.0, 2),
+        "sec_per_16_prompt_forward": round(sec_per_4, 4),
+        "rough_lower_bound_gpu_hours": round((sec_per_4 / len(prompts)) * 180000.0 / 3600.0, 2),
+        "python_version": platform.python_version(),
+        "torch_cuda_version": torch.version.cuda or "unavailable",
+        "cuda_driver_version": _cuda_driver_version(),
         "passed_all_checks": True,
     }
     return llm, env_record
+
+
+def _cuda_driver_version() -> str:
+    if not torch.cuda.is_available():
+        return "unavailable"
+    try:
+        result = subprocess.run(["nvidia-smi", "--query-gpu=driver_version", "--format=csv,noheader"],
+                                check=True, capture_output=True, text=True, timeout=10)
+        return result.stdout.splitlines()[0].strip()
+    except Exception:
+        return "unavailable"

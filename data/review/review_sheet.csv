@@ -1,0 +1,337 @@
+template_id,family,ans_prompt,unans_prompt,b_ctrl_prompt,ground_truth,check_answer_unambiguous,check_zero_unans_support,check_distinct_predicate,check_b_ctrl_valid
+famA_001,A,"Clinical and engineering dossier for the Larkspur Kingswell Initiative archived in 2019. Primary technical oversight was led by Felix Rossi.
+Question: Based strictly on the dossier, who led primary technical oversight for the Larkspur Kingswell Initiative?","Clinical and engineering dossier for the Larkspur Kingswell Initiative archived in 2019. The solar degradation study was led by Jonas Bennett.
+Question: Based strictly on the dossier, who led primary technical oversight for the Larkspur Kingswell Initiative?",NA,Felix Rossi,Y,Y,Y,NA
+famA_002,A,"Infrastructure dispatch record for the Crestwood Evergreen Initiative logged in 2020. The geothermal turbine layout was designed by Mei Costa.
+Question: Based strictly on the dispatch record, who designed the geothermal turbine layout for the Crestwood Evergreen Initiative?","Infrastructure dispatch record for the Crestwood Evergreen Initiative logged in 2020. The geothermal well monitoring array was designed by Priya Keller.
+Question: Based strictly on the dispatch record, who designed the geothermal turbine layout for the Crestwood Evergreen Initiative?",NA,Mei Costa,Y,Y,Y,NA
+famA_003,A,"Cryptography validation memo for the Riverside Windward Initiative filed in 2021. The lattice key protocol was authored by Mara Quinn.
+Question: Based strictly on the validation memo, who authored the lattice key protocol for the Riverside Windward Initiative?","Cryptography validation memo for the Riverside Windward Initiative filed in 2021. The entropy-source test specification was authored by Mei Parker.
+Question: Based strictly on the validation memo, who authored the lattice key protocol for the Riverside Windward Initiative?",NA,Mara Quinn,Y,Y,Y,NA
+famA_004,A,"Electrochemistry lab bulletin for the Bluehaven Halvorsen Initiative issued in 2022. The electrolyte dopant formula was synthesized by Farah Singh.
+Question: Based strictly on the lab bulletin, who synthesized the electrolyte dopant formula for the Bluehaven Halvorsen Initiative?","Electrochemistry lab bulletin for the Bluehaven Halvorsen Initiative issued in 2022. The silicon-anode binder polymer was synthesized by Omar Lind.
+Question: Based strictly on the lab bulletin, who synthesized the electrolyte dopant formula for the Bluehaven Halvorsen Initiative?",NA,Farah Singh,Y,Y,Y,NA
+famA_005,A,"Bioinformatics registry entry for the Riverside Solstice Initiative updated in 2018. The sequencing pipeline calibration was verified by Simon Turner.
+Question: Based strictly on the registry entry, who verified the sequencing pipeline calibration for the Riverside Solstice Initiative?","Bioinformatics registry entry for the Riverside Solstice Initiative updated in 2018. The variant expression matrix was verified by Simon Costa.
+Question: Based strictly on the registry entry, who verified the sequencing pipeline calibration for the Riverside Solstice Initiative?",NA,Simon Turner,Y,Y,Y,NA
+famA_006,A,"Semiconductor lithography note for the Ashford Windward Initiative recorded in 2023. The waveguide etching mask was designed by Mei Hughes.
+Question: Based strictly on the lithography note, who designed the waveguide etching mask for the Ashford Windward Initiative?","Semiconductor lithography note for the Ashford Windward Initiative recorded in 2023. The silicon wafer etch-depth model was designed by Omar Kim.
+Question: Based strictly on the lithography note, who designed the waveguide etching mask for the Ashford Windward Initiative?",NA,Mei Hughes,Y,Y,Y,NA
+famA_007,A,"Port authority customs log for the Crestwood Kingswell Initiative stamped in 2017. The vessel navigation charter was signed by Omar Walsh.
+Question: Based strictly on the customs log, who signed the vessel navigation charter for the Crestwood Kingswell Initiative?","Port authority customs log for the Crestwood Kingswell Initiative stamped in 2017. The cargo vessel stability calculation was signed by Hugo Lopez.
+Question: Based strictly on the customs log, who signed the vessel navigation charter for the Crestwood Kingswell Initiative?",NA,Omar Walsh,Y,Y,Y,NA
+famA_008,A,"Pharmacology study protocol for the Larkspur Windward Initiative registered in 2020. The biostatistics endpoint model was reviewed by Kenji Halvorsen.
+Question: Based strictly on the study protocol, who reviewed the biostatistics endpoint model for the Larkspur Windward Initiative?","Pharmacology study protocol for the Larkspur Windward Initiative registered in 2020. The planned dose escalation schedule was reviewed by Amina Halvorsen.
+Question: Based strictly on the study protocol, who reviewed the biostatistics endpoint model for the Larkspur Windward Initiative?",NA,Kenji Halvorsen,Y,Y,Y,NA
+famA_009,A,"Orbital tracking summary for the Stonebridge Juniper Initiative transmitted in 2021. The attitude thruster burn sequence was calculated by Tomas Sato.
+Question: Based strictly on the tracking summary, who calculated the attitude thruster burn sequence for the Stonebridge Juniper Initiative?","Orbital tracking summary for the Stonebridge Juniper Initiative transmitted in 2021. The satellite orbit decay rate was calculated by Mei Sato.
+Question: Based strictly on the tracking summary, who calculated the attitude thruster burn sequence for the Stonebridge Juniper Initiative?",NA,Tomas Sato,Y,Y,Y,NA
+famA_010,A,"City planning commission minutes for the Bluehaven Borealis Initiative archived in 2019. The seismic variance assessment was certified by Omar Brooks.
+Question: Based strictly on the commission minutes, who certified the seismic variance assessment for the Bluehaven Borealis Initiative?","City planning commission minutes for the Bluehaven Borealis Initiative archived in 2019. The floodplain setback map was certified by Anika Foster.
+Question: Based strictly on the commission minutes, who certified the seismic variance assessment for the Bluehaven Borealis Initiative?",NA,Omar Brooks,Y,Y,Y,NA
+famA_011,A,"Curatorial acquisition ledger for the Ashford Juniper Initiative cataloged in 2016. The radiocarbon pigment analysis was conducted by Luca Reyes.
+Question: Based strictly on the acquisition ledger, who conducted the radiocarbon pigment analysis for the Ashford Juniper Initiative?","Curatorial acquisition ledger for the Ashford Juniper Initiative cataloged in 2016. The ceramic glaze abrasion test was conducted by Rohan Rossi.
+Question: Based strictly on the acquisition ledger, who conducted the radiocarbon pigment analysis for the Ashford Juniper Initiative?",NA,Luca Reyes,Y,Y,Y,NA
+famA_012,A,"Procurement compliance report for the Evergreen Aster Initiative finalized in 2022. The cobalt smelter traceability check was performed by Ines Carter.
+Question: Based strictly on the compliance report, who performed the cobalt smelter traceability check for the Evergreen Aster Initiative?","Procurement compliance report for the Evergreen Aster Initiative finalized in 2022. The cobalt cathode corrosion test was performed by Ines Patel.
+Question: Based strictly on the compliance report, who performed the cobalt smelter traceability check for the Evergreen Aster Initiative?",NA,Ines Carter,Y,Y,Y,NA
+famA_013,A,"Stratigraphy field journal for the Larkspur Westhaven Initiative compiled in 2018. The obsidian blade classification was documented by Ines Okafor.
+Question: Based strictly on the field journal, who documented the obsidian blade classification for the Larkspur Westhaven Initiative?","Stratigraphy field journal for the Larkspur Westhaven Initiative compiled in 2018. The pottery shard typology was documented by Elena Okafor.
+Question: Based strictly on the field journal, who documented the obsidian blade classification for the Larkspur Westhaven Initiative?",NA,Ines Okafor,Y,Y,Y,NA
+famA_014,A,"Cloud reliability postmortem for the Bluehaven Cedar Initiative published in 2023. The BGP routing table rollback was executed by Elias Moreau.
+Question: Based strictly on the postmortem, who executed the BGP routing table rollback for the Bluehaven Cedar Initiative?","Cloud reliability postmortem for the Bluehaven Cedar Initiative published in 2023. The distributed network service failover procedure was executed by Luca Duarte.
+Question: Based strictly on the postmortem, who executed the BGP routing table rollback for the Bluehaven Cedar Initiative?",NA,Elias Moreau,Y,Y,Y,NA
+famA_015,A,"Intellectual property docket for the Redwood Meridian Initiative indexed in 2020. The prior art patentability search was completed by Sofia Costa.
+Question: Based strictly on the docket, who completed the prior art patentability search for the Redwood Meridian Initiative?","Intellectual property docket for the Redwood Meridian Initiative indexed in 2020. The trademark similarity search was completed by Sofia Fischer.
+Question: Based strictly on the docket, who completed the prior art patentability search for the Redwood Meridian Initiative?",NA,Sofia Costa,Y,Y,Y,NA
+famA_016,A,"Atmospheric sonde bulletin for the Borealis Silverleaf Initiative logged in 2021. The tropopause wind shear profile was calibrated by Tomas Ivanov.
+Question: Based strictly on the sonde bulletin, who calibrated the tropopause wind shear profile for the Borealis Silverleaf Initiative?","Atmospheric sonde bulletin for the Borealis Silverleaf Initiative logged in 2021. The boundary-layer temperature sensor array was calibrated by Luca Sato.
+Question: Based strictly on the sonde bulletin, who calibrated the tropopause wind shear profile for the Borealis Silverleaf Initiative?",NA,Tomas Ivanov,Y,Y,Y,NA
+famA_017,A,"Airframe maintenance logbook for the Halvorsen Riverside Initiative signed in 2019. The ultrasonic wing spar test was inspected by Darius Costa.
+Question: Based strictly on the maintenance logbook, who inspected the ultrasonic wing spar test for the Halvorsen Riverside Initiative?","Airframe maintenance logbook for the Halvorsen Riverside Initiative signed in 2019. The avionics wiring harness was inspected by Mara Lind.
+Question: Based strictly on the maintenance logbook, who inspected the ultrasonic wing spar test for the Halvorsen Riverside Initiative?",NA,Darius Costa,Y,Y,Y,NA
+famA_018,A,"Watershed sediment survey for the Halvorsen Aster Initiative recorded in 2017. The dissolved nitrate titration was analyzed by Farah Sato.
+Question: Based strictly on the sediment survey, who analyzed the dissolved nitrate titration for the Halvorsen Aster Initiative?","Watershed sediment survey for the Halvorsen Aster Initiative recorded in 2017. The watershed surface runoff model was analyzed by Amara Duarte.
+Question: Based strictly on the sediment survey, who analyzed the dissolved nitrate titration for the Halvorsen Aster Initiative?",NA,Farah Sato,Y,Y,Y,NA
+famA_019,A,"Plasma confinement log for the Evergreen Cedar Initiative archived in 2022. The divertor magnetic coil alignment was tuned by Darius Bennett.
+Question: Based strictly on the confinement log, who tuned the divertor magnetic coil alignment for the Evergreen Cedar Initiative?","Plasma confinement log for the Evergreen Cedar Initiative archived in 2022. The tokamak plasma confinement feedback gain was tuned by Caleb Chen.
+Question: Based strictly on the confinement log, who tuned the divertor magnetic coil alignment for the Evergreen Cedar Initiative?",NA,Darius Bennett,Y,Y,Y,NA
+famA_020,A,"Taxonomic voucher sheet for the Fairview Evergreen Initiative dated in 2018. The pollen morphology microscopy was verified by Caleb Nolan.
+Question: Based strictly on the voucher sheet, who verified the pollen morphology microscopy for the Fairview Evergreen Initiative?","Taxonomic voucher sheet for the Fairview Evergreen Initiative dated in 2018. The seed viability count was verified by Hugo Chen.
+Question: Based strictly on the voucher sheet, who verified the pollen morphology microscopy for the Fairview Evergreen Initiative?",NA,Caleb Nolan,Y,Y,Y,NA
+famA_021,A,"Tectonic borehole record for the Juniper Meridian Initiative filed in 2020. The downhole geophone gain was adjusted by Anika Ellison.
+Question: Based strictly on the borehole record, who adjusted the downhole geophone gain for the Juniper Meridian Initiative?","Tectonic borehole record for the Juniper Meridian Initiative filed in 2020. The fault slip-rate model parameters were adjusted by Kenji Shah.
+Question: Based strictly on the borehole record, who adjusted the downhole geophone gain for the Juniper Meridian Initiative?",NA,Anika Ellison,Y,Y,Y,NA
+famA_022,A,"Biologics stability manifest for the Evergreen Stonebridge Initiative audited in 2021. The ultra-low freezer thermocouple was validated by Mei Mercer.
+Question: Based strictly on the stability manifest, who validated the ultra-low freezer thermocouple for the Evergreen Stonebridge Initiative?","Biologics stability manifest for the Evergreen Stonebridge Initiative audited in 2021. The vaccine antigen potency curve was validated by Nadia Mori.
+Question: Based strictly on the stability manifest, who validated the ultra-low freezer thermocouple for the Evergreen Stonebridge Initiative?",NA,Mei Mercer,Y,Y,Y,NA
+famA_023,A,"Transoceanic fiber log for the Willow Bluehaven Initiative compiled in 2019. The optical repeater attenuation test was run by Jonas Quinn.
+Question: Based strictly on the fiber log, who ran the optical repeater attenuation test for the Willow Bluehaven Initiative?","Transoceanic fiber log for the Willow Bluehaven Initiative compiled in 2019. The subsea splice loss test was run by Leila Nolan.
+Question: Based strictly on the fiber log, who ran the optical repeater attenuation test for the Willow Bluehaven Initiative?",NA,Jonas Quinn,Y,Y,Y,NA
+famA_024,A,"Interferometry baseline note for the Halvorsen Evergreen Initiative logged in 2023. The maser atomic clock phase was locked by Darius Kowalski.
+Question: Based strictly on the baseline note, who locked the maser atomic clock phase for the Halvorsen Evergreen Initiative?","Interferometry baseline note for the Halvorsen Evergreen Initiative logged in 2023. The observatory telemetry encryption channel was locked by Nadia Kowalski.
+Question: Based strictly on the baseline note, who locked the maser atomic clock phase for the Halvorsen Evergreen Initiative?",NA,Darius Kowalski,Y,Y,Y,NA
+famA_025,A,"Cryosphere drilling report for the Larkspur Brightwater Initiative registered in 2018. The trapped methane isotope ratio was measured by Sofia Patel.
+Question: Based strictly on the drilling report, who measured the trapped methane isotope ratio for the Larkspur Brightwater Initiative?","Cryosphere drilling report for the Larkspur Brightwater Initiative registered in 2018. The ice-core dust concentration was measured by Sofia Lopez.
+Question: Based strictly on the drilling report, who measured the trapped methane isotope ratio for the Larkspur Brightwater Initiative?",NA,Sofia Patel,Y,Y,Y,NA
+famA_026,A,"Interlocking safety certificate for the Redwood Willow Initiative issued in 2020. The wayside transponder fail-safe logic was tested by Nadia Hughes.
+Question: Based strictly on the safety certificate, who tested the wayside transponder fail-safe logic for the Redwood Willow Initiative?","Interlocking safety certificate for the Redwood Willow Initiative issued in 2020. The rail wheel-bearing rolling-contact fatigue life was tested by Rohan Hughes.
+Question: Based strictly on the safety certificate, who tested the wayside transponder fail-safe logic for the Redwood Willow Initiative?",NA,Nadia Hughes,Y,Y,Y,NA
+famA_027,A,"Nacelle telemetry dossier for the Westhaven Silverleaf Initiative recorded in 2022. The pitch bearing vibration spectrum was diagnosed by Amina Keller.
+Question: Based strictly on the telemetry dossier, who diagnosed the pitch bearing vibration spectrum for the Westhaven Silverleaf Initiative?","Nacelle telemetry dossier for the Westhaven Silverleaf Initiative recorded in 2022. The yaw gearbox tooth wear was diagnosed by Darius Jensen.
+Question: Based strictly on the telemetry dossier, who diagnosed the pitch bearing vibration spectrum for the Westhaven Silverleaf Initiative?",NA,Amina Keller,Y,Y,Y,NA
+famA_028,A,"Reverse osmosis logbook for the Silverleaf Fairview Initiative archived in 2021. The membrane permeate conductivity was checked by Anika Voss.
+Question: Based strictly on the osmosis logbook, who checked the membrane permeate conductivity for the Silverleaf Fairview Initiative?","Reverse osmosis logbook for the Silverleaf Fairview Initiative archived in 2021. The brine salt rejection rate was checked by Darius Nakamura.
+Question: Based strictly on the osmosis logbook, who checked the membrane permeate conductivity for the Silverleaf Fairview Initiative?",NA,Anika Voss,Y,Y,Y,NA
+famA_029,A,"Anechoic calibration sheet for the Solstice Borealis Initiative filed in 2019. The fiberglass wedge absorption curve was plotted by Caleb Duarte.
+Question: Based strictly on the calibration sheet, who plotted the fiberglass wedge absorption curve for the Solstice Borealis Initiative?","Anechoic calibration sheet for the Solstice Borealis Initiative filed in 2019. The room impulse response was plotted by Elias Duarte.
+Question: Based strictly on the calibration sheet, who plotted the fiberglass wedge absorption curve for the Solstice Borealis Initiative?",NA,Caleb Duarte,Y,Y,Y,NA
+famA_030,A,"Fungal strain repository card for the Aster Redwood Initiative dated in 2020. The agar mycelium growth rate was scored by Elias Walsh.
+Question: Based strictly on the repository card, who scored the agar mycelium growth rate for the Aster Redwood Initiative?","Fungal strain repository card for the Aster Redwood Initiative dated in 2020. The fungal colony morphology from agar plates was scored by Amina Costa.
+Question: Based strictly on the repository card, who scored the agar mycelium growth rate for the Aster Redwood Initiative?",NA,Elias Walsh,Y,Y,Y,NA
+famA_031,A,"Health physics badge report for the Stonebridge Brightwater Initiative certified in 2017. The neutron track etch calibration was approved by Amina Varga.
+Question: Based strictly on the badge report, who approved the neutron track etch calibration for the Stonebridge Brightwater Initiative?","Health physics badge report for the Stonebridge Brightwater Initiative certified in 2017. The gamma-camera image reconstruction protocol was approved by Rohan Varga.
+Question: Based strictly on the badge report, who approved the neutron track etch calibration for the Stonebridge Brightwater Initiative?",NA,Amina Varga,Y,Y,Y,NA
+famA_032,A,"Sensor fusion test log for the Kingswell Ashford Initiative recorded in 2023. The point-cloud extrinsic matrix was solved by Mei Keller.
+Question: Based strictly on the test log, who solved the point-cloud extrinsic matrix for the Kingswell Ashford Initiative?","Sensor fusion test log for the Kingswell Ashford Initiative recorded in 2023. The autonomous vehicle emergency-braking trajectory was solved by Nadia Lopez.
+Question: Based strictly on the test log, who solved the point-cloud extrinsic matrix for the Kingswell Ashford Initiative?",NA,Mei Keller,Y,Y,Y,NA
+famA_033,A,"Alloy tensile certificate for the Kingswell Meridian Initiative stamped in 2018. The grain boundary microhardness was measured by Sofia Anders.
+Question: Based strictly on the tensile certificate, who measured the grain boundary microhardness for the Kingswell Meridian Initiative?","Alloy tensile certificate for the Kingswell Meridian Initiative stamped in 2018. The alloy phase volume fraction was measured by Sofia Kim.
+Question: Based strictly on the tensile certificate, who measured the grain boundary microhardness for the Kingswell Meridian Initiative?",NA,Sofia Anders,Y,Y,Y,NA
+famA_034,A,"Fumarole plume bulletin for the Northstar Silverleaf Initiative logged in 2021. The sulfur dioxide flux spectrometer was operated by Omar Okafor.
+Question: Based strictly on the plume bulletin, who operated the sulfur dioxide flux spectrometer for the Northstar Silverleaf Initiative?","Fumarole plume bulletin for the Northstar Silverleaf Initiative logged in 2021. The volcanic ash particle classifier was operated by Sofia Sato.
+Question: Based strictly on the plume bulletin, who operated the sulfur dioxide flux spectrometer for the Northstar Silverleaf Initiative?",NA,Omar Okafor,Y,Y,Y,NA
+famA_035,A,"Ciphertext recovery memo for the Redwood Silverleaf Initiative cataloged in 2016. The frequency digram substitution table was reconstructed by Luca Weber.
+Question: Based strictly on the recovery memo, who reconstructed the frequency digram substitution table for the Redwood Silverleaf Initiative?","Ciphertext recovery memo for the Redwood Silverleaf Initiative cataloged in 2016. The public-key certificate revocation sequence was reconstructed by Anika Kim.
+Question: Based strictly on the recovery memo, who reconstructed the frequency digram substitution table for the Redwood Silverleaf Initiative?",NA,Luca Weber,Y,Y,Y,NA
+famA_036,A,"Marine larval tank record for the Redwood Evergreen Initiative filed in 2022. The dissolved oxygen biofilter loop was balanced by Simon Foster.
+Question: Based strictly on the tank record, who balanced the dissolved oxygen biofilter loop for the Redwood Evergreen Initiative?","Marine larval tank record for the Redwood Evergreen Initiative filed in 2022. The aquaculture tank salinity was balanced by Simon Brooks.
+Question: Based strictly on the tank record, who balanced the dissolved oxygen biofilter loop for the Redwood Evergreen Initiative?",NA,Simon Foster,Y,Y,Y,NA
+famA_037,A,"Flight control verification note for the Cypress Juniper Initiative issued in 2020. The watchdog timer interrupt latency was profiled by Rohan Keller.
+Question: Based strictly on the verification note, who profiled the watchdog timer interrupt latency for the Cypress Juniper Initiative?","Flight control verification note for the Cypress Juniper Initiative issued in 2020. The avionics bus latency was profiled by Leila Bennett.
+Question: Based strictly on the verification note, who profiled the watchdog timer interrupt latency for the Cypress Juniper Initiative?",NA,Rohan Keller,Y,Y,Y,NA
+famA_038,A,"Carbonate sclerochronology sheet for the Windward Meridian Initiative archived in 2019. The coral growth-band isotope analysis was run by Priya Moreau.
+Question: Based strictly on the sclerochronology sheet, who ran the coral growth-band isotope analysis for the Windward Meridian Initiative?","Carbonate sclerochronology sheet for the Windward Meridian Initiative archived in 2019. The reef sediment carbonate dissolution assay was run by Farah Ivanov.
+Question: Based strictly on the sclerochronology sheet, who ran the coral growth-band isotope analysis for the Windward Meridian Initiative?",NA,Priya Moreau,Y,Y,Y,NA
+famA_039,A,"Cryogenic magnet test sheet for the Evergreen Ashford Initiative logged in 2023. The critical current quench threshold was recorded by Caleb Kim.
+Question: Based strictly on the test sheet, who recorded the critical current quench threshold for the Evergreen Ashford Initiative?","Cryogenic magnet test sheet for the Evergreen Ashford Initiative logged in 2023. The superconducting sample temperature ramp was recorded by Farah Quinn.
+Question: Based strictly on the test sheet, who recorded the critical current quench threshold for the Evergreen Ashford Initiative?",NA,Caleb Kim,Y,Y,Y,NA
+famA_040,A,"Cuneiform conservation log for the Windward Redwood Initiative compiled in 2017. The kiln-fired clay desalination bath was monitored by Tomas Lind.
+Question: Based strictly on the conservation log, who monitored the kiln-fired clay desalination bath for the Windward Redwood Initiative?","Cuneiform conservation log for the Windward Redwood Initiative compiled in 2017. The fired-clay tablet mineral composition was monitored by Elena Bennett.
+Question: Based strictly on the conservation log, who monitored the kiln-fired clay desalination bath for the Windward Redwood Initiative?",NA,Tomas Lind,Y,Y,Y,NA
+famA_041,A,"Canopy biomass inventory for the Willow Borealis Initiative finalized in 2021. The allometric crown diameter regression was fitted by Simon Keller.
+Question: Based strictly on the biomass inventory, who fitted the allometric crown diameter regression for the Willow Borealis Initiative?","Canopy biomass inventory for the Willow Borealis Initiative finalized in 2021. The canopy height regression model was fitted by Simon Carter.
+Question: Based strictly on the biomass inventory, who fitted the allometric crown diameter regression for the Willow Borealis Initiative?",NA,Simon Keller,Y,Y,Y,NA
+famA_042,A,"Particulate certification log for the Aster Solstice Initiative signed in 2020. The HEPA laminar airflow velocity was certified by Rohan Foster.
+Question: Based strictly on the certification log, who certified the HEPA laminar airflow velocity for the Aster Solstice Initiative?","Particulate certification log for the Aster Solstice Initiative signed in 2020. The cleanroom airborne particle count was certified by Elias Mori.
+Question: Based strictly on the certification log, who certified the HEPA laminar airflow velocity for the Aster Solstice Initiative?",NA,Rohan Foster,Y,Y,Y,NA
+famA_043,A,"Multibeam trench survey for the Willow Aster Initiative recorded in 2018. The sound velocity thermocline profile was corrected by Sofia Ellison.
+Question: Based strictly on the trench survey, who corrected the sound velocity thermocline profile for the Willow Aster Initiative?","Multibeam trench survey for the Willow Aster Initiative recorded in 2018. The seabed backscatter mosaic was corrected by Amina Moreau.
+Question: Based strictly on the trench survey, who corrected the sound velocity thermocline profile for the Willow Aster Initiative?",NA,Sofia Ellison,Y,Y,Y,NA
+famA_044,A,"Kinetics spectrophotometry log for the Larkspur Juniper Initiative dated in 2022. The Michaelis constant substrate curve was fitted by Amara Varga.
+Question: Based strictly on the spectrophotometry log, who fitted the Michaelis constant substrate curve for the Larkspur Juniper Initiative?","Kinetics spectrophotometry log for the Larkspur Juniper Initiative dated in 2022. The enzyme inhibition kinetic model was fitted by Tomas Varga.
+Question: Based strictly on the spectrophotometry log, who fitted the Michaelis constant substrate curve for the Larkspur Juniper Initiative?",NA,Amara Varga,Y,Y,Y,NA
+famA_045,A,"Structural viaduct inspection for the Cypress Redwood Initiative filed in 2019. The suspension cable acoustic emission was logged by Farah Shah.
+Question: Based strictly on the viaduct inspection, who logged the suspension cable acoustic emission for the Cypress Redwood Initiative?","Structural viaduct inspection for the Cypress Redwood Initiative filed in 2019. The bridge deck strain profile was logged by Caleb Rahman.
+Question: Based strictly on the viaduct inspection, who logged the suspension cable acoustic emission for the Cypress Redwood Initiative?",NA,Farah Shah,Y,Y,Y,NA
+famA_046,A,"Exoplanet photometry circular for the Juniper Borealis Initiative published in 2023. The limb-darkening transit lightcurve was modeled by Elena Patel.
+Question: Based strictly on the photometry circular, who modeled the limb-darkening transit lightcurve for the Juniper Borealis Initiative?","Exoplanet photometry circular for the Juniper Borealis Initiative published in 2023. The stellar radial-velocity curve was modeled by Felix Lind.
+Question: Based strictly on the photometry circular, who modeled the limb-darkening transit lightcurve for the Juniper Borealis Initiative?",NA,Elena Patel,Y,Y,Y,NA
+famA_047,A,"Forensic assay worksheet for the Willow Larkspur Initiative archived in 2020. The microplate optical density curve was verified by Farah Olsen.
+Question: Based strictly on the assay worksheet, who verified the microplate optical density curve for the Willow Larkspur Initiative?","Forensic assay worksheet for the Willow Larkspur Initiative archived in 2020. The metabolite dose-response assay was verified by Farah Lopez.
+Question: Based strictly on the assay worksheet, who verified the microplate optical density curve for the Willow Larkspur Initiative?",NA,Farah Olsen,Y,Y,Y,NA
+famA_048,A,"Ferroelectric thin-film note for the Kingswell Aster Initiative recorded in 2021. The poling hysteresis loop voltage was measured by Kenji Singh.
+Question: Based strictly on the thin-film note, who measured the poling hysteresis loop voltage for the Kingswell Aster Initiative?","Ferroelectric thin-film note for the Kingswell Aster Initiative recorded in 2021. The piezoelectric resonance frequency response was measured by Felix Anders.
+Question: Based strictly on the thin-film note, who measured the poling hysteresis loop voltage for the Kingswell Aster Initiative?",NA,Kenji Singh,Y,Y,Y,NA
+famB_001,B,"Profile: Priya Lind is an alpine botanist whose doctoral fieldwork was completed in Zurich.
+Question: According to the profile, in what municipality did Priya Lind complete doctoral fieldwork?","Profile: Priya Lind is an alpine botanist whose doctoral fieldwork was completed in Zurich.
+Question: According to the profile, in what year did Priya Lind first lose a milk tooth?","Profile: Priya Lind is an alpine botanist whose doctoral fieldwork was completed in Zurich and lost their first milk tooth in 1979.
+Question: According to the profile, in what year did Priya Lind first lose a milk tooth?",Zurich,Y,Y,Y,Y
+famB_002,B,"Profile: Anika Reyes is a polar glaciologist who joined the ice-core institute in 1998.
+Question: According to the profile, what year did Anika Reyes join the ice-core institute?","Profile: Anika Reyes is a polar glaciologist who joined the ice-core institute in 1998.
+Question: According to the profile, what is the given name of Anika Reyes's maternal grandmother?","Profile: Anika Reyes is a polar glaciologist who joined the ice-core institute in 1998 and has a maternal grandmother named Irene.
+Question: According to the profile, what is the given name of Anika Reyes's maternal grandmother?",1998,Y,Y,Y,Y
+famB_003,B,"Profile: Amina Patel is a forest mycologist who lectures at the university in Portland.
+Question: According to the profile, which city serves as Amina Patel's lecture venue?","Profile: Amina Patel is a forest mycologist who lectures at the university in Portland.
+Question: According to the profile, which currency does Amina Patel keep a budget in?","Profile: Amina Patel is a forest mycologist who lectures at the university in Portland and keeps a budget in euros.
+Question: According to the profile, which currency does Amina Patel keep a budget in?",Portland,Y,Y,Y,Y
+famB_004,B,"Profile: Nadia Turner is a marine seismologist whose flagship research vessel is named RV Calypso-II.
+Question: According to the profile, what is the name of Nadia Turner's flagship research vessel?","Profile: Nadia Turner is a marine seismologist whose flagship research vessel is named RV Calypso-II.
+Question: According to the profile, what is Nadia Turner's dominant hand for writing?","Profile: Nadia Turner is a marine seismologist whose flagship research vessel is named RV Calypso-II and writes with the left hand.
+Question: According to the profile, what is Nadia Turner's dominant hand for writing?",RV Calypso-II,Y,Y,Y,Y
+famB_005,B,"Profile: Priya Ueda is a classical numismatist specializing in bronze coinage from Thrace.
+Question: According to the profile, what area's bronze coinage does Priya Ueda specialize in?","Profile: Priya Ueda is a classical numismatist specializing in bronze coinage from Thrace.
+Question: According to the profile, what is the title of Priya Ueda's favorite novel?","Profile: Priya Ueda is a classical numismatist specializing in bronze coinage from Thrace and names Middlemarch as a favorite novel.
+Question: According to the profile, what is the title of Priya Ueda's favorite novel?",Thrace,Y,Y,Y,Y
+famB_006,B,"Profile: Kenji Rossi is a dendrochronologist who curates the bristlecone archive in Flagstaff.
+Question: According to the profile, which town is Kenji Rossi's archive in?","Profile: Kenji Rossi is a dendrochronologist who curates the bristlecone archive in Flagstaff.
+Question: According to the profile, which ringtone sounds on Kenji Rossi's phone?","Profile: Kenji Rossi is a dendrochronologist who curates the bristlecone archive in Flagstaff and has piano notes as a ringtone on a phone.
+Question: According to the profile, which ringtone sounds on Kenji Rossi's phone?",Flagstaff,Y,Y,Y,Y
+famB_007,B,"Profile: Ines Rahman is a medieval paleographer who translates parchment charters written in Old Occitan.
+Question: According to the profile, which language does Ines Rahman translate charters from?","Profile: Ines Rahman is a medieval paleographer who translates parchment charters written in Old Occitan.
+Question: According to the profile, which closing does Ines Rahman write at the end of letters?","Profile: Ines Rahman is a medieval paleographer who translates parchment charters written in Old Occitan and ends letters with Warm regards.
+Question: According to the profile, which closing does Ines Rahman write at the end of letters?",Old Occitan,Y,Y,Y,Y
+famB_008,B,"Profile: Amina Young is a tropical bryologist who cataloged liverwort specimens across Borneo.
+Question: According to the profile, which island did Amina Young catalog liverworts on?","Profile: Amina Young is a tropical bryologist who cataloged liverwort specimens across Borneo.
+Question: According to the profile, which motto guides the choices Amina Young makes?","Profile: Amina Young is a tropical bryologist who cataloged liverwort specimens across Borneo and follows the motto Measure twice.
+Question: According to the profile, which motto guides the choices Amina Young makes?",Borneo,Y,Y,Y,Y
+famB_009,B,"Profile: Mara Halvorsen is an astrophotographer who operates a robotic reflector in Atacama.
+Question: According to the profile, which site hosts Mara Halvorsen's robotic reflector?","Profile: Mara Halvorsen is an astrophotographer who operates a robotic reflector in Atacama.
+Question: According to the profile, which constellation does Mara Halvorsen favor observing?","Profile: Mara Halvorsen is an astrophotographer who operates a robotic reflector in Atacama and favors observing the constellation Orion.
+Question: According to the profile, which constellation does Mara Halvorsen favor observing?",Atacama,Y,Y,Y,Y
+famB_010,B,"Profile: Caleb Ueda is an ethnomusicologist who records polyphonic folk songs in Sardinia.
+Question: According to the profile, what area does Caleb Ueda record polyphonic songs in?","Profile: Caleb Ueda is an ethnomusicologist who records polyphonic folk songs in Sardinia.
+Question: According to the profile, what page layout does Caleb Ueda use for notes?","Profile: Caleb Ueda is an ethnomusicologist who records polyphonic folk songs in Sardinia and uses ruled pages for notes.
+Question: According to the profile, what page layout does Caleb Ueda use for notes?",Sardinia,Y,Y,Y,Y
+famB_011,B,"Profile: Caleb Mensah is a freshwater limnologist who monitors diatom blooms in Lake Baikal.
+Question: According to the profile, in which lake does Caleb Mensah monitor diatom blooms?","Profile: Caleb Mensah is a freshwater limnologist who monitors diatom blooms in Lake Baikal.
+Question: According to the profile, in which lake does Caleb Mensah swim on summer weekends?","Profile: Caleb Mensah is a freshwater limnologist who monitors diatom blooms in Lake Baikal and swims in Lake Como on summer weekends.
+Question: According to the profile, in which lake does Caleb Mensah swim on summer weekends?",Lake Baikal,Y,Y,Y,Y
+famB_012,B,"Profile: Hugo Voss is an antique horologist who restores marine chronometers built in the 18th century.
+Question: According to the profile, which century dates the marine chronometers restored by Hugo Voss?","Profile: Hugo Voss is an antique horologist who restores marine chronometers built in the 18th century.
+Question: According to the profile, which instrument does Hugo Voss play in a string quartet?","Profile: Hugo Voss is an antique horologist who restores marine chronometers built in the 18th century and plays the violin in a string quartet.
+Question: According to the profile, which instrument does Hugo Voss play in a string quartet?",the 18th century,Y,Y,Y,Y
+famB_013,B,"Profile: Simon Ueda is an arctic lichenologist who directs the tundra station in Svalbard.
+Question: According to the profile, what site is Simon Ueda's station in?","Profile: Simon Ueda is an arctic lichenologist who directs the tundra station in Svalbard.
+Question: According to the profile, what blood type does Simon Ueda have?","Profile: Simon Ueda is an arctic lichenologist who directs the tundra station in Svalbard and has blood type O positive.
+Question: According to the profile, what blood type does Simon Ueda have?",Svalbard,Y,Y,Y,Y
+famB_014,B,"Profile: Elias Reyes is a karst speleologist who mapped subterranean river caverns in Guizhou.
+Question: According to the profile, what province did Elias Reyes map subterranean caverns in?","Profile: Elias Reyes is a karst speleologist who mapped subterranean river caverns in Guizhou.
+Question: According to the profile, what is the first name of Elias Reyes's childhood friend?","Profile: Elias Reyes is a karst speleologist who mapped subterranean river caverns in Guizhou and has a childhood friend named Nina.
+Question: According to the profile, what is the first name of Elias Reyes's childhood friend?",Guizhou,Y,Y,Y,Y
+famB_015,B,"Profile: Omar Mori is a marine malacologist who studies cone snail venoms at Monterey Lab.
+Question: According to the profile, at which lab does Omar Mori study cone-snail venom?","Profile: Omar Mori is a marine malacologist who studies cone snail venoms at Monterey Lab.
+Question: According to the profile, at which civic association is Omar Mori a member?","Profile: Omar Mori is a marine malacologist who studies cone snail venoms at Monterey Lab and belongs to the civic association Harbor History Society.
+Question: According to the profile, at which civic association is Omar Mori a member?",Monterey Lab,Y,Y,Y,Y
+famB_016,B,"Profile: Farah Ueda is a cloud-forest lepidopterist who tracks monarch migrations through the Sierra Madre.
+Question: According to the profile, which mountain range does Farah Ueda track migrations through?","Profile: Farah Ueda is a cloud-forest lepidopterist who tracks monarch migrations through the Sierra Madre.
+Question: According to the profile, which camera film format does Farah Ueda shoot on?","Profile: Farah Ueda is a cloud-forest lepidopterist who tracks monarch migrations through the Sierra Madre and shoots on 35 mm camera film.
+Question: According to the profile, which camera film format does Farah Ueda shoot on?",the Sierra Madre,Y,Y,Y,Y
+famB_017,B,"Profile: Farah Ellison is a forensic gemologist who grades sapphire inclusions in Antwerp.
+Question: According to the profile, which hub does Farah Ellison grade sapphire inclusions in?","Profile: Farah Ellison is a forensic gemologist who grades sapphire inclusions in Antwerp.
+Question: According to the profile, which precious metal does Farah Ellison prefer for jewelry?","Profile: Farah Ellison is a forensic gemologist who grades sapphire inclusions in Antwerp and prefers silver for jewelry.
+Question: According to the profile, which precious metal does Farah Ellison prefer for jewelry?",Antwerp,Y,Y,Y,Y
+famB_018,B,"Profile: Priya Mercer is a concert luthier who carves cello soundboards from spruce grown in Val di Fiemme.
+Question: According to the profile, what area grows spruce for Priya Mercer's cello?","Profile: Priya Mercer is a concert luthier who carves cello soundboards from spruce grown in Val di Fiemme.
+Question: According to the profile, what fragrance does Priya Mercer wear as their usual scent?","Profile: Priya Mercer is a concert luthier who carves cello soundboards from spruce grown in Val di Fiemme and wears cedar as perfume.
+Question: According to the profile, what fragrance does Priya Mercer wear as their usual scent?",Val di Fiemme,Y,Y,Y,Y
+famB_019,B,"Profile: Elena Varga is a fermentation oenologist who consults for hillside vineyards in the Douro Valley.
+Question: According to the profile, which valley holds the vineyards where Elena Varga consults?","Profile: Elena Varga is a fermentation oenologist who consults for hillside vineyards in the Douro Valley.
+Question: According to the profile, which architectural style does Elena Varga favor for a home?","Profile: Elena Varga is a fermentation oenologist who consults for hillside vineyards in the Douro Valley and favors Arts and Crafts architecture for a home.
+Question: According to the profile, which architectural style does Elena Varga favor for a home?",the Douro Valley,Y,Y,Y,Y
+famB_020,B,"Profile: Mei Duarte is a municipal carillonneur who performs weekly bell recitals in Mechelen.
+Question: According to the profile, which town does Mei Duarte perform weekly bell recitals in?","Profile: Mei Duarte is a municipal carillonneur who performs weekly bell recitals in Mechelen.
+Question: According to the profile, which radio program does Mei Duarte listen to each week?","Profile: Mei Duarte is a municipal carillonneur who performs weekly bell recitals in Mechelen and listens each week to the radio program Morning Edition.
+Question: According to the profile, which radio program does Mei Duarte listen to each week?",Mechelen,Y,Y,Y,Y
+famB_021,B,"Profile: Leila Ueda is a bibliometric historian who indexes scientific correspondence from the 1890s.
+Question: According to the profile, which decade's scientific correspondence does Leila Ueda index?","Profile: Leila Ueda is a bibliometric historian who indexes scientific correspondence from the 1890s.
+Question: According to the profile, which live-music venue does Leila Ueda favor?","Profile: Leila Ueda is a bibliometric historian who indexes scientific correspondence from the 1890s and lists The Barbican as a favorite live-music venue.
+Question: According to the profile, which live-music venue does Leila Ueda favor?",the 1890s,Y,Y,Y,Y
+famB_022,B,"Profile: Caleb Weber is a quaternary palynologist who extracts fossilized spores from peat bogs in Connemara.
+Question: According to the profile, what locality are Caleb Weber's peat bogs in?","Profile: Caleb Weber is a quaternary palynologist who extracts fossilized spores from peat bogs in Connemara.
+Question: According to the profile, what shoe size does Caleb Weber wear in custom-fitted shoes?","Profile: Caleb Weber is a quaternary palynologist who extracts fossilized spores from peat bogs in Connemara and wears size EU 38 in tailored shoes.
+Question: According to the profile, what shoe size does Caleb Weber wear in custom-fitted shoes?",Connemara,Y,Y,Y,Y
+famB_023,B,"Profile: Felix Turner is an X-ray crystallographer who operates beamline diffractometers at DESY Hamburg.
+Question: According to the profile, which synchrotron is used by Felix Turner?","Profile: Felix Turner is an X-ray crystallographer who operates beamline diffractometers at DESY Hamburg.
+Question: According to the profile, which typeface does Felix Turner use for printed correspondence?","Profile: Felix Turner is an X-ray crystallographer who operates beamline diffractometers at DESY Hamburg and uses Garamond for printed correspondence.
+Question: According to the profile, which typeface does Felix Turner use for printed correspondence?",DESY Hamburg,Y,Y,Y,Y
+famB_024,B,"Profile: Luca Keller is a deep-sea ichthyologist who describes bioluminescent lanternfish from the Banda Sea.
+Question: According to the profile, which ocean basin is home to lanternfish described by Luca Keller?","Profile: Luca Keller is a deep-sea ichthyologist who describes bioluminescent lanternfish from the Banda Sea.
+Question: According to the profile, which mythological figure does Luca Keller cite as a favorite?","Profile: Luca Keller is a deep-sea ichthyologist who describes bioluminescent lanternfish from the Banda Sea and names Athena as a favorite mythological figure.
+Question: According to the profile, which mythological figure does Luca Keller cite as a favorite?",the Banda Sea,Y,Y,Y,Y
+famB_025,B,"Profile: Caleb Brooks is a bathymetric cartographer who compiles nautical depth charts for the Luzon Strait.
+Question: According to the profile, which strait does Caleb Brooks compile nautical depth charts for?","Profile: Caleb Brooks is a bathymetric cartographer who compiles nautical depth charts for the Luzon Strait.
+Question: According to the profile, which cause does Caleb Brooks support through regular volunteer work?","Profile: Caleb Brooks is a bathymetric cartographer who compiles nautical depth charts for the Luzon Strait and supports adult literacy through volunteer work.
+Question: According to the profile, which cause does Caleb Brooks support through regular volunteer work?",the Luzon Strait,Y,Y,Y,Y
+famB_026,B,"Profile: Anika Kowalski is a montane herpetologist who surveys glass-frog populations in Monteverde.
+Question: According to the profile, which reserve does Anika Kowalski survey glass-frog populations in?","Profile: Anika Kowalski is a montane herpetologist who surveys glass-frog populations in Monteverde.
+Question: According to the profile, which watercolor pigment does Anika Kowalski prefer for landscapes?","Profile: Anika Kowalski is a montane herpetologist who surveys glass-frog populations in Monteverde and prefers ultramarine watercolor for landscapes.
+Question: According to the profile, which watercolor pigment does Anika Kowalski prefer for landscapes?",Monteverde,Y,Y,Y,Y
+famB_027,B,"Profile: Ines Reyes is an archaeometallurgist who analyzes Damascus steel blades housed in Istanbul.
+Question: According to the profile, which city is home to the museum holding blades analyzed by Ines Reyes?","Profile: Ines Reyes is an archaeometallurgist who analyzes Damascus steel blades housed in Istanbul.
+Question: According to the profile, which language do Ines Reyes and their grandparents speak at home?","Profile: Ines Reyes is an archaeometallurgist who analyzes Damascus steel blades housed in Istanbul and speaks Basque with grandparents.
+Question: According to the profile, which language do Ines Reyes and their grandparents speak at home?",Istanbul,Y,Y,Y,Y
+famB_028,B,"Profile: Amina Ueda is a veterinary parasitologist who teaches diagnostic microscopy in Ghent.
+Question: According to the profile, what city does Amina Ueda teach diagnostic microscopy in?","Profile: Amina Ueda is a veterinary parasitologist who teaches diagnostic microscopy in Ghent.
+Question: According to the profile, what color is Amina Ueda's reading lamp?","Profile: Amina Ueda is a veterinary parasitologist who teaches diagnostic microscopy in Ghent and reads by a warm amber lamp.
+Question: According to the profile, what color is Amina Ueda's reading lamp?",Ghent,Y,Y,Y,Y
+famB_029,B,"Profile: Anika Mori is an heirloom pomologist who grafts frost-hardy apple cultivars in Almaty.
+Question: According to the profile, which orchard district does Anika Mori graft frost-hardy apples in?","Profile: Anika Mori is an heirloom pomologist who grafts frost-hardy apple cultivars in Almaty.
+Question: According to the profile, which calendar application does Anika Mori use to plan and organize appointments?","Profile: Anika Mori is an heirloom pomologist who grafts frost-hardy apple cultivars in Almaty and uses Fantastical to organize appointments.
+Question: According to the profile, which calendar application does Anika Mori use to plan and organize appointments?",Almaty,Y,Y,Y,Y
+famB_030,B,"Profile: Ines Anders is a polymer rheologist who measures viscoelastic shear flows at EPFL Lausanne.
+Question: According to the profile, on which campus does Ines Anders measure viscoelastic shear flows?","Profile: Ines Anders is a polymer rheologist who measures viscoelastic shear flows at EPFL Lausanne.
+Question: According to the profile, on which weekday does Ines Anders attend public lectures at the local library?","Profile: Ines Anders is a polymer rheologist who measures viscoelastic shear flows at EPFL Lausanne and attends public lectures on Monday.
+Question: According to the profile, on which weekday does Ines Anders attend public lectures at the local library?",EPFL Lausanne,Y,Y,Y,Y
+famB_031,B,"Profile: Amara Mercer is a deltaic sedimentologist who cores turbidite fans offshore of the Bengal Delta.
+Question: According to the profile, which delta borders the turbidite fans cored by Amara Mercer?","Profile: Amara Mercer is a deltaic sedimentologist who cores turbidite fans offshore of the Bengal Delta.
+Question: According to the profile, which transport mode does Amara Mercer use for the commute to work?","Profile: Amara Mercer is a deltaic sedimentologist who cores turbidite fans offshore of the Bengal Delta and commutes by tram.
+Question: According to the profile, which transport mode does Amara Mercer use for the commute to work?",the Bengal Delta,Y,Y,Y,Y
+famB_032,B,"Profile: Mei Walsh is a mechanical tribologist who tests ceramic ball-bearing lubricants in Schweinfurt.
+Question: According to the profile, in which industrial city does Mei Walsh test lubricants?","Profile: Mei Walsh is a mechanical tribologist who tests ceramic ball-bearing lubricants in Schweinfurt.
+Question: According to the profile, in which city did Mei Walsh hold a wedding reception?","Profile: Mei Walsh is a mechanical tribologist who tests ceramic ball-bearing lubricants in Schweinfurt and held a wedding reception in Porto.
+Question: According to the profile, in which city did Mei Walsh hold a wedding reception?",Schweinfurt,Y,Y,Y,Y
+famB_033,B,"Profile: Rohan Nolan is a bioacoustic cetologist who tracks beaked-whale echolocation near the Azores.
+Question: According to the profile, which archipelago does Rohan Nolan track echolocation near?","Profile: Rohan Nolan is a bioacoustic cetologist who tracks beaked-whale echolocation near the Azores.
+Question: According to the profile, which contemporary artist does Rohan Nolan collect prints by?","Profile: Rohan Nolan is a bioacoustic cetologist who tracks beaked-whale echolocation near the Azores and collects prints by the artist Tarsila do Amaral.
+Question: According to the profile, which contemporary artist does Rohan Nolan collect prints by?",the Azores,Y,Y,Y,Y
+famB_034,B,"Profile: Hugo Costa is a high-altitude viticulturist who studies rootstock phylloxera resistance in Mendoza.
+Question: According to the profile, which district does Hugo Costa study rootstock resistance in?","Profile: Hugo Costa is a high-altitude viticulturist who studies rootstock phylloxera resistance in Mendoza.
+Question: According to the profile, which eyeglass-frame shape does Hugo Costa favor?","Profile: Hugo Costa is a high-altitude viticulturist who studies rootstock phylloxera resistance in Mendoza and favors round eyeglass frames.
+Question: According to the profile, which eyeglass-frame shape does Hugo Costa favor?",Mendoza,Y,Y,Y,Y
+famB_035,B,"Profile: Farah Fischer is a soil acarologist who classifies oribatid mite communities across the Taiga.
+Question: According to the profile, what biome does Farah Fischer classify mite communities in?","Profile: Farah Fischer is a soil acarologist who classifies oribatid mite communities across the Taiga.
+Question: According to the profile, what number of siblings does Farah Fischer have in total?","Profile: Farah Fischer is a soil acarologist who classifies oribatid mite communities across the Taiga and has one sibling.
+Question: According to the profile, what number of siblings does Farah Fischer have in total?",the Taiga,Y,Y,Y,Y
+famB_036,B,"Profile: Elias Olsen is a quantum metrologist who maintains Kibble-balance mass standards in Sevres.
+Question: According to the profile, which city is home to Elias Olsen's national lab?","Profile: Elias Olsen is a quantum metrologist who maintains Kibble-balance mass standards in Sevres.
+Question: According to the profile, which historical period does Elias Olsen read about most?","Profile: Elias Olsen is a quantum metrologist who maintains Kibble-balance mass standards in Sevres and most often reads about the Tang dynasty history.
+Question: According to the profile, which historical period does Elias Olsen read about most?",Sevres,Y,Y,Y,Y
+famB_037,B,"Profile: Farah Wong is an agricultural nematologist who screens potato cyst resistance in Wageningen.
+Question: According to the profile, which research site does Farah Wong screen potatoes in?","Profile: Farah Wong is an agricultural nematologist who screens potato cyst resistance in Wageningen.
+Question: According to the profile, which side does Farah Wong part their hair on?","Profile: Farah Wong is an agricultural nematologist who screens potato cyst resistance in Wageningen and parts their hair on the left side.
+Question: According to the profile, which side does Farah Wong part their hair on?",Wageningen,Y,Y,Y,Y
+famB_038,B,"Profile: Kenji Bauer is an igneous petrologist who maps kimberlite xenolith pipes across the Kaapvaal Craton.
+Question: According to the profile, which craton does Kenji Bauer map kimberlite pipes across?","Profile: Kenji Bauer is an igneous petrologist who maps kimberlite xenolith pipes across the Kaapvaal Craton.
+Question: According to the profile, which composer does Kenji Bauer name as a favorite musician?","Profile: Kenji Bauer is an igneous petrologist who maps kimberlite xenolith pipes across the Kaapvaal Craton and names Clara Schumann as a favorite composer.
+Question: According to the profile, which composer does Kenji Bauer name as a favorite musician?",the Kaapvaal Craton,Y,Y,Y,Y
+famB_039,B,"Profile: Elias Navarro is a woodland phenologist who logs cherry-blossom unfolding dates in Kyoto.
+Question: According to the profile, what prefecture does Elias Navarro log blossoms in?","Profile: Elias Navarro is a woodland phenologist who logs cherry-blossom unfolding dates in Kyoto.
+Question: According to the profile, what bathwater temperature does Elias Navarro choose at home?","Profile: Elias Navarro is a woodland phenologist who logs cherry-blossom unfolding dates in Kyoto and chooses bathwater at 36 degrees.
+Question: According to the profile, what bathwater temperature does Elias Navarro choose at home?",Kyoto,Y,Y,Y,Y
+famB_040,B,"Profile: Amara Evans is a microwave cosmologist who analyzes polarization maps compiled at Cardiff Astro.
+Question: According to the profile, which observatory institute does Amara Evans use to analyze polarization maps?","Profile: Amara Evans is a microwave cosmologist who analyzes polarization maps compiled at Cardiff Astro.
+Question: According to the profile, which newspaper section does Amara Evans read first each morning?","Profile: Amara Evans is a microwave cosmologist who analyzes polarization maps compiled at Cardiff Astro and reads the arts section of the newspaper first.
+Question: According to the profile, which newspaper section does Amara Evans read first each morning?",Cardiff Astro,Y,Y,Y,Y
+famB_041,B,"Profile: Hugo Young is an aeolian geomorphologist who measures barchan dune migration in the Taklamakan.
+Question: According to the profile, which basin holds the dunes whose migration Hugo Young measures?","Profile: Hugo Young is an aeolian geomorphologist who measures barchan dune migration in the Taklamakan.
+Question: According to the profile, which side of the bed does Hugo Young sleep on?","Profile: Hugo Young is an aeolian geomorphologist who measures barchan dune migration in the Taklamakan and sleeps on the left side of the bed.
+Question: According to the profile, which side of the bed does Hugo Young sleep on?",the Taklamakan,Y,Y,Y,Y
+famB_042,B,"Profile: Mara Mercer is a medical radiochemist who synthesizes cyclotron PET tracers in Turku.
+Question: According to the profile, which city is home to the cyclotron Mara Mercer uses?","Profile: Mara Mercer is a medical radiochemist who synthesizes cyclotron PET tracers in Turku.
+Question: According to the profile, which sport does Mara Mercer practice alongside colleagues after work?","Profile: Mara Mercer is a medical radiochemist who synthesizes cyclotron PET tracers in Turku and practices rowing alongside colleagues after work.
+Question: According to the profile, which sport does Mara Mercer practice alongside colleagues after work?",Turku,Y,Y,Y,Y
+famB_043,B,"Profile: Elena Weber is a lunar geologist who classifies basaltic regolith breccias at Houston JSC.
+Question: According to the profile, which center houses breccias classified by Elena Weber?","Profile: Elena Weber is a lunar geologist who classifies basaltic regolith breccias at Houston JSC.
+Question: According to the profile, which art medium does Elena Weber use to make abstract paintings?","Profile: Elena Weber is a lunar geologist who classifies basaltic regolith breccias at Houston JSC and uses gouache to make abstract art.
+Question: According to the profile, which art medium does Elena Weber use to make abstract paintings?",Houston JSC,Y,Y,Y,Y
+famB_044,B,"Profile: Mei Shah is an epigraphic historian who catalogs oracle-bone inscriptions from Anyang.
+Question: According to the profile, which archaeological location yielded inscriptions cataloged by Mei Shah?","Profile: Mei Shah is an epigraphic historian who catalogs oracle-bone inscriptions from Anyang.
+Question: According to the profile, which symbol appears on Mei Shah's bookplate?","Profile: Mei Shah is an epigraphic historian who catalogs oracle-bone inscriptions from Anyang and has an oak leaf as a bookplate symbol.
+Question: According to the profile, which symbol appears on Mei Shah's bookplate?",Anyang,Y,Y,Y,Y
+famB_045,B,"Profile: Elena Walsh is a paleoclimatologist who dates stalagmite uranium series in Waitomo.
+Question: According to the profile, which cave system holds the stalagmites dated by Elena Walsh?","Profile: Elena Walsh is a paleoclimatologist who dates stalagmite uranium series in Waitomo.
+Question: According to the profile, which material is Elena Walsh's watch strap made from?","Profile: Elena Walsh is a paleoclimatologist who dates stalagmite uranium series in Waitomo and wears a wristwatch with a leather strap.
+Question: According to the profile, which material is Elena Walsh's watch strap made from?",Waitomo,Y,Y,Y,Y
+famB_046,B,"Profile: Tomas Reyes is a hepatic toxicologist who runs transcriptomic microarrays in Basel.
+Question: According to the profile, what city is the base of Tomas Reyes's microarray work?","Profile: Tomas Reyes is a hepatic toxicologist who runs transcriptomic microarrays in Basel.
+Question: According to the profile, what job does Tomas Reyes list as their first paid job outside school?","Profile: Tomas Reyes is a hepatic toxicologist who runs transcriptomic microarrays in Basel and first worked as a library page outside school.
+Question: According to the profile, what job does Tomas Reyes list as their first paid job outside school?",Basel,Y,Y,Y,Y
+famB_047,B,"Profile: Felix Mercer is an amphibian conservationist who breeds giant salamanders in Tottori.
+Question: According to the profile, which municipality does Felix Mercer breed giant salamanders in?","Profile: Felix Mercer is an amphibian conservationist who breeds giant salamanders in Tottori.
+Question: According to the profile, which coastal landscape does Felix Mercer most enjoy sketching?","Profile: Felix Mercer is an amphibian conservationist who breeds giant salamanders in Tottori and most enjoys sketching the coastal landscape at chalk cliffs.
+Question: According to the profile, which coastal landscape does Felix Mercer most enjoy sketching?",Tottori,Y,Y,Y,Y
+famB_048,B,"Profile: Kenji Keller is an industrial zymologist who isolates wild lambic yeasts in the Pajottenland.
+Question: According to the profile, what region does Kenji Keller isolate wild lambic yeasts in?","Profile: Kenji Keller is an industrial zymologist who isolates wild lambic yeasts in the Pajottenland.
+Question: According to the profile, what time does Kenji Keller reserve for quiet Sunday reading?","Profile: Kenji Keller is an industrial zymologist who isolates wild lambic yeasts in the Pajottenland and reserves early morning for quiet reading on Sundays.
+Question: According to the profile, what time does Kenji Keller reserve for quiet Sunday reading?",the Pajottenland,Y,Y,Y,Y

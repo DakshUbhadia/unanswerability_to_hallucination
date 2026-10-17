@@ -42,10 +42,9 @@ scratch/
 tmp/
 
 # Secrets & Authentication
-*token*
-*secret*
 kaggle.json
 .env
+*.secret
 
 # Implementation Plans
 stage_0_ide_setup_and_environment_verification_plan.md

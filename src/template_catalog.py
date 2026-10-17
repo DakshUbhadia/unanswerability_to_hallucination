@@ -1,6 +1,100 @@
 # src/template_catalog.py
 from datetime import datetime, timezone
+import random
+from functools import lru_cache
 from typing import Any, Dict, List, Tuple
+from src.config import CONFIG
+
+
+_GIVEN_NAMES = ("Mara", "Elias", "Nadia", "Rohan", "Leila", "Tomas", "Amina", "Jonas", "Priya", "Caleb", "Sofia", "Kenji", "Amara", "Felix", "Ines", "Omar", "Elena", "Hugo", "Mei", "Darius", "Anika", "Simon", "Farah", "Luca")
+_SURNAMES = ("Ellison", "Halvorsen", "Mercer", "Okafor", "Varga", "Chen", "Navarro", "Bennett", "Kowalski", "Rahman", "Fischer", "Sato", "Moreau", "Patel", "Lind", "Reyes", "Brooks", "Nakamura", "Mensah", "Weber", "Costa", "Shah", "Walsh", "Kim", "Anders", "Bauer", "Carter", "Duarte", "Evans", "Foster", "Grant", "Hughes", "Ivanov", "Jensen", "Keller", "Lopez", "Mori", "Nolan", "Olsen", "Parker", "Quinn", "Rossi", "Singh", "Turner", "Ueda", "Voss", "Wong", "Young")
+_ENTITY_WORDS = ("Halvorsen", "Meridian", "Aster", "Northstar", "Cypress", "Solstice", "Juniper", "Westhaven", "Larkspur", "Borealis", "Silverleaf", "Crestwood", "Redwood", "Evergreen", "Stonebridge", "Bluehaven", "Cedar", "Windward", "Kingswell", "Riverside", "Fairview", "Brightwater", "Ashford", "Willow")
+_TECHNICAL_DISTRACTORS = (
+    "The instrument calibration", "The diagnostic algorithm", "The reference dataset", "The validation protocol",
+    "The signal processing transform", "The materials assay", "The system reliability report", "The statistical design",
+    "The sensor alignment procedure", "The environmental measurement", "The equipment performance benchmark", "The safety envelope",
+    "The molecular assay", "The imaging reconstruction", "The computational simulation", "The structural response",
+    "The field sampling protocol", "The archival classification", "The network performance benchmark", "The control system test",
+    "The power conversion analysis", "The thermal reaction profile", "The acoustic measurement", "The geospatial surface",
+    "The chemical composition assay", "The biological reaction analysis", "The optical transmission test", "The fluid dynamics solution",
+    "The manufacturing tolerance assessment", "The reliability forecast", "The data quality assessment", "The numerical solver",
+    "The calibration dataset", "The technical risk analysis", "The process optimization curve", "The laboratory control protocol",
+    "The spectral decomposition", "The coral band isotope ratio reconstruction", "The measurement uncertainty estimate", "The systems integration test",
+    "The material behavior profile", "The trajectory optimization", "The detailed diagnostic imaging protocol", "The experimental design",
+    "The quality assurance protocol", "The engineering feasibility study", "The signal classification model", "The instrument validation study",
+)
+_TECHNICAL_VERBS = (
+    "calibrated", "modeled", "validated", "benchmarked", "simulated", "quantified", "characterized", "profiled",
+    "optimized", "estimated", "measured", "mapped", "classified", "tested", "diagnosed", "parameterized",
+    "analyzed", "assessed", "documented", "monitored", "reconstructed", "integrated", "compared", "audited",
+    "verified", "derived", "resolved", "computed", "sampled", "corrected", "interpreted", "forecast",
+    "fitted", "examined", "operated", "designed", "reviewed", "recorded", "refined", "tracked",
+    "surveyed", "interpolated", "extrapolated", "correlated", "sequenced", "aggregated", "segmented", "projected",
+)
+
+
+def _fixed_names() -> List[str]:
+    names = [f"{first} {last}" for first in _GIVEN_NAMES for last in _SURNAMES]
+    random.Random(CONFIG.seed_global).shuffle(names)
+    return names
+
+
+def _human_names_a() -> List[str]:
+    return _fixed_names()[:192]
+
+
+def _human_names_b() -> List[str]:
+    return _fixed_names()[192:384]
+
+
+def _token_matched_human_names(tokenizer: Any) -> Tuple[List[str], List[str]]:
+    """Keep Family A answer names and pair each distractor name at equal tokenizer length."""
+    names = _fixed_names()
+    answer_names = names[:192]
+    # Keep the middle block reserved for Family B person entities.
+    distractor_pool = names[192:384] + names[576:]
+    lengths = {name: len(tokenizer.encode(name, add_special_tokens=False)) for name in distractor_pool}
+    used = set()
+    distractor_names: List[str] = []
+    for i, answer_name in enumerate(answer_names):
+        target_len = len(tokenizer.encode(answer_name, add_special_tokens=False))
+        existing = names[192 + i]
+        if lengths[existing] == target_len and existing not in used:
+            chosen = existing
+        else:
+            chosen = next((n for n in distractor_pool if n not in used and lengths[n] == target_len), None)
+            if chosen is None:
+                raise ValueError(f"Name pools cannot provide a distinct {target_len}-token distractor name")
+        used.add(chosen)
+        distractor_names.append(chosen)
+    return answer_names, distractor_names
+
+
+@lru_cache(maxsize=1)
+def _natural_entities() -> Tuple[str, ...]:
+    words = [f"the {a} {b} Initiative" for a in _ENTITY_WORDS for b in _ENTITY_WORDS]
+    random.Random(CONFIG.seed_global).shuffle(words)
+    selected = words[:192]
+    used = set()
+    for pos, name in enumerate(selected):
+        parts = name.removeprefix("the ").removesuffix(" Initiative").split()
+        if len(parts) == 2 and parts[0] == parts[1] or name in used:
+            replacement = next(candidate for candidate in words[192:]
+                               if candidate not in used and candidate not in selected
+                               and candidate.removeprefix("the ").removesuffix(" Initiative").split()[0]
+                               != candidate.removeprefix("the ").removesuffix(" Initiative").split()[1])
+            selected[pos] = replacement
+            name = replacement
+        used.add(name)
+    return tuple(selected)
+
+
+def _natural_entity(idx: int, k: int) -> str:
+    return _natural_entities()[idx * 4 + k]
+
+
+def _natural_person(idx: int, k: int) -> str:
+    return _fixed_names()[384 + idx * 4 + k]
 
 
 # 48 distinct domains, answerable clauses, and distractor clauses for Family A.
@@ -59,6 +153,71 @@ FAMILY_A_SPECS: List[Tuple[str, str, str, str, str, List[str], List[str]]] = [
     ("piezoelectric_sensor", "Ferroelectric thin-film note for {entity} recorded in 2021.", "The poling hysteresis loop voltage was measured by {attr1}.", "The outbound shipping crate foam padding insert was cut to size by {attr2}.", "Based strictly on the thin-film note, who measured the poling hysteresis loop voltage for {entity}?", ["Cedric Moss", "Adriana Rossi", "Noah Price", "Linnea Berg"], ["FoamCut Packaging", "CushionBox", "InsertCraft", "DieCut Foam"]),
 ]
 
+# Replace legacy facility/vendor distractors with distinct technical work by a person.
+_FAMILY_A_MANUAL_CLAUSES = {
+    0: 'The solar degradation study was led by {attr2}.',
+    1: 'The geothermal well monitoring array was designed by {attr2}.',
+    2: 'The entropy-source test specification was authored by {attr2}.',
+    3: 'The silicon-anode binder polymer was synthesized by {attr2}.',
+    4: 'The variant expression matrix was verified by {attr2}.',
+    5: 'The silicon wafer etch-depth model was designed by {attr2}.',
+    6: 'The cargo vessel stability calculation was signed by {attr2}.',
+    7: 'The planned dose escalation schedule was reviewed by {attr2}.',
+    8: 'The satellite orbit decay rate was calculated by {attr2}.',
+    9: 'The floodplain setback map was certified by {attr2}.',
+    10: 'The ceramic glaze abrasion test was conducted by {attr2}.',
+    11: 'The cobalt cathode corrosion test was performed by {attr2}.',
+    12: 'The pottery shard typology was documented by {attr2}.',
+    13: 'The distributed network service failover procedure was executed by {attr2}.',
+    14: 'The trademark similarity search was completed by {attr2}.',
+    15: 'The boundary-layer temperature sensor array was calibrated by {attr2}.',
+    16: 'The avionics wiring harness was inspected by {attr2}.',
+    17: 'The watershed surface runoff model was analyzed by {attr2}.',
+    18: 'The tokamak plasma confinement feedback gain was tuned by {attr2}.',
+    19: 'The seed viability count was verified by {attr2}.',
+    20: 'The fault slip-rate model parameters were adjusted by {attr2}.',
+    21: 'The vaccine antigen potency curve was validated by {attr2}.',
+    22: 'The subsea splice loss test was run by {attr2}.',
+    23: 'The observatory telemetry encryption channel was locked by {attr2}.',
+    24: 'The ice-core dust concentration was measured by {attr2}.',
+    25: 'The rail wheel-bearing rolling-contact fatigue life was tested by {attr2}.',
+    26: 'The yaw gearbox tooth wear was diagnosed by {attr2}.',
+    27: 'The brine salt rejection rate was checked by {attr2}.',
+    28: 'The room impulse response was plotted by {attr2}.',
+    29: 'The fungal colony morphology from agar plates was scored by {attr2}.',
+    30: 'The gamma-camera image reconstruction protocol was approved by {attr2}.',
+    31: 'The autonomous vehicle emergency-braking trajectory was solved by {attr2}.',
+    32: 'The alloy phase volume fraction was measured by {attr2}.',
+    33: 'The volcanic ash particle classifier was operated by {attr2}.',
+    34: 'The public-key certificate revocation sequence was reconstructed by {attr2}.',
+    35: 'The aquaculture tank salinity was balanced by {attr2}.',
+    36: 'The avionics bus latency was profiled by {attr2}.',
+    37: 'The reef sediment carbonate dissolution assay was run by {attr2}.',
+    38: 'The superconducting sample temperature ramp was recorded by {attr2}.',
+    39: 'The fired-clay tablet mineral composition was monitored by {attr2}.',
+    40: 'The canopy height regression model was fitted by {attr2}.',
+    41: 'The cleanroom airborne particle count was certified by {attr2}.',
+    42: 'The seabed backscatter mosaic was corrected by {attr2}.',
+    43: 'The enzyme inhibition kinetic model was fitted by {attr2}.',
+    44: 'The bridge deck strain profile was logged by {attr2}.',
+    45: 'The stellar radial-velocity curve was modeled by {attr2}.',
+    46: 'The metabolite dose-response assay was verified by {attr2}.',
+    47: 'The piezoelectric resonance frequency response was measured by {attr2}.',
+}
+_FAMILY_A_ANSWER_OVERRIDES = {
+    1: 'The geothermal turbine layout was designed by {attr1}.',
+    37: 'The coral growth-band isotope analysis was run by {attr1}.',
+}
+_FAMILY_A_QUESTION_OVERRIDES = {
+    1: 'Based strictly on the dispatch record, who designed the geothermal turbine layout for {entity}?',
+    37: 'Based strictly on the sclerochronology sheet, who ran the coral growth-band isotope analysis for {entity}?',
+}
+FAMILY_A_SPECS = [
+    (dom, prefix, _FAMILY_A_ANSWER_OVERRIDES.get(i, ans), _FAMILY_A_MANUAL_CLAUSES.get(i, f"{_TECHNICAL_DISTRACTORS[i]} was {_TECHNICAL_VERBS[i]} by {{attr2}}."), _FAMILY_A_QUESTION_OVERRIDES.get(i, question),
+     _human_names_a()[i * 4 : i * 4 + 4], _human_names_b()[i * 4 : i * 4 + 4])
+    for i, (dom, prefix, ans, _legacy_unans, question, a1, a2) in enumerate(FAMILY_A_SPECS)
+]
+
 # 48 distinct biographical/entity profile domains for Family B.
 # Each tuple: (domain, profile, ans_question, unans_question, b_ctrl_profile, attr1_examples, attr2_examples)
 # ans_question and unans_question share the same interrogative stem ("where does", "in which ... did",
@@ -78,7 +237,7 @@ FAMILY_B_SPECS: List[Tuple[str, str, str, str, str, List[str], List[str]]] = [
     ("limnologist", "Profile: {entity} is a freshwater limnologist who monitors diatom blooms in {attr1}.", "According to the profile, in which lake does {entity} monitor diatom blooms?", "According to the profile, in which lake does {entity} swim on summer weekends?", "Profile: {entity} is a freshwater limnologist who monitors diatom blooms in {attr1} and swims in {attr2} on summer weekends.", ["Lake Baikal", "Lake Tanganyika", "Lake Ohrid", "Lake Biwa"], ["Lake Como", "Lake Bled", "Lake Annecy", "Lake Hallstatt"]),
     ("horologist", "Profile: {entity} is an antique horologist who restores marine chronometers built in {attr1}.", "According to the profile, from which century are the chronometers {entity} restores?", "According to the profile, from which century are the teacups {entity} inherited?", "Profile: {entity} is an antique horologist who restores marine chronometers built in {attr1} and inherited teacups made in {attr2}.", ["the 18th century", "the 17th century", "the 19th century", "the 16th century"], ["the 20th century", "the 19th century", "the 18th century", "the 17th century"]),
     ("lichenologist", "Profile: {entity} is an arctic lichenologist who directs the tundra station in {attr1}.", "According to the profile, where does {entity} direct the tundra station?", "According to the profile, where does {entity} store spare kayaks?", "Profile: {entity} is an arctic lichenologist who directs the tundra station in {attr1} and stores spare kayaks in {attr2}.", ["Svalbard", "Tromso", "Nuuk", "Abisko"], ["Bodo", "Kiruna", "Ilulissat", "Narvik"]),
-    ("speleologist", "Profile: {entity} is a karst speleologist who mapped subterranean river caverns in {attr1}.", "According to the profile, in which province did {entity} map subterranean caverns?", "According to the profile, in which province did {entity} attend summer camp as a child?", "Profile: {entity} is a karst speleologist who mapped subterranean river caverns in {attr1} and attended summer camp in {attr2} as a child.", ["Guizhou", "Slovenia", "Yucatan", "Cantabria"], ["Hunan", "Istria", "Oaxaca", "Asturias"]),
+    ("speleologist", "Profile: {entity} is a karst speleologist who mapped subterranean river caverns in {attr1}.", "According to the profile, in which province did {entity} map subterranean caverns?", "According to the profile, where did {entity} camp as a child?", "Profile: {entity} is a karst speleologist who mapped subterranean river caverns in {attr1} and attended summer camp in {attr2} as a child.", ["Guizhou", "Slovenia", "Yucatan", "Cantabria"], ["Hunan", "Istria", "Oaxaca", "Asturias"]),
     ("malacologist", "Profile: {entity} is a marine malacologist who studies cone snail venoms at {attr1}.", "According to the profile, at which aquarium does {entity} study cone snail venoms?", "According to the profile, at which aquarium does {entity} host family birthday parties?", "Profile: {entity} is a marine malacologist who studies cone snail venoms at {attr1} and hosts family birthday parties at {attr2}.", ["Monterey Lab", "Okinawa Marine", "Monaco Ocean", "Woods Hole"], ["Genoa Aquarium", "Osaka Kaiyukan", "Shedd Chicago", "Oceanario Lisbon"]),
     ("lepidopterist", "Profile: {entity} is a cloud-forest lepidopterist who tracks monarch migrations through {attr1}.", "According to the profile, through which mountain range does {entity} track migrations?", "According to the profile, through which mountain range does {entity} drive each spring?", "Profile: {entity} is a cloud-forest lepidopterist who tracks monarch migrations through {attr1} and drives through {attr2} each spring.", ["the Sierra Madre", "the Cordillera Real", "the Rwenzori", "the Nilgiri Hills"], ["the Dolomites", "the Pyrenees", "the Tatras", "the Atlas"]),
     ("gemologist", "Profile: {entity} is a forensic gemologist who grades sapphire inclusions in {attr1}.", "According to the profile, in which trading hub does {entity} grade sapphire inclusions?", "According to the profile, in which trading hub does {entity} buy birthday gifts?", "Profile: {entity} is a forensic gemologist who grades sapphire inclusions in {attr1} and buys birthday gifts in {attr2}.", ["Antwerp", "Geneva", "Jaipur", "Chanthaburi"], ["Dubai", "Bangkok", "Hong Kong", "Singapore"]),
@@ -98,10 +257,10 @@ FAMILY_B_SPECS: List[Tuple[str, str, str, str, str, List[str], List[str]]] = [
     ("sedimentologist", "Profile: {entity} is a deltaic sedimentologist who cores turbidite fans offshore of {attr1}.", "According to the profile, offshore of which delta does {entity} core turbidite fans?", "According to the profile, offshore of which island does {entity} go sailing with old friends?", "Profile: {entity} is a deltaic sedimentologist who cores turbidite fans offshore of {attr1} and goes sailing with old friends offshore of {attr2}.", ["the Bengal Delta", "the Rhone Delta", "the Mackenzie Delta", "the Danube Delta"], ["Gotland", "Mykonos", "Rhodes", "Bornholm"]),
     ("tribologist", "Profile: {entity} is a mechanical tribologist who tests ceramic ball-bearing lubricants in {attr1}.", "According to the profile, in which industrial city does {entity} test bearing lubricants?", "According to the profile, in which city does {entity} rent garden plots?", "Profile: {entity} is a mechanical tribologist who tests ceramic ball-bearing lubricants in {attr1} and rents garden plots in {attr2}.", ["Schweinfurt", "Gothenburg", "Nagoya", "Turin"], ["Bremen", "Aarhus", "Kobe", "Genoa"]),
     ("cetologist", "Profile: {entity} is a bioacoustic cetologist who tracks beaked-whale echolocation near {attr1}.", "According to the profile, near which archipelago does {entity} track echolocation?", "According to the profile, near which archipelago does {entity} spend family summers?", "Profile: {entity} is a bioacoustic cetologist who tracks beaked-whale echolocation near {attr1} and spends family summers near {attr2}.", ["the Azores", "the Lofoten Islands", "the Hebrides", "the Commander Islands"], ["the Cyclades", "the Aland Islands", "the Scilly Isles", "the Faroe Islands"]),
-    ("viticulturist", "Profile: {entity} is a high-altitude viticulturist who studies rootstock phylloxera resistance in {attr1}.", "According to the profile, where does {entity} study rootstock phylloxera resistance?", "According to the profile, where does {entity} play competitive weekend chess tournaments with friends?", "Profile: {entity} is a high-altitude viticulturist who studies rootstock phylloxera resistance in {attr1} and plays competitive weekend chess tournaments with friends in {attr2}.", ["Mendoza", "Cafayate", "Valais", "Priorat"], ["Rosario", "Salta", "Sion", "Tarragona"]),
+    ("viticulturist", "Profile: {entity} is a high-altitude viticulturist who studies rootstock phylloxera resistance in {attr1}.", "According to the profile, where does {entity} study rootstock phylloxera resistance?", "According to the profile, where does {entity} play chess?", "Profile: {entity} is a high-altitude viticulturist who studies rootstock phylloxera resistance in {attr1} and plays competitive weekend chess tournaments with friends in {attr2}.", ["Mendoza", "Cafayate", "Valais", "Priorat"], ["Rosario", "Salta", "Sion", "Tarragona"]),
     ("acarologist", "Profile: {entity} is a soil acarologist who classifies oribatid mite communities across {attr1}.", "According to the profile, across which biome does {entity} classify mite communities?", "According to the profile, across which country does {entity} cycle each summer?", "Profile: {entity} is a soil acarologist who classifies oribatid mite communities across {attr1} and cycles across {attr2} each summer.", ["the Taiga", "the Pampas", "the Cerrado", "the Karoo"], ["Portugal", "Ireland", "Austria", "Denmark"]),
     ("metrologist", "Profile: {entity} is a quantum metrologist who maintains Kibble-balance mass standards in {attr1}.", "According to the profile, in which national lab city does {entity} maintain mass standards?", "According to the profile, in which city does {entity} attend crossword club meetings?", "Profile: {entity} is a quantum metrologist who maintains Kibble-balance mass standards in {attr1} and attends crossword club meetings in {attr2}.", ["Sevres", "Braunschweig", "Gaithersburg", "Teddington"], ["Nantes", "Kassel", "Baltimore", "Oxford"]),
-    ("nematologist", "Profile: {entity} is an agricultural nematologist who screens potato cyst resistance in {attr1}.", "According to the profile, where does {entity} screen potato cyst resistance?", "According to the profile, where does {entity} take weekly tango lessons?", "Profile: {entity} is an agricultural nematologist who screens potato cyst resistance in {attr1} and takes weekly tango lessons in {attr2}.", ["Wageningen", "Rothamsted", "Tartu", "Saskatoon"], ["Nijmegen", "Bath", "Riga", "Regina"]),
+    ("nematologist", "Profile: {entity} is an agricultural nematologist who screens potato cyst resistance in {attr1}.", "According to the profile, where does {entity} screen potato cyst resistance?", "According to the profile, which city does {entity} take weekly tango lessons in?", "Profile: {entity} is an agricultural nematologist who screens potato cyst resistance in {attr1} and takes weekly tango lessons in {attr2}.", ["Wageningen", "Rothamsted", "Tartu", "Saskatoon"], ["Nijmegen", "Bath", "Riga", "Regina"]),
     ("petrologist", "Profile: {entity} is an igneous petrologist who maps kimberlite xenolith pipes across {attr1}.", "According to the profile, across which craton does {entity} map kimberlite pipes?", "According to the profile, across which region does {entity} tour with the violin quartet?", "Profile: {entity} is an igneous petrologist who maps kimberlite xenolith pipes across {attr1} and tours across {attr2} with the violin quartet.", ["the Kaapvaal Craton", "the Slave Craton", "the Karelia Craton", "the Yilgarn Craton"], ["Andalusia", "Bohemia", "Silesia", "Umbria"]),
     ("phenologist", "Profile: {entity} is a woodland phenologist who logs cherry-blossom unfolding dates in {attr1}.", "According to the profile, in which prefecture does {entity} log blossom unfolding dates?", "According to the profile, in which prefecture does {entity} visit hot springs?", "Profile: {entity} is a woodland phenologist who logs cherry-blossom unfolding dates in {attr1} and visits hot springs in {attr2}.", ["Kyoto", "Aomori", "Nagano", "Kanazawa"], ["Gunma", "Oita", "Shizuoka", "Akita"]),
     ("planck_cosmologist", "Profile: {entity} is a microwave cosmologist who analyzes polarization maps compiled at {attr1}.", "According to the profile, at which observatory institute does {entity} analyze polarization maps?", "According to the profile, at which cafe does {entity} read the Sunday papers?", "Profile: {entity} is a microwave cosmologist who analyzes polarization maps compiled at {attr1} and reads the Sunday papers at {attr2}.", ["Cardiff Astro", "Trieste SISSA", "Orsay IAS", "Garching MPA"], ["Cafe Lumen", "Blue Kettle", "Corner Brew", "Moka House"]),
@@ -111,48 +270,148 @@ FAMILY_B_SPECS: List[Tuple[str, str, str, str, str, List[str], List[str]]] = [
     ("sinologist", "Profile: {entity} is an epigraphic historian who catalogs oracle-bone inscriptions from {attr1}.", "According to the profile, from which archaeological site does {entity} catalog inscriptions?", "According to the profile, from which orchard does {entity} buy lunch apples?", "Profile: {entity} is an epigraphic historian who catalogs oracle-bone inscriptions from {attr1} and buys lunch apples from {attr2}.", ["Anyang", "Erlitou", "Sanxingdui", "Liangzhu"], ["Hilltop Orchard", "Maple Farm", "Cedar Grove", "Sunny Acres"]),
     ("speleothem_chemist", "Profile: {entity} is a paleoclimatologist who dates stalagmite uranium series in {attr1}.", "According to the profile, in which cave region does {entity} date stalagmite series?", "According to the profile, in which shop does {entity} have racing bicycles serviced and repaired?", "Profile: {entity} is a paleoclimatologist who dates stalagmite uranium series in {attr1} and has racing bicycles serviced and repaired in {attr2}.", ["Waitomo", "Postojna", "Carlsbad", "Jeita"], ["Spoke Corner", "Wheelhouse", "Gearbox Cycles", "Pedal Works"]),
     ("toxicogenomicist", "Profile: {entity} is a hepatic toxicologist who runs transcriptomic microarrays in {attr1}.", "According to the profile, in which city does {entity} run transcriptomic microarrays?", "According to the profile, in which city does {entity} store spare luggage?", "Profile: {entity} is a hepatic toxicologist who runs transcriptomic microarrays in {attr1} and stores spare luggage in {attr2}.", ["Basel", "Lund", "Leiden", "Heidelberg"], ["Zug", "Malmo", "Delft", "Mannheim"]),
-    ("urodelologist", "Profile: {entity} is an amphibian conservationist who breeds giant salamanders in {attr1}.", "According to the profile, where does {entity} breed giant salamanders?", "According to the profile, where does {entity} sketch coastal landscapes?", "Profile: {entity} is an amphibian conservationist who breeds giant salamanders in {attr1} and sketches coastal landscapes in {attr2}.", ["Tottori", "Guiyang", "Ozark Station", "Hanzhong"], ["Matsue", "Kunming", "Branson", "Qingdao"]),
+    ("urodelologist", "Profile: {entity} is an amphibian conservationist who breeds giant salamanders in {attr1}.", "According to the profile, where does {entity} breed giant salamanders?", "According to the profile, which city does {entity} sketch coastal landscapes in?", "Profile: {entity} is an amphibian conservationist who breeds giant salamanders in {attr1} and sketches coastal landscapes in {attr2}.", ["Tottori", "Guiyang", "Yichang", "Hanzhong"], ["Matsue", "Kunming", "Branson", "Qingdao"]),
     ("zymologist", "Profile: {entity} is an industrial zymologist who isolates wild lambic yeasts in {attr1}.", "According to the profile, in which valley does {entity} isolate wild lambic yeasts?", "According to the profile, in which valley does {entity} go hiking in autumn?", "Profile: {entity} is an industrial zymologist who isolates wild lambic yeasts in {attr1} and goes hiking in {attr2} in autumn.", ["the Pajottenland", "the Senne Valley", "the Dender Valley", "the Zenne Valley"], ["the Meuse Valley", "the Ourthe Valley", "the Lesse Valley", "the Semois Valley"]),
 ]
 
-# Neutral suffixes appended (before the final punctuation) to the shorter unanswerable text when
-# restoring the canonical template still leaves |delta_L| > max_diff. Ordered by length; the shortest
-# one that brings every slot instance within tolerance is used.
-_NEUTRAL_PADS_A: Tuple[str, ...] = (" that year", " that same year", " later that same year", " later during that same year")
-_NEUTRAL_PADS_B: Tuple[str, ...] = (" exactly", " at present", " at the moment", " at this point in time")
+# Family B private-detail questions use distinct topics, name the profiled person,
+# and use present-tense wording. Each control profile states the same detail.
+_FAMILY_B_PRIVATE_DETAILS = [
+    ("According to the profile, in what year did {entity} first lose a milk tooth?", "lost their first milk tooth in {attr2}", ["1979", "1983", "1990", "1986"]),
+    ("According to the profile, what is the given name of {entity}'s maternal grandmother?", "has a maternal grandmother named {attr2}", ["Irene", "Lucia", "Evelyn", "Marisol"]),
+    ("According to the profile, which currency does {entity} keep a budget in?", "keeps a budget in {attr2}", ["euros", "yen", "pounds sterling", "Canadian dollars"]),
+    ("According to the profile, what is {entity}'s dominant hand for writing?", "writes with the {attr2} hand", ["left", "right", "ambidextrous", "alternating"]),
+    ("According to the profile, what is the title of {entity}'s favorite novel?", "names {attr2} as a favorite novel", ["Middlemarch", "The Left Hand of Darkness", "Beloved", "The Master and Margarita"]),
+    ("According to the profile, which ringtone sounds on {entity}'s phone?", "has {attr2} as a ringtone on a phone", ["piano notes", "wind chimes", "birdsong", "a soft bell"]),
+    ("According to the profile, which closing does {entity} write at the end of letters?", "ends letters with {attr2}", ["Warm regards", "With thanks", "Sincerely", "Best wishes"]),
+    ("According to the profile, which motto guides the choices {entity} makes?", "follows the motto {attr2}", ["Measure twice", "Leave room for wonder", "Steady hands, open mind", "Make careful notes"]),
+    ("According to the profile, which constellation does {entity} favor observing?", "favors observing the constellation {attr2}", ["Orion", "Lyra", "Cygnus", "Cassiopeia"]),
+    ("According to the profile, what page layout does {entity} use for notes?", "uses {attr2} pages for notes", ["ruled", "grid", "dot-grid", "blank"]),
+    ("According to the profile, in which lake does {entity} swim on summer weekends?", "swims in {attr2} on summer weekends", ["Lake Como", "Lake Bled", "Lake Annecy", "Lake Hallstatt"]),
+    ("According to the profile, which instrument does {entity} play in a string quartet?", "plays the {attr2} in a string quartet", ["violin", "cello", "viola", "double bass"]),
+    ("According to the profile, what blood type does {entity} have?", "has blood type {attr2}", ["O positive", "A negative", "B positive", "AB negative"]),
+    ("According to the profile, what is the first name of {entity}'s childhood friend?", "has a childhood friend named {attr2}", ["Nina", "Rafael", "Priya", "Jonas"]),
+    ("According to the profile, at which civic association is {entity} a member?", "belongs to the civic association {attr2}", ["Harbor History Society", "Northside Readers Circle", "Riverside Arts Council", "Old Town Preservation League"]),
+    ("According to the profile, which camera film format does {entity} shoot on?", "shoots on {attr2} camera film", ["35 mm", "120 roll film", "110 film", "instant film"]),
+    ("According to the profile, which precious metal does {entity} prefer for jewelry?", "prefers {attr2} for jewelry", ["silver", "platinum", "copper", "white gold"]),
+    ("According to the profile, what fragrance does {entity} wear as their usual scent?", "wears {attr2} as perfume", ["cedar", "bergamot", "iris", "vetiver"]),
+    ("According to the profile, which architectural style does {entity} favor for a home?", "favors {attr2} architecture for a home", ["Arts and Crafts", "Bauhaus", "Art Deco", "mid-century modern"]),
+    ("According to the profile, which radio program does {entity} listen to each week?", "listens each week to the radio program {attr2}", ["Morning Edition", "The Inquiry", "Science Friday", "World Review"]),
+    ("According to the profile, which live-music venue does {entity} favor?", "lists {attr2} as a favorite live-music venue", ["The Barbican", "Jazzhus Montmartre", "The Fillmore", "Ronnie Scott's"]),
+    ("According to the profile, what shoe size does {entity} wear in custom-fitted shoes?", "wears size {attr2} in tailored shoes", ["EU 38", "EU 41", "EU 43", "EU 45"]),
+    ("According to the profile, which typeface does {entity} use for printed correspondence?", "uses {attr2} for printed correspondence", ["Garamond", "Baskerville", "Futura", "Palatino"]),
+    ("According to the profile, which mythological figure does {entity} cite as a favorite?", "names {attr2} as a favorite mythological figure", ["Athena", "Anansi", "Maui", "Brigid"]),
+    ("According to the profile, which cause does {entity} support through regular volunteer work?", "supports {attr2} through volunteer work", ["adult literacy", "coastal access", "community archives", "wildlife rescue"]),
+    ("According to the profile, which watercolor pigment does {entity} prefer for landscapes?", "prefers {attr2} watercolor for landscapes", ["ultramarine", "burnt sienna", "viridian", "ochre"]),
+    ("According to the profile, which language do {entity} and their grandparents speak at home?", "speaks {attr2} with grandparents", ["Basque", "Yiddish", "Gaelic", "Romansh"]),
+    ("According to the profile, what color is {entity}'s reading lamp?", "reads by a {attr2} lamp", ["warm amber", "soft white", "cool white", "soft blue"]),
+    ("According to the profile, which calendar application does {entity} use to plan and organize appointments?", "uses {attr2} to organize appointments", ["Fantastical", "Etar", "Simple Calendar", "Proton Calendar"]),
+    ("According to the profile, on which weekday does {entity} attend public lectures at the local library?", "attends public lectures on {attr2}", ["Monday", "Tuesday", "Thursday", "Saturday"]),
+    ("According to the profile, which transport mode does {entity} use for the commute to work?", "commutes by {attr2}", ["tram", "bicycle", "ferry", "subway"]),
+    ("According to the profile, in which city did {entity} hold a wedding reception?", "held a wedding reception in {attr2}", ["Porto", "Quito", "Lyon", "Osaka"]),
+    ("According to the profile, which contemporary artist does {entity} collect prints by?", "collects prints by the artist {attr2}", ["Tarsila do Amaral", "Jacob Lawrence", "Etel Adnan", "Hokusai"]),
+    ("According to the profile, which eyeglass-frame shape does {entity} favor?", "favors {attr2} eyeglass frames", ["round", "rectangular", "aviator", "cat-eye"]),
+    ("According to the profile, what number of siblings does {entity} have in total?", "has {attr2}", ["one sibling", "two siblings", "three siblings", "four siblings"]),
+    ("According to the profile, which historical period does {entity} read about most?", "most often reads about {attr2} history", ["the Tang dynasty", "the Renaissance", "the Abbasid era", "the Bronze Age"]),
+    ("According to the profile, which side does {entity} part their hair on?", "parts their hair on the {attr2} side", ["left", "right", "center", "no part"]),
+    ("According to the profile, which composer does {entity} name as a favorite musician?", "names {attr2} as a favorite composer", ["Clara Schumann", "Fela Kuti", "Ryuichi Sakamoto", "Nina Simone"]),
+    ("According to the profile, what bathwater temperature does {entity} choose at home?", "chooses bathwater at {attr2}", ["36 degrees", "38 degrees", "40 degrees", "42 degrees"]),
+    ("According to the profile, which newspaper section does {entity} read first each morning?", "reads the {attr2} section of the newspaper first", ["arts", "science", "international", "editorial"]),
+    ("According to the profile, which side of the bed does {entity} sleep on?", "sleeps on the {attr2} side of the bed", ["left", "right", "window", "door"]),
+    ("According to the profile, which sport does {entity} practice alongside colleagues after work?", "practices {attr2} alongside colleagues after work", ["rowing", "fencing", "badminton", "squash"]),
+    ("According to the profile, which art medium does {entity} use to make abstract paintings?", "uses {attr2} to make abstract art", ["gouache", "linocut", "collage", "pastel"]),
+    ("According to the profile, which symbol appears on {entity}'s bookplate?", "has {attr2} as a bookplate symbol", ["an oak leaf", "a compass rose", "a small moon", "a heron"]),
+    ("According to the profile, which material is {entity}'s watch strap made from?", "wears a wristwatch with a {attr2} strap", ["leather", "woven nylon", "steel mesh", "suede"]),
+    ("According to the profile, what job does {entity} list as their first paid job outside school?", "first worked as {attr2} outside school", ["a library page", "a paper carrier", "a lifeguard", "a camp counselor"]),
+    ("According to the profile, which coastal landscape does {entity} most enjoy sketching?", "most enjoys sketching the coastal landscape at {attr2}", ["chalk cliffs", "tidal flats", "rocky coves", "salt marshes"]),
+    ("According to the profile, what time does {entity} reserve for quiet Sunday reading?", "reserves {attr2} for quiet reading on Sundays", ["early morning", "midday", "late afternoon", "after dinner"]),
+]
+for _idx, (_question, _detail, _answers) in enumerate(_FAMILY_B_PRIVATE_DETAILS):
+    _dom, _prof, _ans_q, _old_unans, _old_bctrl, _attr1, _old_attr2 = FAMILY_B_SPECS[_idx]
+    _bctrl = _prof[:-1] + f" and {_detail}." if _prof.endswith(".") else _prof + f" and {_detail}."
+    FAMILY_B_SPECS[_idx] = (_dom, _prof, _ans_q, _question, _bctrl, _attr1, _answers)
 
+# Rephrase only answerable questions so each pair uses the same interrogative
+# stem. The private-detail questions above remain the reviewed unanswerable
+# categories; famB_035 only changes from "how many" to the equivalent "what
+# number" wording so it can share a stem with its answerable question.
+_FAMILY_B_ANSWER_QUESTIONS = {
+    0: "According to the profile, in what municipality did {entity} complete doctoral fieldwork?",
+    1: "According to the profile, what year did {entity} join the ice-core institute?",
+    2: "According to the profile, which city serves as {entity}'s lecture venue?",
+    4: "According to the profile, what area's bronze coinage does {entity} specialize in?",
+    5: "According to the profile, which town is {entity}'s archive in?",
+    6: "According to the profile, which language does {entity} translate charters from?",
+    7: "According to the profile, which island did {entity} catalog liverworts on?",
+    8: "According to the profile, which site hosts {entity}'s robotic reflector?",
+    9: "According to the profile, what area does {entity} record polyphonic songs in?",
+    11: "According to the profile, which century dates the marine chronometers restored by {entity}?",
+    12: "According to the profile, what site is {entity}'s station in?",
+    13: "According to the profile, what province did {entity} map subterranean caverns in?",
+    14: "According to the profile, at which lab does {entity} study cone-snail venom?",
+    15: "According to the profile, which mountain range does {entity} track migrations through?",
+    16: "According to the profile, which hub does {entity} grade sapphire inclusions in?",
+    17: "According to the profile, what area grows spruce for {entity}'s cello?",
+    18: "According to the profile, which valley holds the vineyards where {entity} consults?",
+    19: "According to the profile, which town does {entity} perform weekly bell recitals in?",
+    20: "According to the profile, which decade's scientific correspondence does {entity} index?",
+    21: "According to the profile, what locality are {entity}'s peat bogs in?",
+    22: "According to the profile, which synchrotron is used by {entity}?",
+    23: "According to the profile, which ocean basin is home to lanternfish described by {entity}?",
+    24: "According to the profile, which strait does {entity} compile nautical depth charts for?",
+    25: "According to the profile, which reserve does {entity} survey glass-frog populations in?",
+    26: "According to the profile, which city is home to the museum holding blades analyzed by {entity}?",
+    27: "According to the profile, what city does {entity} teach diagnostic microscopy in?",
+    28: "According to the profile, which orchard district does {entity} graft frost-hardy apples in?",
+    29: "According to the profile, on which campus does {entity} measure viscoelastic shear flows?",
+    30: "According to the profile, which delta borders the turbidite fans cored by {entity}?",
+    31: "According to the profile, in which industrial city does {entity} test lubricants?",
+    32: "According to the profile, which archipelago does {entity} track echolocation near?",
+    33: "According to the profile, which district does {entity} study rootstock resistance in?",
+    34: "According to the profile, what biome does {entity} classify mite communities in?",
+    35: "According to the profile, which city is home to {entity}'s national lab?",
+    36: "According to the profile, which research site does {entity} screen potatoes in?",
+    37: "According to the profile, which craton does {entity} map kimberlite pipes across?",
+    38: "According to the profile, what prefecture does {entity} log blossoms in?",
+    39: "According to the profile, which observatory institute does {entity} use to analyze polarization maps?",
+    40: "According to the profile, which basin holds the dunes whose migration {entity} measures?",
+    41: "According to the profile, which city is home to the cyclotron {entity} uses?",
+    42: "According to the profile, which center houses breccias classified by {entity}?",
+    43: "According to the profile, which archaeological location yielded inscriptions cataloged by {entity}?",
+    44: "According to the profile, which cave system holds the stalagmites dated by {entity}?",
+    45: "According to the profile, what city is the base of {entity}'s microarray work?",
+    46: "According to the profile, which municipality does {entity} breed giant salamanders in?",
+    47: "According to the profile, what region does {entity} isolate wild lambic yeasts in?",
+}
+for _idx, _question in _FAMILY_B_ANSWER_QUESTIONS.items():
+    _dom, _prof, _old_ans, _unans, _bctrl, _a1, _a2 = FAMILY_B_SPECS[_idx]
+    FAMILY_B_SPECS[_idx] = (_dom, _prof, _question, _unans, _bctrl, _a1, _a2)
 
-def generate_raw_template_catalog(n_per_family: int = 48) -> List[Dict[str, Any]]:
+def generate_raw_template_catalog(n_per_family: int = 48, tokenizer: Any = None) -> List[Dict[str, Any]]:
     """
     Constructs the 96-template catalog (48 Family A + 48 Family B).
     Each template includes 4 slot instances and the 4 human-review booleans.
-    Template famA_001 initially contains an uncalibrated distractor clause so that
-    the automated token-length calibrator exercises and logs an in-place rewrite
-    to `data/audit_log.csv`.
+    Catalog values are deterministic under CONFIG.seed_global.
     """
     assert 1 <= n_per_family <= 48
     catalog: List[Dict[str, Any]] = []
+    if tokenizer is None:
+        names_a, names_b = _human_names_a(), _human_names_b()
+    else:
+        names_a, names_b = _token_matched_human_names(tokenizer)
 
     for idx in range(n_per_family):
         dom, prefix, ans_c, unans_c, q_str, a1_list, a2_list = FAMILY_A_SPECS[idx]
         tid = f"famA_{idx + 1:03d}"
-        # Deliberate initial length imbalance on famA_001 to verify audit_log.csv pipeline
-        if idx == 0:
-            unans_c_init = (
-                "Annual facility maintenance and exterior structural safety compliance "
-                "inspections were comprehensively audited by {attr2}."
-            )
-        else:
-            unans_c_init = unans_c
-
         slots = []
         for k in range(4):
+            entity = _natural_entity(idx, k)
             slots.append(
                 {
-                    "entity": f"Unit-{tid.upper()}-{k + 1}",
-                    "attr1": a1_list[k],
-                    "attr2": a2_list[k],
-                    "ground_truth": a1_list[k],
+                    "entity": entity,
+                    "attr1": names_a[idx * 4 + k],
+                    "attr2": names_b[idx * 4 + k],
+                    "ground_truth": names_a[idx * 4 + k],
                 }
             )
 
@@ -162,14 +421,13 @@ def generate_raw_template_catalog(n_per_family: int = 48) -> List[Dict[str, Any]
                 "family": "A",
                 "domain": dom,
                 "ans_template": f"{prefix} {ans_c}\nQuestion: {q_str}",
-                "unans_template": f"{prefix} {unans_c_init}\nQuestion: {q_str}",
-                "canonical_unans_template": f"{prefix} {unans_c}\nQuestion: {q_str}",
+                "unans_template": f"{prefix} {unans_c}\nQuestion: {q_str}",
                 "b_ctrl_template": None,
                 "slots": slots,
-                "check_answer_unambiguous": True,
-                "check_zero_unans_support": True,
-                "check_distinct_predicate": True,
-                "check_b_ctrl_valid": True,
+                "check_answer_unambiguous": None,
+                "check_zero_unans_support": None,
+                "check_distinct_predicate": None,
+                "check_b_ctrl_valid": None,
             }
         )
 
@@ -180,7 +438,7 @@ def generate_raw_template_catalog(n_per_family: int = 48) -> List[Dict[str, Any]
         for k in range(4):
             slots.append(
                 {
-                    "entity": f"Dr. Subject-{idx + 1:02d}-{k + 1}",
+                    "entity": _natural_person(idx, k),
                     "attr1": a1_list[k],
                     "attr2": a2_list[k],
                     "ground_truth": a1_list[k],
@@ -195,13 +453,12 @@ def generate_raw_template_catalog(n_per_family: int = 48) -> List[Dict[str, Any]
                 "domain": dom,
                 "ans_template": f"{prof_base}\nQuestion: {ans_q}",
                 "unans_template": f"{prof_base}\nQuestion: {unans_q}",
-                "canonical_unans_template": f"{prof_base}\nQuestion: {unans_q}",
                 "b_ctrl_template": f"{bctrl_prof}\nQuestion: {unans_q}",
                 "slots": slots,
-                "check_answer_unambiguous": True,
-                "check_zero_unans_support": True,
-                "check_distinct_predicate": True,
-                "check_b_ctrl_valid": True,
+                "check_answer_unambiguous": None,
+                "check_zero_unans_support": None,
+                "check_distinct_predicate": None,
+                "check_b_ctrl_valid": None,
             }
         )
 
@@ -218,68 +475,30 @@ def _slot_token_diffs(tmpl: Dict[str, Any], unans_template: str, tokenizer: Any)
     return diffs
 
 
-def _pad_unans_template(unans_template: str, family: str, pad: str) -> str:
-    """Appends a neutral pad to the distractor clause (Family A) or unans question (Family B)."""
-    context, question = unans_template.split("\nQuestion: ")
-    if family == "A":
-        context = context[: -len(".")] + pad + "."
-    else:
-        question = question[: -len("?")] + pad + "?"
-    return f"{context}\nQuestion: {question}"
-
-
 def calibrate_template_token_parity(
     catalog: List[Dict[str, Any]],
     tokenizer: Any,
     max_diff: int = 2,
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
-    """
-    Checks token length parity |L(ans) - L(unans)| <= max_diff across all 4 slot instances
-    of every template. If any template violates parity, rewrites `unans_template` in place
-    (Step 1: restore the canonical authored clause; Step 2: append the shortest neutral pad
-    that restores parity when the unanswerable text is too short) and logs a permanent audit
-    entry for `data/audit_log.csv`. Slot values are never modified. A template whose
-    unanswerable text is too long cannot be fixed automatically and is logged with
-    post_fix_passed=False so the author rewrites it by hand.
-    """
+    """Check token parity without modifying any authored prompt text."""
     audit_rows: List[Dict[str, Any]] = []
-
     for tmpl in catalog:
-        old_unans_tmpl = tmpl["unans_template"]
-        canonical = tmpl.pop("canonical_unans_template", old_unans_tmpl)
-
-        diffs = _slot_token_diffs(tmpl, old_unans_tmpl, tokenizer)
+        authored_unans = tmpl["unans_template"]
+        diffs = _slot_token_diffs(tmpl, authored_unans, tokenizer)
         if max(abs(d) for d in diffs) <= max_diff:
             continue
-
-        # Step 1: Restore canonical balanced template
-        candidate = canonical
-        cand_diffs = _slot_token_diffs(tmpl, candidate, tokenizer)
-
-        # Step 2: Pad the unanswerable text when it is uniformly too short
-        if max(abs(d) for d in cand_diffs) > max_diff and min(cand_diffs) > 0:
-            pads = _NEUTRAL_PADS_A if tmpl["family"] == "A" else _NEUTRAL_PADS_B
-            for pad in pads:
-                padded = _pad_unans_template(canonical, tmpl["family"], pad)
-                padded_diffs = _slot_token_diffs(tmpl, padded, tokenizer)
-                if max(abs(d) for d in padded_diffs) <= max_diff:
-                    candidate, cand_diffs = padded, padded_diffs
-                    break
-
-        tmpl["unans_template"] = candidate
         audit_rows.append(
             {
                 "timestamp_utc": datetime.now(timezone.utc).isoformat(),
                 "template_id": tmpl["template_id"],
                 "failure_reason": "length_parity",
                 "offending_detail": (
-                    f"Initial max |delta_L| = {max(abs(d) for d in diffs)} > {max_diff} "
-                    f"(per-slot L(ans)-L(unans) = {diffs})"
+                    f"Authored max |delta_L| = {max(abs(d) for d in diffs)} > {max_diff}; "
+                    f"per-slot L(ans)-L(unans) = {diffs}"
                 ),
-                "old_text": old_unans_tmpl.replace("\n", " "),
-                "new_text": candidate.replace("\n", " "),
-                "post_fix_passed": max(abs(d) for d in cand_diffs) <= max_diff,
+                "old_text": authored_unans.replace("\n", " "),
+                "new_text": authored_unans.replace("\n", " "),
+                "post_fix_passed": False,
             }
         )
-
     return catalog, audit_rows

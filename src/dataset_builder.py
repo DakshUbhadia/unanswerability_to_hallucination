@@ -4,10 +4,181 @@ import json
 import math
 import random
 import re
+import unicodedata
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Set, Tuple
 from src.config import CONFIG
+
+REVIEW_FLAGS = ("check_answer_unambiguous", "check_zero_unans_support", "check_distinct_predicate", "check_b_ctrl_valid")
+FORBIDDEN_UNANS_PHRASES = (
+    "at this point in time", "at present", "at the moment", "the profile subject",
+    "described in the profile", "during the same period", "during the period",
+)
+
+
+def find_unanswerable_style_confounds(templates: List[Dict[str, Any]]) -> Dict[str, List[str]]:
+    """Return template IDs with unanswerable-only -ly words or banned filler phrases."""
+    failures: Dict[str, List[str]] = {}
+    for tmpl in templates:
+        issues: List[str] = []
+        for slot_index, slot in enumerate(tmpl["slots"]):
+            ans = tmpl["ans_template"].format(**slot).casefold()
+            unans = tmpl["unans_template"].format(**slot).casefold()
+            ans_words = set(re.findall(r"\b[\w'-]+\b", ans))
+            unans_words = set(re.findall(r"\b[\w'-]+\b", unans))
+            leaked_adverbs = sorted(w for w in unans_words - ans_words if w.endswith("ly"))
+            for word in leaked_adverbs:
+                issues.append(f"slot{slot_index}:unans_only_-ly:{word}")
+            for phrase in FORBIDDEN_UNANS_PHRASES:
+                if phrase in unans:
+                    issues.append(f"slot{slot_index}:forbidden_phrase:{phrase}")
+        if issues:
+            failures[tmpl["template_id"]] = issues
+    return failures
+
+
+_INTERROGATIVE_STEMS = (
+    "offshore of which", "in what", "in which", "on which", "at which",
+    "from which", "across which", "through which", "for which", "near which",
+    "how many", "what", "which", "where",
+)
+
+
+def _interrogative_stem(prompt: str) -> str:
+    question = prompt.split("\nQuestion: ", 1)[-1].strip().casefold()
+    prefix = "according to the profile,"
+    if question.startswith(prefix):
+        question = question[len(prefix):].strip()
+    return next((stem for stem in _INTERROGATIVE_STEMS if question.startswith(stem)), "")
+
+
+def find_family_b_interrogative_stem_mismatches(
+    templates: List[Dict[str, Any]],
+) -> Dict[str, Tuple[str, str]]:
+    """Return Family B templates whose paired questions start with different wh stems."""
+    failures: Dict[str, Tuple[str, str]] = {}
+    for tmpl in templates:
+        if tmpl.get("family") != "B":
+            continue
+        ans_stem = _interrogative_stem(tmpl["ans_template"])
+        unans_stem = _interrogative_stem(tmpl["unans_template"])
+        if not ans_stem or ans_stem != unans_stem:
+            failures[tmpl["template_id"]] = (ans_stem or "<unrecognized>", unans_stem or "<unrecognized>")
+    return failures
+
+
+def _extract_reviewed_slots(template: str, rendered: str) -> Dict[str, str] | None:
+    """Extract slot values only when the reviewed prompt has the exact current wording."""
+    pieces = re.split(r"(\{(?:entity|attr1|attr2)\})", template)
+    pattern, names = [], []
+    for piece in pieces:
+        match = re.fullmatch(r"\{(entity|attr1|attr2)\}", piece)
+        if match:
+            name = match.group(1)
+            names.append(name)
+            pattern.append(f"(?P<{name}>.+?)" if names.count(name) == 1 else f"(?P={name})")
+        else:
+            pattern.append(re.escape(piece))
+    match = re.fullmatch("".join(pattern), rendered)
+    return match.groupdict() if match else None
+
+
+def _adopt_reviewed_slot_values(tmpl: Dict[str, Any], row: Dict[str, str]) -> bool:
+    """Reuse names from the reviewed example while requiring all template wording to match."""
+    family = tmpl["family"]
+    parsed = _extract_reviewed_slots(tmpl["ans_template"], row.get("ans_prompt", "").strip())
+    unans = _extract_reviewed_slots(tmpl["unans_template"], row.get("unans_prompt", "").strip())
+    bctrl = ({"entity": "NA"} if family == "A" else
+             _extract_reviewed_slots(tmpl["b_ctrl_template"], row.get("b_ctrl_prompt", "").strip()))
+    if parsed is None or unans is None or bctrl is None:
+        return False
+    values = {**parsed}
+    if any(unans.get(k) != v for k, v in parsed.items() if k == "entity"):
+        return False
+    values.update(unans)
+    if family == "B":
+        if bctrl.get("entity") != parsed.get("entity"):
+            return False
+        if any(bctrl.get(k) != v for k, v in values.items() if k in bctrl):
+            return False
+    slot = tmpl["slots"][0]
+    slot.update(values)
+    slot["ground_truth"] = values["attr1"]
+    return True
+
+
+def parse_review_value(value: str, family: str, flag: str) -> bool:
+    value = value.strip().upper()
+    if value in {"Y", "YES", "TRUE"}:
+        return True
+    if value in {"N", "NO", "FALSE", ""}:
+        return False
+    if value == "NA" and family == "A" and flag == "check_b_ctrl_valid":
+        return True
+    raise ValueError(f"Invalid review value {value!r} for {family}/{flag}; use Y, N, or NA")
+
+
+def validate_review_sheet(templates: List[Dict[str, Any]], path: Path) -> Dict[str, List[str]]:
+    with path.open(encoding="utf-8-sig", newline="") as f:
+        rows = {r["template_id"]: r for r in csv.DictReader(f)}
+    failures: Dict[str, List[str]] = {}
+    for tmpl in templates:
+        row = rows.get(tmpl["template_id"])
+        reasons: List[str] = []
+        if row is None:
+            reasons.append("missing_row")
+        else:
+            # Earlier review exports may have used different natural synthetic names.
+            # Preserve those reviewed slot values if (and only if) literal wording matches.
+            if not _adopt_reviewed_slot_values(tmpl, row):
+                reasons.append("prompt_mismatch")
+            slot = tmpl["slots"][0]
+            expected_prompts = {
+                "ans_prompt": tmpl["ans_template"].format(**slot),
+                "unans_prompt": tmpl["unans_template"].format(**slot),
+                "b_ctrl_prompt": "NA" if tmpl["family"] == "A" else tmpl["b_ctrl_template"].format(**slot),
+                "ground_truth": str(slot["ground_truth"]),
+            }
+            if any(row.get(key, "").strip() != value for key, value in expected_prompts.items()):
+                if "prompt_mismatch" not in reasons:
+                    reasons.append("prompt_mismatch")
+        for flag in REVIEW_FLAGS:
+            val = "" if row is None else row.get(flag, "")
+            passed = parse_review_value(val, tmpl["family"], flag)
+            tmpl[flag] = passed
+            if not passed:
+                reasons.append(f"manual_check:{flag}")
+        if reasons:
+            failures[tmpl["template_id"]] = reasons
+    return failures
+
+
+def apply_review_sheet(templates: List[Dict[str, Any]], path: Path) -> List[str]:
+    """Compatibility helper returning the IDs of failed or stale review rows."""
+    return list(validate_review_sheet(templates, path))
+
+
+def normalize_aliases(aliases: List[str]) -> List[str]:
+    cleaned, seen = [], set()
+    for alias in aliases:
+        text = "".join(ch for ch in str(alias) if unicodedata.category(ch) != "Cf" and ch not in "\u034f\u061c\u180e\u200b\u200c\u200d\u2060\ufeff")
+        text = " ".join(text.split())
+        key = text.casefold()
+        if len(text) <= 2 or not text or key in seen:
+            continue
+        seen.add(key)
+        cleaned.append(text)
+    if not cleaned:
+        short_seen = set()
+        cleaned = []
+        for alias in aliases:
+            text = "".join(ch for ch in str(alias) if unicodedata.category(ch) != "Cf" and ch not in "\u034f\u061c\u180e\u200b\u200c\u200d\u2060\ufeff")
+            text = " ".join(text.split())
+            if text and text.casefold() not in short_seen:
+                short_seen.add(text.casefold())
+                cleaned.append(text)
+    return cleaned
 
 
 def create_template_splits(
@@ -78,12 +249,7 @@ def instantiate_pairs_and_b_ctrl(
         split_name = split_lookup[tid]
 
         # Enforce all 4 human review checklist booleans
-        for flag in (
-            "check_answer_unambiguous",
-            "check_zero_unans_support",
-            "check_distinct_predicate",
-            "check_b_ctrl_valid",
-        ):
+        for flag in REVIEW_FLAGS:
             assert tmpl.get(flag) is True, f"Template {tid} failed human checklist flag {flag}!"
 
         for idx, slot in enumerate(tmpl["slots"]):
@@ -223,7 +389,9 @@ def load_popqa_rows() -> List[Dict[str, Any]]:
                 "subj": str(row.get("subj", "")),
                 "obj": str(row.get("obj", "")),
                 "possible_answers": [str(a) for a in parsed_ans],
+                "possible_answers_clean": normalize_aliases([str(a) for a in parsed_ans]),
                 "s_pop": float(row["s_pop"]),
+                "log_s_pop": math.log10(float(row["s_pop"]) + 1.0),
             }
         )
     return all_rows
@@ -243,7 +411,15 @@ def stratify_and_sample_popqa(
       - Deciles 6..10: 0.14 per decile (140 items/decile for n_total=1000)
     """
     # Sort deterministically by (s_pop, hf_row_idx) to assign equal-sized deciles 1..10
-    all_rows = sorted(all_rows, key=lambda r: (r["s_pop"], r["hf_row_idx"]))
+    # Normalize at sampling time too, so callers with in-memory or cached raw rows
+    # receive the same schema as rows loaded directly from PopQA.
+    normalized_rows = []
+    for row in all_rows:
+        normalized = dict(row)
+        normalized.setdefault("possible_answers_clean", normalize_aliases(list(row["possible_answers"])))
+        normalized.setdefault("log_s_pop", math.log10(float(row["s_pop"]) + 1.0))
+        normalized_rows.append(normalized)
+    all_rows = sorted(normalized_rows, key=lambda r: (r["s_pop"], r["hf_row_idx"]))
     n_all = len(all_rows)
     decile_buckets: Dict[int, List[Dict[str, Any]]] = defaultdict(list)
 
@@ -276,7 +452,9 @@ def stratify_and_sample_popqa(
                 "subj": item["subj"],
                 "obj": item["obj"],
                 "possible_answers": item["possible_answers"],
+                "possible_answers_clean": item["possible_answers_clean"],
                 "s_pop": item["s_pop"],
+                "log_s_pop": item["log_s_pop"],
                 "s_pop_decile": item["s_pop_decile"],
                 "baseline_response": "",
                 "baseline_partition": "ungraded",

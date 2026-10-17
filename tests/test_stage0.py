@@ -57,8 +57,12 @@ def test_gpu_stage0_contract_from_json():
     rec = json.loads(p.read_text(encoding="utf-8"))
     assert rec["passed_all_checks"] is True
     assert rec["all_layer_activations_finite"] is True
+    assert len(rec["max_abs_activation_per_layer"]) == rec["n_layers"]
+    assert max(rec["max_abs_activation_per_layer"]) < 60000
+    assert rec["python_version"] and rec["torch_cuda_version"] and rec["cuda_driver_version"]
     assert rec["k_suffix"] == CONFIG.k_suffix_default
     assert len(rec["suffix_token_ids"]) == rec["k_suffix"]
     assert rec["zero_intervention_max_abs_diff"] <= CONFIG.atol_zero
     assert rec["fp32_logit_cosine_sim"] >= CONFIG.min_fp16_fp32_logit_cos
     assert rec["fp32_logit_mean_kl_nats"] <= CONFIG.max_fp16_fp32_kl
+    assert rec["fp32_logit_mean_kl_nats"] >= -1e-9

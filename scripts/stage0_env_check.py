@@ -24,6 +24,11 @@ REQUIRED_STAGE0_KEYS = {
     "k_suffix": int,
     "suffix_token_ids": list,
     "all_layer_activations_finite": bool,
+    "max_abs_activation_per_layer": list,
+    "python_version": str,
+    "torch_cuda_version": str,
+    "cuda_driver_version": str,
+    "rough_lower_bound_gpu_hours": float,
     "zero_intervention_max_abs_diff": float,
     "fp32_logit_cosine_sim": float,
     "fp32_logit_mean_kl_nats": float,
@@ -43,11 +48,15 @@ def validate_existing_stage0_output(output_path: Path) -> bool:
                 return False
         if not data["passed_all_checks"] or not data["all_layer_activations_finite"]:
             return False
+        if not data["max_abs_activation_per_layer"] or max(data["max_abs_activation_per_layer"]) >= 60000:
+            return False
         if data["zero_intervention_max_abs_diff"] > CONFIG.atol_zero:
             return False
         if data["fp32_logit_cosine_sim"] < CONFIG.min_fp16_fp32_logit_cos:
             return False
         if data["fp32_logit_mean_kl_nats"] > CONFIG.max_fp16_fp32_kl:
+            return False
+        if data["fp32_logit_mean_kl_nats"] < -1e-9:
             return False
         if data["k_suffix"] < 1 or len(data["suffix_token_ids"]) != data["k_suffix"]:
             return False

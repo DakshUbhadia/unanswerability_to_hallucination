@@ -13,6 +13,8 @@ from src.dataset_builder import (
     instantiate_pairs_and_b_ctrl,
     compute_max_ngram_phi,
     stratify_and_sample_popqa,
+    normalize_aliases,
+    find_unanswerable_style_confounds,
 )
 
 
@@ -36,24 +38,25 @@ def qwen_tokenizer():
 @pytest.fixture(scope="module")
 def calibrated_dataset(qwen_tokenizer):
     calibrated, audit_rows = calibrate_template_token_parity(
-        generate_raw_template_catalog(48), tokenizer=qwen_tokenizer, max_diff=CONFIG.max_token_diff_pair
+        generate_raw_template_catalog(48, tokenizer=qwen_tokenizer), tokenizer=qwen_tokenizer, max_diff=CONFIG.max_token_diff_pair
     )
+    # Unit tests provide an explicit in-memory review fixture; production reads the CSV.
+    for template in calibrated:
+        for flag in ("check_answer_unambiguous", "check_zero_unans_support", "check_distinct_predicate", "check_b_ctrl_valid"):
+            template[flag] = True
     splits = create_template_splits(calibrated, seed_split=CONFIG.seed_split)
     pairs, b_ctrl = instantiate_pairs_and_b_ctrl(calibrated, splits, tokenizer=qwen_tokenizer)
     return calibrated, audit_rows, splits, pairs, b_ctrl
 
 
 def test_template_catalog_and_token_parity_calibration(calibrated_dataset):
-    """Verifies that all 96 templates calibrate to |delta_L| <= 2 and log famA_001 to audit_rows."""
+    """Verifies that all 96 templates calibrate to |delta_L| <= 2."""
     calibrated, audit_rows, _, _, _ = calibrated_dataset
     assert len(calibrated) == 96
     assert Counter(t["family"] for t in calibrated) == {"A": 48, "B": 48}
     assert len({t["template_id"] for t in calibrated}) == 96
     assert all("canonical_unans_template" not in t for t in calibrated)
 
-    assert len(audit_rows) >= 1
-    assert audit_rows[0]["template_id"] == "famA_001"
-    assert audit_rows[0]["failure_reason"] == "length_parity"
     assert all(row["post_fix_passed"] is True for row in audit_rows)
 
 
@@ -123,34 +126,38 @@ def test_pairs_b_ctrl_and_ngram_leakage_gate(calibrated_dataset):
     )
 
 
-def test_calibrator_restores_canonical_and_pads_without_touching_slots():
-    """Verifies the in-place rewrite path: canonical restore, neutral padding, and failure logging."""
+def test_calibrator_never_rewrites_authored_text():
+    """Parity failures are reported without changing authored template wording."""
     tok = WhitespaceMockTokenizer()
-    seed = generate_raw_template_catalog(n_per_family=1)[0]
-    assert seed["template_id"] == "famA_001"
+    balanced = {
+        "template_id": "synthetic_rewrite", "family": "A",
+        "ans_template": "Context: {entity} was examined by {attr1}.\nQuestion: Who examined {entity}?",
+        "unans_template": "Context: {entity} was reviewed by {attr2}.\nQuestion: Who examined {entity}?",
+        "slots": [{"entity": "Northstar Project", "attr1": "Mara Ellison", "attr2": "Caleb Mercer", "ground_truth": "Mara Ellison"}],
+    }
+    fixed, audit = calibrate_template_token_parity([copy.deepcopy(balanced)], tokenizer=tok, max_diff=2)
+    assert audit == []
+    assert fixed[0]["unans_template"] == balanced["unans_template"]
 
-    # famA_001 is seeded with an over-long distractor; restoring the canonical clause fixes it.
-    fixed, audit = calibrate_template_token_parity([copy.deepcopy(seed)], tokenizer=tok, max_diff=2)
-    assert len(audit) == 1 and audit[0]["post_fix_passed"] is True
-    assert fixed[0]["unans_template"] == seed["canonical_unans_template"]
-    assert fixed[0]["slots"] == seed["slots"]
+    unbalanced = copy.deepcopy(balanced)
+    unbalanced["unans_template"] = "Context: {entity} underwent a highly comprehensive secondary technical inspection by {attr2}.\nQuestion: Who examined {entity}?"
+    original_text = unbalanced["unans_template"]
+    fixed, audit = calibrate_template_token_parity([unbalanced], tokenizer=tok, max_diff=2)
+    assert len(audit) == 1 and audit[0]["post_fix_passed"] is False
+    assert fixed[0]["unans_template"] == original_text
+    assert fixed[0]["slots"] == balanced["slots"]
 
-    # Unanswerable text too short -> a neutral pad is appended to the distractor clause.
-    short = copy.deepcopy(seed)
-    short["canonical_unans_template"] = short["canonical_unans_template"].replace(
-        "Annual facility maintenance was audited by", "Audited by"
-    )
-    short["unans_template"] = short["canonical_unans_template"]
-    fixed, audit = calibrate_template_token_parity([short], tokenizer=tok, max_diff=2)
-    assert audit[0]["post_fix_passed"] is True
-    assert "by {attr2} that" in fixed[0]["unans_template"]
-    assert fixed[0]["slots"] == seed["slots"]
 
-    # Unanswerable text too long after canonical restore -> logged as an unfixed failure.
-    long = copy.deepcopy(seed)
-    long["canonical_unans_template"] = seed["unans_template"]
-    fixed, audit = calibrate_template_token_parity([long], tokenizer=tok, max_diff=2)
-    assert audit[0]["post_fix_passed"] is False
+def test_unanswerable_style_gate_rejects_unans_only_ly_and_filler():
+    synthetic = [{
+        "template_id": "synthetic_style", "slots": [{"entity": "Mara Ellison"}],
+        "ans_template": "Profile: {entity} works outdoors.",
+        "unans_template": "Profile: {entity} works methodically outdoors at present.",
+    }]
+    failures = find_unanswerable_style_confounds(synthetic)
+    assert "synthetic_style" in failures
+    assert any("methodically" in reason for reason in failures["synthetic_style"])
+    assert any("at present" in reason for reason in failures["synthetic_style"])
 
 
 def test_ngram_phi_detects_synthetic_leakage():
@@ -189,6 +196,8 @@ def test_popqa_decile_stratification_on_synthetic_rows():
     counts = Counter(r["s_pop_decile"] for r in sample)
     assert all(counts[d] == 60 for d in range(1, 6))
     assert all(counts[d] == 140 for d in range(6, 11))
+    assert all("log_s_pop" in r and "possible_answers_clean" in r for r in sample)
+    assert sample[0]["log_s_pop"] == pytest.approx(__import__("math").log10(sample[0]["s_pop"] + 1))
     assert len({r["hf_row_idx"] for r in sample}) == 1000
     assert [r["popqa_id"] for r in sample[:2]] == ["popqa_0001", "popqa_0002"]
     assert all(r["baseline_partition"] == "ungraded" and r["matched_pair_id"] is None for r in sample)
@@ -196,3 +205,8 @@ def test_popqa_decile_stratification_on_synthetic_rows():
 
     again = stratify_and_sample_popqa(rows, n_total=1000, seed_popqa=CONFIG.seed_popqa)
     assert [r["hf_row_idx"] for r in again] == [r["hf_row_idx"] for r in sample]
+
+
+def test_possible_answers_clean_removes_formatting_and_short_aliases():
+    assert normalize_aliases([" A ", "Alpha\u200b Beta", "alpha beta", "XY"]) == ["Alpha Beta"]
+    assert normalize_aliases(["A", "a", " "]) == ["A"]

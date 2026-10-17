@@ -1,78 +1,37 @@
-# From Unanswerability to Hallucination
+# Unanswerability to Hallucination
 
-> **Investigating Refusal Suppression, Orthogonal Projections, and Representation Engineering in LLMs**
+Does the unanswerability direction in Qwen2.5-3B-Instruct predict closed-book hallucinations? A replication and extension of Lavi, Milo & Geva (EACL 2026).
 
-This repository contains the experimental framework, mathematical operators, and evaluation pipeline for analyzing how Large Language Models transition from refusal (unanswerability) to hallucination under representation steering and refusal ablation.
+The frozen research protocol is in [documentation.md](documentation.md). Implementation deviations are tracked in [DEVIATIONS.md](DEVIATIONS.md).
 
----
+## Status
 
-## ?? Repository Architecture
+| Stage | Status |
+|---|---|
+| Stage 0 | Passed |
+| Stage 1 | Pending human review |
 
-```text
-??? src/
-?   ??? config.py             # Frozen Experiment Configuration (v4.0 constants, seeds, thresholds)
-?   ??? model_utils.py        # Numerical assertions, FP16/FP32 projections, model loaders
-?   ??? template_catalog.py   # 96 minimal-pair templates (48 Fam A, 48 Fam B) + token-parity calibrator
-?   ??? dataset_builder.py    # Template splits, pair/B-ctrl instantiation, n-gram phi gate, PopQA sampler
-?   ??? __init__.py
-??? scripts/
-?   ??? stage0_env_check.py   # Hardware verification, T4 VRAM check, logit cosine audit
-?   ??? stage1_build_dataset.py # Builds & validates data/ on CPU (resumable; --force, --cut3)
-?   ??? kaggle_sync.py        # Remote Kaggle secrets and artifact synchronization
-?   ??? __init__.py
-??? tests/
-?   ??? test_stage0.py        # Invariant unit tests (projection idempotence, scaling invariance)
-?   ??? test_stage1.py        # Dataset gates: splits, |delta_L| <= 2, max |phi| <= 0.15, B-ctrl, PopQA deciles
-?   ??? __init__.py
-??? data/                     # Stage 1 outputs: templates, splits, pairs, b_ctrl, popqa_sample, audit_log
-??? notebooks/
-?   ??? kaggle_runner.md      # Instructions & cell runner for Kaggle 2x Tesla T4 execution
-??? DEVIATIONS.md             # Formal registry of hardware adaptations (DEV-001, DEV-002)
-??? requirements.txt          # Primary project dependencies
-??? pytest.ini                # Pytest configuration and marker definitions
-??? README.md
+## Kaggle setup
+
+Use Accelerator = GPU T4 (single GPU is sufficient), Internet = On, and add Kaggle secrets `GITHUB_TOKEN` and `HF_TOKEN`. Run this cell:
+
+```python
+import os, subprocess
+from kaggle_secrets import UserSecretsClient
+s = UserSecretsClient()
+os.environ["GITHUB_TOKEN"] = s.get_secret("GITHUB_TOKEN").strip()
+os.environ["HF_TOKEN"] = s.get_secret("HF_TOKEN").strip()
+subprocess.run("rm -rf /tmp/repo && git clone -q https://x-access-token:$GITHUB_TOKEN@github.com/DakshUbhadia/unanswerability_to_hallucination.git /tmp/repo && cd /tmp/repo && bash scripts/kaggle_run.sh 0", shell=True, check=True)
 ```
 
----
+Set `FORCE=1` in the environment to pass `--force` to stages that support it. To build Stage 1, first export and complete `data/review/review_sheet.csv`, then run `bash scripts/kaggle_run.sh 1`.
 
-## ?? Environment & Hardware Specifications
+## Local validation
 
-- **Primary Target Architecture**: NVIDIA Tesla T4 (16 GB VRAM) on Kaggle Free Tier.
-- **Precision Adaptations**:
-  - **DEV-001**: Fallback from `bfloat16` to `float16` on Tesla T4 due to hardware capability limitations (SM 7.5).
-  - **DEV-002**: Python 3.10+ / Kaggle pre-installed environment tolerance.
-- **Logit Cosine Similarity Threshold**: >= 0.999 between FP16 and FP32 baselines.
-
----
-
-## ?? Quickstart & Local Verification
-
-### 1. Setup Virtual Environment
 ```bash
-uv venv --python 3.11 .venv
-source .venv/bin/activate
-uv pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu --index-strategy unsafe-best-match
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python scripts/stage1_export_review.py
+.venv/bin/python scripts/stage1_build_dataset.py --force  # after completing data/review/review_sheet.csv
+.venv/bin/python -m pytest -q -m "not slow"
 ```
-
-### 2. Run Invariant Unit Tests
-```bash
-python -m pytest tests/test_stage0.py -m "not integration" -v
-```
-
-### 3. Run Environment Audit
-```bash
-python scripts/stage0_env_check.py --allow-kaggle-env
-```
-
-### 4. Build the Stage 1 Dataset (CPU only)
-```bash
-python -m pytest tests/test_stage1.py -v
-python scripts/stage1_build_dataset.py          # [SKIP] if data/ already passes every gate
-python scripts/stage1_build_dataset.py --force  # rebuild from scratch
-```
-Downloads only the Qwen tokenizer and the `akariasai/PopQA` test split. Any template that fails a gate must be rewritten in `src/template_catalog.py`; every failure and rewrite is logged to `data/audit_log.csv`.
-
----
-
-## ?? Remote Kaggle Execution
-Refer to [`notebooks/kaggle_runner.md`](notebooks/kaggle_runner.md) for step-by-step instructions on running the GPU integration tests and full model steering passes on Kaggle 2x T4 GPUs.

@@ -1,8 +1,9 @@
-# Registered Implementation Deviations from Frozen Specification v4.0
+# Implementation Deviations
 
-This file logs strictly bounded hardware and environment adaptations required to execute the Frozen Specification (v4.0) on Kaggle Free Tier GPUs (NVIDIA Tesla T4, 16 GB VRAM, Turing \sm_75\). No experimental hypotheses, dataset schemas, controls, or statistical tests are altered.
+This log records implementation choices that differ from the frozen protocol in `documentation.md`. The frozen specification is unchanged.
 
-| Deviation ID | Spec Section | Specified Setting | Executed Setting on Kaggle | Justification & Stage 0 Verification Safeguard |
-| :--- | :--- | :--- | :--- | :--- |
-| **DEV-001** | Section 2.1 | \	orch.bfloat16\ model weights & forward pass | \	orch.float16\ model weights & forward pass on NVIDIA T4 (\sm_75\), with all residual projections, steering math, and accumulations in \	orch.float32\ | Kaggle T4 (\sm_75\) and P100 (\sm_60\) GPUs lack native hardware \float16\ support. Stage 0 enforces two mandatory safeguards: (1) an all-layer finite activation check (\zero NaN/Inf\ across all 36 layers), and (2) a \loat16\ vs. \loat32\ baseline logit fidelity check requiring cosine similarity >= 0.9990 and D_KL(P_fp32 || P_fp16) <= 0.005 nats. |
-| **DEV-002** | Section 2.2 | Exact pinned \pip\ environment (\python==3.11.9\, \	orch==2.4.1\) | Exact pins for nsight==0.3.7\ and \	ransformers==4.46.3\ layered on Kaggle'''s native CUDA PyTorch image (\--allow-kaggle-env\) | Reinstalling the multi-gigabyte \	orch\ wheel inside ephemeral Kaggle sessions wastes GPU quota and risks host CUDA driver mismatches. Exact runtime package versions are logged to esults/stage0_env.json\. |
+| ID | Spec section | Specified | Implemented | Reason |
+|---|---|---|---|---|
+| DEV-001 | 2.1 | `torch.bfloat16` model weights and forward pass | `torch.float16` on NVIDIA T4 (`sm_75`) and P100 (`sm_60`); residual projections, steering math, and accumulations use `torch.float32` | These GPUs lack native hardware bfloat16 support. Stage 0 checks every layer for finite activations and compares fp16 logits with an fp32 reference, requiring cosine similarity at least 0.9990 and KL at most 0.005 nats. |
+| DEV-002 | 2.2 | Exact pinned Python and PyTorch environment | Pin `nnsight==0.3.7` and `transformers==4.46.3` while using Kaggle's native CUDA PyTorch image with `--allow-kaggle-env` | Reinstalling the large PyTorch wheel in ephemeral Kaggle sessions wastes GPU time and can mismatch host CUDA drivers. Runtime package versions are recorded in `results/stage0_env.json`. |
+| DEV-003 | 4.4, Stages 2 and 8 | Match popularity using the original PopQA `s_pop` field | Popularity matching uses `log_s_pop = log10(s_pop + 1)`; caliper widths are fractions of `SD(log_s_pop)` | PopQA `s_pop` is raw monthly pageviews and is highly skewed. Log scaling gives the intended standardized popularity matching scale while preserving original fields and rank based deciles. |
