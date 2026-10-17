@@ -1,0 +1,43 @@
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python Cache & Bytecode
+__pycache__/
+*.py[cod]
+*.class
+*.so
+.Python
+
+# Pytest & Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Local IDE & OS Files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Large Model Checkpoints & Raw Data (Synced to HF Hub)
+checkpoints/
+*.pt
+*.bin
+*.safetensors
+*.pth
+data/cache/
+
+# Experiment Logs & Scratch Files
+*.log
+scratch/
+tmp/
+
+# Secrets & Authentication
+*token*
+*secret*
+kaggle.json
+.env
