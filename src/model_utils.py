@@ -219,7 +219,8 @@ def assert_all_layer_activations_finite(
         assert maximum < 60000, f"Activation headroom exceeded at layer {l_idx}: {maximum}"
         maxima.append(maximum)
     assert torch.isfinite(_deref_saved(saved_logits)).all(), "NaN/Inf in output logits!"
-    return True
+    assert len(maxima) == n_layers, "Missing activation maximum for one or more layers"
+    return maxima
 
 
 @torch.no_grad()
