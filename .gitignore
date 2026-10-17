@@ -31,6 +31,11 @@ checkpoints/
 *.pth
 data/cache/
 
+# Experiment Results (allow JSON/CSV, block heavy .pt)
+results/*.pt
+!results/*.json
+!results/*.csv
+
 # Experiment Logs & Scratch Files
 *.log
 scratch/
@@ -41,3 +46,9 @@ tmp/
 *secret*
 kaggle.json
 .env
+
+# Implementation Plans
+stage_0_ide_setup_and_environment_verification_plan.md
+stage_1_dataset_construction_and_quality_gates_implementation_plan.md
+stage_*_plan.md
+*implementation_plan*.md
