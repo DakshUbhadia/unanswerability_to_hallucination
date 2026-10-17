@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-﻿# scripts/stage0_env_check.py
+# scripts/stage0_env_check.py
 import argparse
 import importlib.metadata
 import json

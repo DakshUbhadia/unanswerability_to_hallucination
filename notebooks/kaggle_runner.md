@@ -1,4 +1,4 @@
-﻿# Kaggle Notebook Runner Template
+# Kaggle Notebook Runner Template
 
 ## Settings (Before Running)
 1. In the right-hand Settings pane, set **Accelerator** to **GPU T4 x2** and toggle **Internet** to **On**.
