@@ -84,7 +84,12 @@ def main() -> int:
     if env["model_name"]!=json.loads(stage0.read_text(encoding="utf-8"))["model_name"]: _atomic_json(stage0,env)
     if not pilot["passed_pilot_gate"]:
         pilot.update(popqa_evaluated_count=0,popqa_correct_count=0,popqa_wrong_count=0,popqa_abstain_count=0,popqa_matched_pair_count=0,caliper_widened=False,caliper_width_s_pop=0.0,passed_pilot_and_power_gate=False)
-        _atomic_json(out,pilot); return 2
+        _atomic_json(out,pilot)
+        if pilot.get("fallback_access_error"):
+            print(f"[BLOCKED] {pilot['fallback_access_error']}", file=sys.stderr)
+        else:
+            print("[FAIL] Pilot gate did not pass after all configured attempts.", file=sys.stderr)
+        return 2
     power=run_popqa_grading_and_power_gate(model,tokenizer,pilot["system_prompt_used"],[env["unknown_token_id_nospace"],env["unknown_token_id_space"]],poppath,args.force)
     summary={**pilot,**power,"passed_pilot_and_power_gate":bool(pilot["passed_pilot_gate"] and power["power_gate_passed"])}
     _atomic_json(out,summary)

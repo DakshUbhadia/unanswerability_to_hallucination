@@ -130,10 +130,30 @@ def run_validation_pilot_gate_state_machine(raw_model: Any, tokenizer: Any, env_
     model_name = active_env["model_name"]
     for attempt in (1, 2, 3):
         if attempt == 3:
+            # The caller may still hold a reference to the primary model. Move it
+            # off the GPU before dropping local references so the fallback fits.
+            try:
+                raw_model.to("cpu")
+            except (AttributeError, RuntimeError):
+                pass
             del raw_model, tokenizer
             gc.collect()
             if torch.cuda.is_available(): torch.cuda.empty_cache()
-            wrapper, active_env = load_model_and_verify_runtime(CFG.fallback_model_name, device, requested_dtype)
+            try:
+                wrapper, active_env = load_model_and_verify_runtime(CFG.fallback_model_name, device, requested_dtype)
+            except Exception as exc:
+                message = str(exc)
+                gated = any(term in message.lower() for term in ("gated repo", "403 client error", "not in the authorized list", "access to model"))
+                if not gated:
+                    raise
+                # There is no valid Attempt 3 result until Hugging Face grants
+                # this account access. Preserve Attempt 2 diagnostics for the CLI.
+                summary["fallback_access_error"] = (
+                    f"Cannot load {CFG.fallback_model_name}: Hugging Face denied access. "
+                    "Request/accept access for the Kaggle account used by HF_TOKEN, "
+                    "then rerun Stage 2."
+                )
+                return None, None, active_env, summary
             raw_model, tokenizer = wrapper._model, wrapper.tokenizer
             model_name, prompt = CFG.fallback_model_name, CFG.system_prompt
         ans = [p["ans_prompt"] for p in val_pairs]
