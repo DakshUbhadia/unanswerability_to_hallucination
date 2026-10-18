@@ -83,6 +83,11 @@ def determine_pilot_gate_status(unans_rate: float, ans_rate: float) -> Tuple[boo
     return passed, gap, mode
 
 
+def compute_log10_s_pop(raw_s_pop: float) -> float:
+    """Return log10(max(raw monthly pageviews, 0) + 1)."""
+    return math.log10(max(float(raw_s_pop), 0.0) + 1.0)
+
+
 def _format_prompts(tokenizer: Any, prompts: List[str], system_prompt: str) -> List[str]:
     return [tokenizer.apply_chat_template([{"role":"system","content":system_prompt},{"role":"user","content":p}], tokenize=False, add_generation_prompt=True) for p in prompts]
 
@@ -176,9 +181,9 @@ def run_validation_pilot_gate_state_machine(raw_model: Any, tokenizer: Any, env_
 
 
 def match_popqa_by_popularity_caliper(popqa_records: List[Dict[str, Any]], caliper_sd_mult: float = CFG.caliper_sd_default, seed: int = CFG.seed_popqa):
-    values = [float(r["s_pop"]) for r in popqa_records]
-    mean = sum(values)/len(values) if values else 0.0
-    sd = math.sqrt(sum((x-mean)**2 for x in values)/len(values)) if values else 0.0
+    log_s_pops = [compute_log10_s_pop(r["s_pop"]) for r in popqa_records]
+    mean = sum(log_s_pops)/len(log_s_pops) if log_s_pops else 0.0
+    sd = math.sqrt(sum((x-mean)**2 for x in log_s_pops)/len(log_s_pops)) if log_s_pops else 1.0
     sd = sd or 1.0
     width = caliper_sd_mult * sd
     for r in popqa_records: r["is_popularity_matched"], r["matched_pair_id"] = False, None
@@ -189,7 +194,7 @@ def match_popqa_by_popularity_caliper(popqa_records: List[Dict[str, Any]], calip
     edges = []
     for w in wrong:
         for c in correct:
-            d = abs(float(popqa_records[w]["s_pop"])-float(popqa_records[c]["s_pop"]))
+            d = abs(log_s_pops[w]-log_s_pops[c])
             if d <= width: edges.append((round(d,10),ties[w],ties[c],w,c))
     used=set(); pairs=[]
     for *_,w,c in sorted(edges):

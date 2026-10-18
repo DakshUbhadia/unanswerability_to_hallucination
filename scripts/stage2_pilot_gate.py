@@ -10,7 +10,12 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from src.config import CFG
-from src.pilot_check import run_popqa_grading_and_power_gate, run_validation_pilot_gate_state_machine
+from src.pilot_check import (
+    compute_log10_s_pop,
+    match_popqa_by_popularity_caliper,
+    run_popqa_grading_and_power_gate,
+    run_validation_pilot_gate_state_machine,
+)
 
 
 def verify_stage2_outputs(stage2_json_path: Path, popqa_jsonl_path: Path) -> bool:
@@ -26,6 +31,7 @@ def verify_stage2_outputs(stage2_json_path: Path, popqa_jsonl_path: Path) -> boo
     assert 0 <= summary["val_ans_abstention_rate_strict"] <= summary["val_ans_abstention_rate"]
     assert math.isfinite(summary["val_unans_mean_log_odds"]) and math.isfinite(summary["val_ans_mean_log_odds"])
     assert summary["val_ans_mean_log_odds"] < summary["val_unans_mean_log_odds"]
+    assert 0.0 < float(summary["caliper_width_s_pop"]) < 5.0
     with Path(popqa_jsonl_path).open(encoding="utf-8") as f: rows=[json.loads(x) for x in f if x.strip()]
     assert len(rows)==summary["popqa_evaluated_count"] and len(rows) in (1000,1250,1500,1750,2000)
     assert len({r["hf_row_idx"] for r in rows})==len(rows)
@@ -40,6 +46,10 @@ def verify_stage2_outputs(stage2_json_path: Path, popqa_jsonl_path: Path) -> boo
         else: assert r.get("matched_pair_id") is None
     assert len(pairs)==summary["popqa_matched_pair_count"] and all(len(v)==2 for v in pairs.values())
     assert sum(bool(r.get("is_popularity_matched")) for r in rows)==2*len(pairs)
+    for pair_rows in pairs.values():
+        assert {r["baseline_partition"] for r in pair_rows} == {"wrong", "correct"}
+        distance = abs(compute_log10_s_pop(pair_rows[0]["s_pop"]) - compute_log10_s_pop(pair_rows[1]["s_pop"]))
+        assert distance <= float(summary["caliper_width_s_pop"]) + 1e-5
     assert summary["passed_pilot_and_power_gate"] is True
     assert summary["popqa_matched_pair_count"]>=100 or (len(rows)==2000 and summary["caliper_widened"] and summary["popqa_matched_pair_count"]>0)
     return True
@@ -51,21 +61,53 @@ def _atomic_json(path: Path, payload: dict) -> None:
     tmp.replace(path)
 
 
+def _atomic_jsonl(path: Path, rows: list[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    with tmp.open("w", encoding="utf-8", newline="\n") as f:
+        for row in rows:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    tmp.replace(path)
+
+
 def main() -> int:
-    import torch
     parser=argparse.ArgumentParser()
     parser.add_argument("--force",action="store_true")
-    parser.add_argument("--device",default="cuda:0" if torch.cuda.is_available() else "cpu")
+    parser.add_argument("--recompute-matching-only", action="store_true", help="Re-run log10 caliper matching on existing graded PopQA rows on CPU without loading the LLM.")
+    parser.add_argument("--device",default=None)
     parser.add_argument("--dtype",default="auto")
     parser.add_argument("--pairs-path",default=str(CFG.data_dir/"pairs.jsonl"))
     parser.add_argument("--popqa-path",default=str(CFG.data_dir/"popqa_sample.jsonl"))
     parser.add_argument("--stage0-path",default=str(CFG.stage0_out_path))
     parser.add_argument("--output-path",default=str(CFG.stage2_out_path))
     args=parser.parse_args(); out=Path(args.output_path); poppath=Path(args.popqa_path)
+    if args.recompute_matching_only:
+        if not out.exists():
+            raise FileNotFoundError(f"Missing {out}; Stage 2 pilot results must exist before recomputing matches")
+        if not poppath.exists():
+            raise FileNotFoundError(f"Missing {poppath}; graded PopQA rows must exist before recomputing matches")
+        summary=json.loads(out.read_text(encoding="utf-8"))
+        with poppath.open(encoding="utf-8") as f:
+            rows=[json.loads(line) for line in f if line.strip()]
+        if any(r.get("baseline_partition") not in ("correct", "wrong", "abstain") or not r.get("baseline_response") for r in rows):
+            raise RuntimeError("PopQA rows must all be graded before matching-only recomputation")
+        rows,matched,width=match_popqa_by_popularity_caliper(rows, caliper_sd_mult=CFG.caliper_sd_default, seed=CFG.seed_popqa)
+        power_passed=matched >= CFG.n_popqa_matched_min
+        summary.update(popqa_matched_pair_count=matched, caliper_widened=False,
+            caliper_width_s_pop=width, power_gate_passed=power_passed,
+            passed_pilot_and_power_gate=bool(summary["passed_pilot_gate"] and power_passed))
+        _atomic_jsonl(poppath,rows)
+        _atomic_json(out,summary)
+        verify_stage2_outputs(out,poppath)
+        print(f"Recomputed log10 popularity matching: {matched} pairs; caliper width={width:.6f}")
+        return 0
     if not args.force and out.exists() and poppath.exists():
         try:
             verify_stage2_outputs(out,poppath); print(f"[SKIP] Stage 2 already verified in {out}"); return 0
         except (AssertionError,RuntimeError,ValueError,KeyError): pass
+    import torch
+    if args.device is None:
+        args.device="cuda:0" if torch.cuda.is_available() else "cpu"
     stage0,pairs_path=Path(args.stage0_path),Path(args.pairs_path)
     if not stage0.exists(): raise FileNotFoundError(f"Missing {stage0}; run Stage 0 first")
     if not pairs_path.exists(): raise FileNotFoundError(f"Missing {pairs_path}; run Stage 1 first")

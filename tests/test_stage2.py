@@ -6,7 +6,7 @@ import pytest
 
 from src.config import CFG
 from src.pilot_check import (build_calibrated_system_prompt, classify_abstention_response,
-    determine_pilot_gate_status, match_popqa_by_popularity_caliper,
+    compute_log10_s_pop, determine_pilot_gate_status, match_popqa_by_popularity_caliper,
     normalize_and_grade_popqa_response, normalize_popqa_text)
 from scripts.stage2_pilot_gate import verify_stage2_outputs
 
@@ -45,6 +45,18 @@ def test_popqa_normalization_and_word_boundary_grading():
     assert normalize_and_grade_popqa_response("Unknown", ["unknown"]) == "abstain"
 
 
+def test_compute_log10_s_pop_scale_invariance():
+    assert compute_log10_s_pop(99) == 2.0
+    assert compute_log10_s_pop(9999) == 4.0
+    assert compute_log10_s_pop(-10) == 0.0
+    rows=[]
+    for i, value in enumerate((10, 100, 1_000, 10_000, 100_000, 1_000_000)):
+        rows.append({"popqa_id":f"popqa_{i+1:04d}", "s_pop":value,
+            "baseline_partition":"wrong" if i % 2 == 0 else "correct"})
+    _, _, width=match_popqa_by_popularity_caliper(rows)
+    assert 0.0 < width < 5.0
+
+
 def test_caliper_matching_global_optimality_and_determinism():
     rows=[]
     # Dense overlapping locations create a large one-to-one matching.
@@ -58,7 +70,7 @@ def test_caliper_matching_global_optimality_and_determinism():
     assert not any(r["is_popularity_matched"] for r in a if r["baseline_partition"]=="abstain")
     for pair_id in {r["matched_pair_id"] for r in a if r["matched_pair_id"]}:
         pair=[r for r in a if r["matched_pair_id"]==pair_id]
-        assert len(pair)==2 and abs(pair[0]["s_pop"]-pair[1]["s_pop"])<=width
+        assert len(pair)==2 and abs(compute_log10_s_pop(pair[0]["s_pop"])-compute_log10_s_pop(pair[1]["s_pop"]))<=width+1e-6
 
 
 def test_caliper_widening_fallback_logic():
@@ -68,7 +80,7 @@ def test_caliper_widening_fallback_logic():
     _,n1,w1=match_popqa_by_popularity_caliper([dict(r) for r in rows],.25)
     widened,n2,w2=match_popqa_by_popularity_caliper([dict(r) for r in rows],.5)
     assert n1 < 100 and n2 >= n1 and w2 == 2*w1
-    assert all(abs(a["s_pop"]-b["s_pop"])<=w2 for a in widened if a["is_popularity_matched"] for b in widened if b["matched_pair_id"]==a["matched_pair_id"])
+    assert all(abs(compute_log10_s_pop(a["s_pop"])-compute_log10_s_pop(b["s_pop"]))<=w2+1e-6 for a in widened if a["is_popularity_matched"] for b in widened if b["matched_pair_id"]==a["matched_pair_id"])
 
 
 def _mock_artifacts(tmp_path):
@@ -77,7 +89,7 @@ def _mock_artifacts(tmp_path):
         "val_unans_abstention_rate_strict":.4,"val_ans_abstention_rate_strict":.05,
         "val_unans_mean_log_odds":1.,"val_ans_mean_log_odds":0.,"attempt_history":[],
         "popqa_evaluated_count":1000,"popqa_correct_count":500,"popqa_wrong_count":499,"popqa_abstain_count":1,
-        "popqa_matched_pair_count":100,"caliper_widened":False,"caliper_width_s_pop":1.,"passed_pilot_and_power_gate":True}
+        "popqa_matched_pair_count":100,"caliper_widened":False,"caliper_width_s_pop":4.99,"passed_pilot_and_power_gate":True}
     rows=[]
     for i in range(1000): rows.append({"popqa_id":f"popqa_{i+1:04d}","hf_row_idx":i,"baseline_response":"answer","baseline_partition":"correct" if i<500 else "wrong" if i<999 else "abstain","is_popularity_matched":False,"matched_pair_id":None,"s_pop":float(i)})
     for i in range(1,101):
