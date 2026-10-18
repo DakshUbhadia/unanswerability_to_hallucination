@@ -22,6 +22,7 @@ _ABSTAIN_PATTERNS = [re.compile(p, re.I) for p in (
     r"\binsufficient information\b", r"\bnot provided in the context\b",
     r"\bnot mentioned\b", r"^unspecified\b")]
 _STRICT_UNKNOWN = re.compile(r"^unknown(?:[\s\.,!?;:\-\)\]\"']*$|(?:\s*[:\-—]\s*|\s+(?:the\s+|this\s+|because\b|as\b|since\b|from\b|based\b|cannot\b|is\s+not\b)))", re.I)
+_GENERIC_ALIAS_TAILS = {"film", "movie", "music", "series", "genre", "church", "game"}
 
 
 def build_calibrated_system_prompt(base_prompt: str = CFG.system_prompt, failure_mode: str = "none") -> str:
@@ -62,11 +63,33 @@ def normalize_and_grade_popqa_response(generated_text: str, possible_answers: Un
     response = normalize_popqa_text(generated_text)
     if not response:
         return "wrong"
+    response_tokens = response.split()
+    ambiguous_match = False
     for alias in aliases:
         normalized = normalize_popqa_text(alias)
-        if normalized and re.search(r"(?:^|\s)" + re.escape(normalized) + r"(?:$|\s)", response):
+        if not normalized:
+            continue
+        # Full aliases and explicitly generic-tail-stripped aliases are valid.
+        valid_forms = {normalized}
+        tail_tokens = normalized.split()
+        while len(tail_tokens) > 1 and tail_tokens[-1] in _GENERIC_ALIAS_TAILS:
+            tail_tokens.pop()
+            valid_forms.add(" ".join(tail_tokens))
+        if any(re.search(r"(?:^|\s)" + re.escape(form) + r"(?:$|\s)", response) for form in valid_forms):
             return "correct"
-    return "wrong"
+        # A response that supplies only a token/phrase from a compound alias is
+        # under-specified; keep it out of both correct and wrong groups.
+        alias_tokens = normalized.split()
+        if len(alias_tokens) > 1:
+            for start in range(len(alias_tokens)):
+                for end in range(start + 1, len(alias_tokens) + 1):
+                    partial = alias_tokens[start:end]
+                    if len(partial) == len(alias_tokens):
+                        continue
+                    partial_text = " ".join(partial)
+                    if re.search(r"(?:^|\s)" + re.escape(partial_text) + r"(?:$|\s)", response):
+                        ambiguous_match = True
+    return "ambiguous" if ambiguous_match else "wrong"
 
 
 def determine_pilot_gate_status(unans_rate: float, ans_rate: float) -> Tuple[bool, float, str]:
@@ -220,7 +243,7 @@ def run_popqa_grading_and_power_gate(raw_model: Any, tokenizer: Any, system_prom
     for start in range(0,len(rows),CFG.batch_size_gen):
         batch=rows[start:start+CFG.batch_size_gen]
         if not force_regrade:
-            batch=[r for r in batch if (r.get("baseline_partition") not in ("correct","wrong","abstain") or not r.get("baseline_response") or
+            batch=[r for r in batch if (r.get("baseline_partition") not in ("correct","wrong","abstain","ambiguous") or not r.get("baseline_response") or
                 r.get("_stage2_model_name") != active_model or r.get("_stage2_system_prompt") != system_prompt)]
         if not batch: continue
         result=evaluate_prompts_log_odds_and_generations(raw_model,tokenizer,[r["question"] for r in batch],system_prompt,unknown_token_ids,run_log_odds=False)
@@ -252,5 +275,5 @@ def run_popqa_grading_and_power_gate(raw_model: Any, tokenizer: Any, system_prom
     if len(rows)>=CFG.n_popqa_max and matched<CFG.n_popqa_matched_min:
         rows,matched,width=match_popqa_by_popularity_caliper(rows,CFG.caliper_sd_fallback); widened=True
     _atomic_jsonl(popqa_path,rows)
-    counts={k:sum(r["baseline_partition"]==k for r in rows) for k in ("correct","wrong","abstain")}
-    return {"popqa_evaluated_count":len(rows),"popqa_correct_count":counts["correct"],"popqa_wrong_count":counts["wrong"],"popqa_abstain_count":counts["abstain"],"popqa_matched_pair_count":matched,"caliper_widened":widened,"caliper_width_s_pop":width,"power_gate_passed":matched>=CFG.n_popqa_matched_min or (len(rows)==CFG.n_popqa_max and widened and matched>0)}
+    counts={k:sum(r["baseline_partition"]==k for r in rows) for k in ("correct","wrong","abstain","ambiguous")}
+    return {"popqa_evaluated_count":len(rows),"popqa_correct_count":counts["correct"],"popqa_wrong_count":counts["wrong"],"popqa_abstain_count":counts["abstain"],"popqa_ambiguous_count":counts["ambiguous"],"popqa_matched_pair_count":matched,"caliper_widened":widened,"caliper_width_s_pop":width,"power_gate_passed":matched>=CFG.n_popqa_matched_min or (len(rows)==CFG.n_popqa_max and widened and matched>0)}

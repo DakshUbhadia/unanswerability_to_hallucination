@@ -9,6 +9,7 @@ from src.pilot_check import (build_calibrated_system_prompt, classify_abstention
     compute_log10_s_pop, determine_pilot_gate_status, match_popqa_by_popularity_caliper,
     normalize_and_grade_popqa_response, normalize_popqa_text)
 from scripts.stage2_pilot_gate import verify_stage2_outputs
+from src.stage_contract import resolve_downstream_model_name
 
 
 def test_classify_abstention_strict_vs_regex():
@@ -43,6 +44,8 @@ def test_popqa_normalization_and_word_boundary_grading():
     assert normalize_and_grade_popqa_response("The company earned a million dollars", ["on", "io", "ll"]) == "wrong"
     assert normalize_and_grade_popqa_response("The United Kingdom!", ["united-kingdom", "UK"]) == "correct"
     assert normalize_and_grade_popqa_response("Unknown", ["unknown"]) == "abstain"
+    assert normalize_and_grade_popqa_response("Horror", ["horror film"]) == "correct"
+    assert normalize_and_grade_popqa_response("Hockey", ["ice hockey"]) == "ambiguous"
 
 
 def test_compute_log10_s_pop_scale_invariance():
@@ -55,6 +58,16 @@ def test_compute_log10_s_pop_scale_invariance():
             "baseline_partition":"wrong" if i % 2 == 0 else "correct"})
     _, _, width=match_popqa_by_popularity_caliper(rows)
     assert 0.0 < width < 5.0
+
+
+def test_downstream_model_contract_uses_stage2_model(tmp_path):
+    stage2_path=tmp_path/"stage2.json"
+    stage2_path.write_text(json.dumps({"model_name":"meta-llama/Llama-3.2-3B-Instruct",
+        "system_prompt_used":"locked prompt", "passed_pilot_and_power_gate":True}),encoding="utf-8")
+    assert resolve_downstream_model_name(stage2_path=stage2_path)=="meta-llama/Llama-3.2-3B-Instruct"
+    assert resolve_downstream_model_name("meta-llama/Llama-3.2-3B-Instruct",stage2_path)=="meta-llama/Llama-3.2-3B-Instruct"
+    with pytest.raises(RuntimeError,match="differs from Stage 2 locked model"):
+        resolve_downstream_model_name(CFG.primary_model_name,stage2_path)
 
 
 def test_caliper_matching_global_optimality_and_determinism():
@@ -88,7 +101,7 @@ def _mock_artifacts(tmp_path):
         "val_unans_abstention_rate":.5,"val_ans_abstention_rate":.1,"val_rate_gap":.4,
         "val_unans_abstention_rate_strict":.4,"val_ans_abstention_rate_strict":.05,
         "val_unans_mean_log_odds":1.,"val_ans_mean_log_odds":0.,"attempt_history":[],
-        "popqa_evaluated_count":1000,"popqa_correct_count":500,"popqa_wrong_count":499,"popqa_abstain_count":1,
+        "popqa_evaluated_count":1000,"popqa_correct_count":500,"popqa_wrong_count":499,"popqa_abstain_count":1,"popqa_ambiguous_count":0,
         "popqa_matched_pair_count":100,"caliper_widened":False,"caliper_width_s_pop":4.99,"passed_pilot_and_power_gate":True}
     rows=[]
     for i in range(1000): rows.append({"popqa_id":f"popqa_{i+1:04d}","hf_row_idx":i,"baseline_response":"answer","baseline_partition":"correct" if i<500 else "wrong" if i<999 else "abstain","is_popularity_matched":False,"matched_pair_id":None,"s_pop":float(i)})

@@ -37,12 +37,14 @@
   ],
   "passed_pilot_gate": true,
   "popqa_evaluated_count": 1000,
-  "popqa_correct_count": 185,
-  "popqa_wrong_count": 298,
+  "popqa_correct_count": 196,
+  "popqa_wrong_count": 253,
   "popqa_abstain_count": 517,
-  "popqa_matched_pair_count": 150,
+  "popqa_matched_pair_count": 147,
   "caliper_widened": false,
   "caliper_width_s_pop": 0.23649790585566202,
   "power_gate_passed": true,
-  "passed_pilot_and_power_gate": true
+  "passed_pilot_and_power_gate": true,
+  "popqa_ambiguous_count": 34,
+  "grading_revision": "generic-tail and ambiguous partial-alias handling"
 }

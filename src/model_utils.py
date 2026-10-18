@@ -2,6 +2,7 @@
 """Stage 0: runtime contract checks, fp16-safe intervention operators, nnsight==0.3.7 wrappers."""
 import gc
 import json
+import os
 import platform
 import subprocess
 import time
@@ -13,6 +14,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from nnsight import LanguageModel
 
 from src.config import CONFIG
+from src.stage_contract import resolve_downstream_model_name
 
 
 # ----------------------------- precision ------------------------------------
@@ -297,10 +299,20 @@ def load_fidelity_prompts(tokenizer: Any) -> Tuple[List[str], List[str]]:
 
 
 def load_model_and_verify_runtime(
-    model_name: str = CONFIG.primary_model_name,
+    model_name: Optional[str] = None,
     device: str = "cuda:0",
     requested_dtype: str = "auto",
 ) -> Tuple[LanguageModel, Dict[str, Any]]:
+    stage2_model = os.environ.get("STAGE2_MODEL_NAME")
+    if stage2_model:
+        locked_model = resolve_downstream_model_name(model_name)
+        if stage2_model != locked_model:
+            raise RuntimeError(
+                f"STAGE2_MODEL_NAME={stage2_model!r} differs from results/stage2_pilot.json model {locked_model!r}"
+            )
+        model_name = locked_model
+    else:
+        model_name = model_name or CONFIG.primary_model_name
     runtime_dtype, dtype_str, precision_deviation = resolve_runtime_dtype(requested_dtype, device)
     print(f"[Stage 0] runtime dtype = {dtype_str}", flush=True)
 
