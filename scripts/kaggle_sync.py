@@ -18,6 +18,15 @@ def run_cmd(cmd: list[str]) -> None:
 def push_git_artifacts(stage_label: str) -> None:
     """Commits and pushes JSON, CSV, Markdown, and Figure artifacts to GitHub."""
     run_cmd(["git", "add", "results/*.json", "results/*.csv", "tables/", "figures/", "DEVIATIONS.md"])
+    if stage_label in ("2", "stage2"):
+        run_cmd(["git", "add", "results/stage2_pilot.json", "data/popqa_sample.jsonl", "results/stage0_env.json"])
+        for artifact in ("results/stage2_pilot.json", "data/popqa_sample.jsonl"):
+            source = CONFIG.root_dir / artifact
+            if source.exists():
+                import shutil
+                target = Path("/kaggle/working") / Path(artifact).name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, target)
     status = subprocess.run(
         ["git", "status", "--porcelain"],
         capture_output=True,

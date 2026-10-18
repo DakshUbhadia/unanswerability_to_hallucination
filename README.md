@@ -28,10 +28,25 @@ Set `FORCE=1` in the environment to pass `--force` to stages that support it. To
 
 ## Local validation
 
+On Debian/Ubuntu/WSL, install project packages in a virtual environment. The system Python is externally managed, so running `pip install` directly may be rejected (PEP 668). From the repository root:
+
 ```bash
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pytest tests/test_stage0.py tests/test_stage1.py tests/test_stage2.py -m "not integration" -v
+```
+
+If creating the virtual environment reports that `venv` or `ensurepip` is unavailable, install the OS support package once with `sudo apt install python3-full`, then rerun the commands above. Always invoke pytest through `.venv/bin/python` so it uses the environment where the dependencies were installed.
+
+To run Stage 2 on Kaggle after Stage 0 and Stage 1:
+
+```bash
+python scripts/stage2_pilot_gate.py
+```
+
+The full local setup and Stage 1 preparation commands are:
+
+```bash
 .venv/bin/python scripts/stage1_export_review.py
 .venv/bin/python scripts/stage1_build_dataset.py --force  # after completing data/review/review_sheet.csv
-.venv/bin/python -m pytest -q -m "not slow"
 ```

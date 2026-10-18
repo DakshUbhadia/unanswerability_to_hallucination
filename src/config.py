@@ -10,6 +10,8 @@ class MasterConfig:
     root_dir: Path = Path(__file__).resolve().parent.parent
     data_dir: Path = root_dir / "data"
     results_dir: Path = root_dir / "results"
+    stage0_out_path: Path = results_dir / "stage0_env.json"
+    stage2_out_path: Path = results_dir / "stage2_pilot.json"
     figures_dir: Path = root_dir / "figures"
     tables_dir: Path = root_dir / "tables"
 
@@ -141,3 +143,4 @@ class MasterConfig:
 
 
 CONFIG = MasterConfig()
+CFG = CONFIG

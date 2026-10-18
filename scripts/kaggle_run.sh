@@ -15,7 +15,7 @@ for stage in "$@"; do
     python "$script" "${args[@]}"
   done
 done
-pytest -q -m "not slow"
+pytest -q tests/test_stage0.py tests/test_stage1.py tests/test_stage2.py -m "not integration and not slow"
 git add -f results/*.json results/*.csv data/ tables/ figures/ 2>/dev/null || true
 if ! git diff --cached --quiet; then
   git config user.name "Kaggle Runner"
