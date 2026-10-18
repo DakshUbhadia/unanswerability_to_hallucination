@@ -1,0 +1,48 @@
+{
+  "attempt_number": 3,
+  "model_name": "meta-llama/Llama-3.2-3B-Instruct",
+  "system_prompt_used": "You are a precise question-answering assistant. If the answer is known or determinable from the prompt, reply directly with the concise answer starting immediately on the first word. If the question cannot be answered from the provided information or you do not know the answer, reply with the exact single word: Unknown",
+  "val_unans_abstention_rate": 0.9479166666666666,
+  "val_ans_abstention_rate": 0.010416666666666666,
+  "val_rate_gap": 0.9375,
+  "val_unans_abstention_rate_strict": 0.9479166666666666,
+  "val_ans_abstention_rate_strict": 0.010416666666666666,
+  "val_unans_mean_log_odds": 4.828174073714763,
+  "val_ans_mean_log_odds": -10.183085578183332,
+  "attempt_history": [
+    {
+      "attempt": 1,
+      "model_name": "Qwen/Qwen2.5-3B-Instruct",
+      "unans_rate": 1.0,
+      "ans_rate": 0.0,
+      "rate_gap": 1.0,
+      "passed": false
+    },
+    {
+      "attempt": 2,
+      "model_name": "Qwen/Qwen2.5-3B-Instruct",
+      "unans_rate": 1.0,
+      "ans_rate": 0.0,
+      "rate_gap": 1.0,
+      "passed": false
+    },
+    {
+      "attempt": 3,
+      "model_name": "meta-llama/Llama-3.2-3B-Instruct",
+      "unans_rate": 0.9479166666666666,
+      "ans_rate": 0.010416666666666666,
+      "rate_gap": 0.9375,
+      "passed": true
+    }
+  ],
+  "passed_pilot_gate": true,
+  "popqa_evaluated_count": 1000,
+  "popqa_correct_count": 185,
+  "popqa_wrong_count": 298,
+  "popqa_abstain_count": 517,
+  "popqa_matched_pair_count": 146,
+  "caliper_widened": false,
+  "caliper_width_s_pop": 20073.600034609506,
+  "power_gate_passed": true,
+  "passed_pilot_and_power_gate": true
+}
