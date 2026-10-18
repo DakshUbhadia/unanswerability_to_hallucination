@@ -10,6 +10,8 @@ This log records implementation choices that differ from the frozen protocol in 
 
 ### DEV-003 details: Stage 2 model switch and log-popularity matching
 
+- Llama token parity measurement: 0/384 pairs had |delta_L| > 2; max |delta_L|=2; absolute-delta distribution={'0': 99, '1': 184, '2': 101}. 48 B-control prompts tokenized; lengths min/median/max=43/50.0/63; distribution={'43': 1, '44': 2, '45': 3, '46': 3, '47': 5, '48': 3, '49': 5, '50': 3, '51': 6, '52': 3, '53': 3, '54': 3, '56': 1, '57': 3, '58': 2, '60': 1, '63': 1}. Full per-pair details are in `results/stage2_llama_parity.json`.
+
 - **Stage affected:** Stage 2, with `meta-llama/Llama-3.2-3B-Instruct` locked for downstream stages in `results/stage2_pilot.json`.
 - **Pre-registered branch execution:** Qwen Attempt 1 and Attempt 2 both had a validation unanswerable abstention rate of `1.0000`, above the registered `0.95` ceiling, with answerable abstention at `0.0000`. Branch Rule 1 therefore triggered Attempt 3 using the registered Llama fallback. The fallback passed Stage 0 checks (`28` layers, `d_model = 3072`, `k_suffix = 5`) and Stage 2's validation pilot (`0.9479` unanswerable, `0.0104` answerable, `0.9375` gap; log-odds means differ by approximately `15.01` nats).
 - **Frozen dataset tokenizer note:** `data/pairs.jsonl` was built and token-length parity checked under the primary Qwen tokenizer. It was not re-tokenized under Llama after the pre-registered fallback. Stage 3 should use the locked Stage 2 model and tokenizer; the token-length parity diagnostic does not transfer across tokenizers by assumption.

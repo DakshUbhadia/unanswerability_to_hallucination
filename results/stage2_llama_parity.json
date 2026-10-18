@@ -1,0 +1,2348 @@
+{
+  "model_name": "meta-llama/Llama-3.2-3B-Instruct",
+  "pair_count": 384,
+  "max_token_diff_pair_threshold": 2,
+  "pairs_with_abs_delta_gt_2": 0,
+  "max_abs_token_delta": 2,
+  "absolute_delta_distribution": {
+    "0": 99,
+    "1": 184,
+    "2": 101
+  },
+  "signed_delta_distribution": {
+    "-2": 21,
+    "-1": 71,
+    "0": 99,
+    "1": 113,
+    "2": 80
+  },
+  "pair_token_lengths": [
+    {
+      "pair_id": "pair_0001",
+      "ans_tokens": 51,
+      "unans_tokens": 52,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0002",
+      "ans_tokens": 47,
+      "unans_tokens": 49,
+      "delta_tokens": -2
+    },
+    {
+      "pair_id": "pair_0003",
+      "ans_tokens": 48,
+      "unans_tokens": 49,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0004",
+      "ans_tokens": 46,
+      "unans_tokens": 47,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0005",
+      "ans_tokens": 51,
+      "unans_tokens": 53,
+      "delta_tokens": -2
+    },
+    {
+      "pair_id": "pair_0006",
+      "ans_tokens": 50,
+      "unans_tokens": 52,
+      "delta_tokens": -2
+    },
+    {
+      "pair_id": "pair_0007",
+      "ans_tokens": 54,
+      "unans_tokens": 56,
+      "delta_tokens": -2
+    },
+    {
+      "pair_id": "pair_0008",
+      "ans_tokens": 51,
+      "unans_tokens": 52,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0009",
+      "ans_tokens": 48,
+      "unans_tokens": 49,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0010",
+      "ans_tokens": 51,
+      "unans_tokens": 52,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0011",
+      "ans_tokens": 50,
+      "unans_tokens": 52,
+      "delta_tokens": -2
+    },
+    {
+      "pair_id": "pair_0012",
+      "ans_tokens": 50,
+      "unans_tokens": 51,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0013",
+      "ans_tokens": 60,
+      "unans_tokens": 59,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0014",
+      "ans_tokens": 55,
+      "unans_tokens": 54,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0015",
+      "ans_tokens": 54,
+      "unans_tokens": 54,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0016",
+      "ans_tokens": 57,
+      "unans_tokens": 57,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0017",
+      "ans_tokens": 48,
+      "unans_tokens": 48,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0018",
+      "ans_tokens": 56,
+      "unans_tokens": 55,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0019",
+      "ans_tokens": 51,
+      "unans_tokens": 50,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0020",
+      "ans_tokens": 49,
+      "unans_tokens": 49,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0021",
+      "ans_tokens": 56,
+      "unans_tokens": 58,
+      "delta_tokens": -2
+    },
+    {
+      "pair_id": "pair_0022",
+      "ans_tokens": 58,
+      "unans_tokens": 59,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0023",
+      "ans_tokens": 57,
+      "unans_tokens": 59,
+      "delta_tokens": -2
+    },
+    {
+      "pair_id": "pair_0024",
+      "ans_tokens": 57,
+      "unans_tokens": 58,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0025",
+      "ans_tokens": 50,
+      "unans_tokens": 51,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0026",
+      "ans_tokens": 51,
+      "unans_tokens": 51,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0027",
+      "ans_tokens": 54,
+      "unans_tokens": 55,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0028",
+      "ans_tokens": 48,
+      "unans_tokens": 49,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0029",
+      "ans_tokens": 63,
+      "unans_tokens": 62,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0030",
+      "ans_tokens": 59,
+      "unans_tokens": 59,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0031",
+      "ans_tokens": 57,
+      "unans_tokens": 57,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0032",
+      "ans_tokens": 53,
+      "unans_tokens": 53,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0033",
+      "ans_tokens": 56,
+      "unans_tokens": 55,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0034",
+      "ans_tokens": 55,
+      "unans_tokens": 54,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0035",
+      "ans_tokens": 53,
+      "unans_tokens": 52,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0036",
+      "ans_tokens": 54,
+      "unans_tokens": 53,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0037",
+      "ans_tokens": 52,
+      "unans_tokens": 54,
+      "delta_tokens": -2
+    },
+    {
+      "pair_id": "pair_0038",
+      "ans_tokens": 54,
+      "unans_tokens": 55,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0039",
+      "ans_tokens": 48,
+      "unans_tokens": 49,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0040",
+      "ans_tokens": 48,
+      "unans_tokens": 50,
+      "delta_tokens": -2
+    },
+    {
+      "pair_id": "pair_0041",
+      "ans_tokens": 55,
+      "unans_tokens": 57,
+      "delta_tokens": -2
+    },
+    {
+      "pair_id": "pair_0042",
+      "ans_tokens": 55,
+      "unans_tokens": 56,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0043",
+      "ans_tokens": 54,
+      "unans_tokens": 54,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0044",
+      "ans_tokens": 54,
+      "unans_tokens": 54,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0045",
+      "ans_tokens": 57,
+      "unans_tokens": 56,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0046",
+      "ans_tokens": 59,
+      "unans_tokens": 58,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0047",
+      "ans_tokens": 59,
+      "unans_tokens": 59,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0048",
+      "ans_tokens": 60,
+      "unans_tokens": 59,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0049",
+      "ans_tokens": 60,
+      "unans_tokens": 59,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0050",
+      "ans_tokens": 59,
+      "unans_tokens": 58,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0051",
+      "ans_tokens": 52,
+      "unans_tokens": 51,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0052",
+      "ans_tokens": 59,
+      "unans_tokens": 59,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0053",
+      "ans_tokens": 55,
+      "unans_tokens": 56,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0054",
+      "ans_tokens": 57,
+      "unans_tokens": 56,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0055",
+      "ans_tokens": 54,
+      "unans_tokens": 55,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0056",
+      "ans_tokens": 57,
+      "unans_tokens": 58,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0057",
+      "ans_tokens": 55,
+      "unans_tokens": 53,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0058",
+      "ans_tokens": 57,
+      "unans_tokens": 55,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0059",
+      "ans_tokens": 59,
+      "unans_tokens": 58,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0060",
+      "ans_tokens": 56,
+      "unans_tokens": 54,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0061",
+      "ans_tokens": 60,
+      "unans_tokens": 60,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0062",
+      "ans_tokens": 56,
+      "unans_tokens": 56,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0063",
+      "ans_tokens": 58,
+      "unans_tokens": 58,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0064",
+      "ans_tokens": 59,
+      "unans_tokens": 58,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0065",
+      "ans_tokens": 59,
+      "unans_tokens": 58,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0066",
+      "ans_tokens": 54,
+      "unans_tokens": 55,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0067",
+      "ans_tokens": 54,
+      "unans_tokens": 55,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0068",
+      "ans_tokens": 54,
+      "unans_tokens": 54,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0069",
+      "ans_tokens": 59,
+      "unans_tokens": 58,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0070",
+      "ans_tokens": 56,
+      "unans_tokens": 54,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0071",
+      "ans_tokens": 55,
+      "unans_tokens": 54,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0072",
+      "ans_tokens": 56,
+      "unans_tokens": 54,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0073",
+      "ans_tokens": 53,
+      "unans_tokens": 53,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0074",
+      "ans_tokens": 51,
+      "unans_tokens": 52,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0075",
+      "ans_tokens": 52,
+      "unans_tokens": 53,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0076",
+      "ans_tokens": 59,
+      "unans_tokens": 59,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0077",
+      "ans_tokens": 50,
+      "unans_tokens": 50,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0078",
+      "ans_tokens": 54,
+      "unans_tokens": 54,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0079",
+      "ans_tokens": 52,
+      "unans_tokens": 52,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0080",
+      "ans_tokens": 48,
+      "unans_tokens": 47,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0081",
+      "ans_tokens": 58,
+      "unans_tokens": 58,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0082",
+      "ans_tokens": 59,
+      "unans_tokens": 58,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0083",
+      "ans_tokens": 56,
+      "unans_tokens": 55,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0084",
+      "ans_tokens": 56,
+      "unans_tokens": 56,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0085",
+      "ans_tokens": 58,
+      "unans_tokens": 57,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0086",
+      "ans_tokens": 58,
+      "unans_tokens": 56,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0087",
+      "ans_tokens": 54,
+      "unans_tokens": 53,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0088",
+      "ans_tokens": 58,
+      "unans_tokens": 56,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0089",
+      "ans_tokens": 54,
+      "unans_tokens": 55,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0090",
+      "ans_tokens": 61,
+      "unans_tokens": 60,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0091",
+      "ans_tokens": 57,
+      "unans_tokens": 57,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0092",
+      "ans_tokens": 54,
+      "unans_tokens": 55,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0093",
+      "ans_tokens": 63,
+      "unans_tokens": 63,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0094",
+      "ans_tokens": 55,
+      "unans_tokens": 56,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0095",
+      "ans_tokens": 55,
+      "unans_tokens": 55,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0096",
+      "ans_tokens": 56,
+      "unans_tokens": 56,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0097",
+      "ans_tokens": 59,
+      "unans_tokens": 58,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0098",
+      "ans_tokens": 55,
+      "unans_tokens": 54,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0099",
+      "ans_tokens": 58,
+      "unans_tokens": 58,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0100",
+      "ans_tokens": 61,
+      "unans_tokens": 59,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0101",
+      "ans_tokens": 57,
+      "unans_tokens": 57,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0102",
+      "ans_tokens": 58,
+      "unans_tokens": 58,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0103",
+      "ans_tokens": 60,
+      "unans_tokens": 58,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0104",
+      "ans_tokens": 61,
+      "unans_tokens": 61,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0105",
+      "ans_tokens": 54,
+      "unans_tokens": 54,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0106",
+      "ans_tokens": 50,
+      "unans_tokens": 49,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0107",
+      "ans_tokens": 53,
+      "unans_tokens": 53,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0108",
+      "ans_tokens": 56,
+      "unans_tokens": 57,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0109",
+      "ans_tokens": 59,
+      "unans_tokens": 60,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0110",
+      "ans_tokens": 60,
+      "unans_tokens": 60,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0111",
+      "ans_tokens": 56,
+      "unans_tokens": 56,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0112",
+      "ans_tokens": 58,
+      "unans_tokens": 59,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0113",
+      "ans_tokens": 57,
+      "unans_tokens": 56,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0114",
+      "ans_tokens": 52,
+      "unans_tokens": 51,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0115",
+      "ans_tokens": 52,
+      "unans_tokens": 51,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0116",
+      "ans_tokens": 54,
+      "unans_tokens": 53,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0117",
+      "ans_tokens": 55,
+      "unans_tokens": 56,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0118",
+      "ans_tokens": 61,
+      "unans_tokens": 62,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0119",
+      "ans_tokens": 57,
+      "unans_tokens": 57,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0120",
+      "ans_tokens": 57,
+      "unans_tokens": 58,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0121",
+      "ans_tokens": 56,
+      "unans_tokens": 56,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0122",
+      "ans_tokens": 56,
+      "unans_tokens": 57,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0123",
+      "ans_tokens": 55,
+      "unans_tokens": 55,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0124",
+      "ans_tokens": 61,
+      "unans_tokens": 60,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0125",
+      "ans_tokens": 54,
+      "unans_tokens": 56,
+      "delta_tokens": -2
+    },
+    {
+      "pair_id": "pair_0126",
+      "ans_tokens": 52,
+      "unans_tokens": 54,
+      "delta_tokens": -2
+    },
+    {
+      "pair_id": "pair_0127",
+      "ans_tokens": 58,
+      "unans_tokens": 60,
+      "delta_tokens": -2
+    },
+    {
+      "pair_id": "pair_0128",
+      "ans_tokens": 54,
+      "unans_tokens": 55,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0129",
+      "ans_tokens": 56,
+      "unans_tokens": 55,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0130",
+      "ans_tokens": 55,
+      "unans_tokens": 55,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0131",
+      "ans_tokens": 57,
+      "unans_tokens": 56,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0132",
+      "ans_tokens": 58,
+      "unans_tokens": 56,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0133",
+      "ans_tokens": 59,
+      "unans_tokens": 57,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0134",
+      "ans_tokens": 57,
+      "unans_tokens": 56,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0135",
+      "ans_tokens": 62,
+      "unans_tokens": 61,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0136",
+      "ans_tokens": 62,
+      "unans_tokens": 61,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0137",
+      "ans_tokens": 55,
+      "unans_tokens": 57,
+      "delta_tokens": -2
+    },
+    {
+      "pair_id": "pair_0138",
+      "ans_tokens": 56,
+      "unans_tokens": 57,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0139",
+      "ans_tokens": 53,
+      "unans_tokens": 55,
+      "delta_tokens": -2
+    },
+    {
+      "pair_id": "pair_0140",
+      "ans_tokens": 56,
+      "unans_tokens": 57,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0141",
+      "ans_tokens": 56,
+      "unans_tokens": 57,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0142",
+      "ans_tokens": 56,
+      "unans_tokens": 56,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0143",
+      "ans_tokens": 57,
+      "unans_tokens": 57,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0144",
+      "ans_tokens": 57,
+      "unans_tokens": 57,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0145",
+      "ans_tokens": 53,
+      "unans_tokens": 54,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0146",
+      "ans_tokens": 56,
+      "unans_tokens": 56,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0147",
+      "ans_tokens": 54,
+      "unans_tokens": 55,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0148",
+      "ans_tokens": 55,
+      "unans_tokens": 55,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0149",
+      "ans_tokens": 64,
+      "unans_tokens": 63,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0150",
+      "ans_tokens": 61,
+      "unans_tokens": 59,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0151",
+      "ans_tokens": 62,
+      "unans_tokens": 62,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0152",
+      "ans_tokens": 62,
+      "unans_tokens": 60,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0153",
+      "ans_tokens": 56,
+      "unans_tokens": 58,
+      "delta_tokens": -2
+    },
+    {
+      "pair_id": "pair_0154",
+      "ans_tokens": 54,
+      "unans_tokens": 56,
+      "delta_tokens": -2
+    },
+    {
+      "pair_id": "pair_0155",
+      "ans_tokens": 57,
+      "unans_tokens": 57,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0156",
+      "ans_tokens": 58,
+      "unans_tokens": 57,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0157",
+      "ans_tokens": 61,
+      "unans_tokens": 59,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0158",
+      "ans_tokens": 63,
+      "unans_tokens": 62,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0159",
+      "ans_tokens": 62,
+      "unans_tokens": 61,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0160",
+      "ans_tokens": 61,
+      "unans_tokens": 59,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0161",
+      "ans_tokens": 54,
+      "unans_tokens": 53,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0162",
+      "ans_tokens": 55,
+      "unans_tokens": 53,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0163",
+      "ans_tokens": 54,
+      "unans_tokens": 54,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0164",
+      "ans_tokens": 51,
+      "unans_tokens": 49,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0165",
+      "ans_tokens": 56,
+      "unans_tokens": 54,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0166",
+      "ans_tokens": 56,
+      "unans_tokens": 55,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0167",
+      "ans_tokens": 57,
+      "unans_tokens": 57,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0168",
+      "ans_tokens": 58,
+      "unans_tokens": 58,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0169",
+      "ans_tokens": 53,
+      "unans_tokens": 54,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0170",
+      "ans_tokens": 58,
+      "unans_tokens": 57,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0171",
+      "ans_tokens": 57,
+      "unans_tokens": 56,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0172",
+      "ans_tokens": 58,
+      "unans_tokens": 56,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0173",
+      "ans_tokens": 66,
+      "unans_tokens": 64,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0174",
+      "ans_tokens": 60,
+      "unans_tokens": 60,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0175",
+      "ans_tokens": 59,
+      "unans_tokens": 57,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0176",
+      "ans_tokens": 63,
+      "unans_tokens": 63,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0177",
+      "ans_tokens": 55,
+      "unans_tokens": 54,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0178",
+      "ans_tokens": 52,
+      "unans_tokens": 53,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0179",
+      "ans_tokens": 56,
+      "unans_tokens": 56,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0180",
+      "ans_tokens": 55,
+      "unans_tokens": 55,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0181",
+      "ans_tokens": 61,
+      "unans_tokens": 60,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0182",
+      "ans_tokens": 59,
+      "unans_tokens": 59,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0183",
+      "ans_tokens": 58,
+      "unans_tokens": 57,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0184",
+      "ans_tokens": 59,
+      "unans_tokens": 58,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0185",
+      "ans_tokens": 57,
+      "unans_tokens": 57,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0186",
+      "ans_tokens": 58,
+      "unans_tokens": 59,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0187",
+      "ans_tokens": 52,
+      "unans_tokens": 53,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0188",
+      "ans_tokens": 52,
+      "unans_tokens": 53,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0189",
+      "ans_tokens": 64,
+      "unans_tokens": 62,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0190",
+      "ans_tokens": 66,
+      "unans_tokens": 64,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0191",
+      "ans_tokens": 64,
+      "unans_tokens": 62,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0192",
+      "ans_tokens": 68,
+      "unans_tokens": 67,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0193",
+      "ans_tokens": 40,
+      "unans_tokens": 41,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0194",
+      "ans_tokens": 43,
+      "unans_tokens": 44,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0195",
+      "ans_tokens": 45,
+      "unans_tokens": 46,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0196",
+      "ans_tokens": 38,
+      "unans_tokens": 39,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0197",
+      "ans_tokens": 41,
+      "unans_tokens": 42,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0198",
+      "ans_tokens": 41,
+      "unans_tokens": 42,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0199",
+      "ans_tokens": 41,
+      "unans_tokens": 42,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0200",
+      "ans_tokens": 41,
+      "unans_tokens": 42,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0201",
+      "ans_tokens": 37,
+      "unans_tokens": 37,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0202",
+      "ans_tokens": 39,
+      "unans_tokens": 39,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0203",
+      "ans_tokens": 37,
+      "unans_tokens": 37,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0204",
+      "ans_tokens": 37,
+      "unans_tokens": 37,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0205",
+      "ans_tokens": 43,
+      "unans_tokens": 41,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0206",
+      "ans_tokens": 42,
+      "unans_tokens": 40,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0207",
+      "ans_tokens": 46,
+      "unans_tokens": 44,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0208",
+      "ans_tokens": 41,
+      "unans_tokens": 39,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0209",
+      "ans_tokens": 43,
+      "unans_tokens": 42,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0210",
+      "ans_tokens": 42,
+      "unans_tokens": 41,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0211",
+      "ans_tokens": 40,
+      "unans_tokens": 39,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0212",
+      "ans_tokens": 40,
+      "unans_tokens": 39,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0213",
+      "ans_tokens": 40,
+      "unans_tokens": 41,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0214",
+      "ans_tokens": 41,
+      "unans_tokens": 42,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0215",
+      "ans_tokens": 37,
+      "unans_tokens": 38,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0216",
+      "ans_tokens": 39,
+      "unans_tokens": 40,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0217",
+      "ans_tokens": 39,
+      "unans_tokens": 41,
+      "delta_tokens": -2
+    },
+    {
+      "pair_id": "pair_0218",
+      "ans_tokens": 37,
+      "unans_tokens": 39,
+      "delta_tokens": -2
+    },
+    {
+      "pair_id": "pair_0219",
+      "ans_tokens": 39,
+      "unans_tokens": 41,
+      "delta_tokens": -2
+    },
+    {
+      "pair_id": "pair_0220",
+      "ans_tokens": 39,
+      "unans_tokens": 41,
+      "delta_tokens": -2
+    },
+    {
+      "pair_id": "pair_0221",
+      "ans_tokens": 41,
+      "unans_tokens": 39,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0222",
+      "ans_tokens": 41,
+      "unans_tokens": 39,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0223",
+      "ans_tokens": 39,
+      "unans_tokens": 37,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0224",
+      "ans_tokens": 41,
+      "unans_tokens": 39,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0225",
+      "ans_tokens": 44,
+      "unans_tokens": 42,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0226",
+      "ans_tokens": 38,
+      "unans_tokens": 36,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0227",
+      "ans_tokens": 39,
+      "unans_tokens": 37,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0228",
+      "ans_tokens": 37,
+      "unans_tokens": 35,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0229",
+      "ans_tokens": 43,
+      "unans_tokens": 41,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0230",
+      "ans_tokens": 43,
+      "unans_tokens": 41,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0231",
+      "ans_tokens": 41,
+      "unans_tokens": 39,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0232",
+      "ans_tokens": 46,
+      "unans_tokens": 44,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0233",
+      "ans_tokens": 40,
+      "unans_tokens": 40,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0234",
+      "ans_tokens": 39,
+      "unans_tokens": 39,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0235",
+      "ans_tokens": 40,
+      "unans_tokens": 40,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0236",
+      "ans_tokens": 40,
+      "unans_tokens": 40,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0237",
+      "ans_tokens": 43,
+      "unans_tokens": 43,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0238",
+      "ans_tokens": 41,
+      "unans_tokens": 41,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0239",
+      "ans_tokens": 41,
+      "unans_tokens": 41,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0240",
+      "ans_tokens": 43,
+      "unans_tokens": 43,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0241",
+      "ans_tokens": 40,
+      "unans_tokens": 39,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0242",
+      "ans_tokens": 37,
+      "unans_tokens": 36,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0243",
+      "ans_tokens": 39,
+      "unans_tokens": 38,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0244",
+      "ans_tokens": 39,
+      "unans_tokens": 38,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0245",
+      "ans_tokens": 44,
+      "unans_tokens": 43,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0246",
+      "ans_tokens": 44,
+      "unans_tokens": 43,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0247",
+      "ans_tokens": 46,
+      "unans_tokens": 45,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0248",
+      "ans_tokens": 46,
+      "unans_tokens": 45,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0249",
+      "ans_tokens": 40,
+      "unans_tokens": 38,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0250",
+      "ans_tokens": 42,
+      "unans_tokens": 40,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0251",
+      "ans_tokens": 42,
+      "unans_tokens": 40,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0252",
+      "ans_tokens": 42,
+      "unans_tokens": 40,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0253",
+      "ans_tokens": 45,
+      "unans_tokens": 45,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0254",
+      "ans_tokens": 44,
+      "unans_tokens": 44,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0255",
+      "ans_tokens": 41,
+      "unans_tokens": 41,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0256",
+      "ans_tokens": 42,
+      "unans_tokens": 42,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0257",
+      "ans_tokens": 40,
+      "unans_tokens": 38,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0258",
+      "ans_tokens": 37,
+      "unans_tokens": 35,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0259",
+      "ans_tokens": 38,
+      "unans_tokens": 36,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0260",
+      "ans_tokens": 40,
+      "unans_tokens": 38,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0261",
+      "ans_tokens": 49,
+      "unans_tokens": 48,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0262",
+      "ans_tokens": 47,
+      "unans_tokens": 46,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0263",
+      "ans_tokens": 45,
+      "unans_tokens": 44,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0264",
+      "ans_tokens": 44,
+      "unans_tokens": 43,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0265",
+      "ans_tokens": 45,
+      "unans_tokens": 44,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0266",
+      "ans_tokens": 43,
+      "unans_tokens": 42,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0267",
+      "ans_tokens": 45,
+      "unans_tokens": 44,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0268",
+      "ans_tokens": 44,
+      "unans_tokens": 43,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0269",
+      "ans_tokens": 42,
+      "unans_tokens": 41,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0270",
+      "ans_tokens": 43,
+      "unans_tokens": 42,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0271",
+      "ans_tokens": 40,
+      "unans_tokens": 39,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0272",
+      "ans_tokens": 42,
+      "unans_tokens": 41,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0273",
+      "ans_tokens": 41,
+      "unans_tokens": 41,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0274",
+      "ans_tokens": 37,
+      "unans_tokens": 37,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0275",
+      "ans_tokens": 39,
+      "unans_tokens": 39,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0276",
+      "ans_tokens": 39,
+      "unans_tokens": 39,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0277",
+      "ans_tokens": 47,
+      "unans_tokens": 48,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0278",
+      "ans_tokens": 48,
+      "unans_tokens": 49,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0279",
+      "ans_tokens": 53,
+      "unans_tokens": 54,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0280",
+      "ans_tokens": 48,
+      "unans_tokens": 49,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0281",
+      "ans_tokens": 43,
+      "unans_tokens": 43,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0282",
+      "ans_tokens": 45,
+      "unans_tokens": 45,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0283",
+      "ans_tokens": 47,
+      "unans_tokens": 47,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0284",
+      "ans_tokens": 43,
+      "unans_tokens": 43,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0285",
+      "ans_tokens": 46,
+      "unans_tokens": 45,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0286",
+      "ans_tokens": 51,
+      "unans_tokens": 50,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0287",
+      "ans_tokens": 49,
+      "unans_tokens": 48,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0288",
+      "ans_tokens": 45,
+      "unans_tokens": 44,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0289",
+      "ans_tokens": 44,
+      "unans_tokens": 42,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0290",
+      "ans_tokens": 45,
+      "unans_tokens": 43,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0291",
+      "ans_tokens": 45,
+      "unans_tokens": 43,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0292",
+      "ans_tokens": 45,
+      "unans_tokens": 43,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0293",
+      "ans_tokens": 49,
+      "unans_tokens": 48,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0294",
+      "ans_tokens": 43,
+      "unans_tokens": 42,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0295",
+      "ans_tokens": 44,
+      "unans_tokens": 43,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0296",
+      "ans_tokens": 43,
+      "unans_tokens": 42,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0297",
+      "ans_tokens": 43,
+      "unans_tokens": 41,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0298",
+      "ans_tokens": 43,
+      "unans_tokens": 41,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0299",
+      "ans_tokens": 41,
+      "unans_tokens": 39,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0300",
+      "ans_tokens": 41,
+      "unans_tokens": 39,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0301",
+      "ans_tokens": 39,
+      "unans_tokens": 38,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0302",
+      "ans_tokens": 39,
+      "unans_tokens": 38,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0303",
+      "ans_tokens": 38,
+      "unans_tokens": 37,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0304",
+      "ans_tokens": 38,
+      "unans_tokens": 37,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0305",
+      "ans_tokens": 47,
+      "unans_tokens": 46,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0306",
+      "ans_tokens": 44,
+      "unans_tokens": 43,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0307",
+      "ans_tokens": 47,
+      "unans_tokens": 46,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0308",
+      "ans_tokens": 47,
+      "unans_tokens": 46,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0309",
+      "ans_tokens": 45,
+      "unans_tokens": 46,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0310",
+      "ans_tokens": 44,
+      "unans_tokens": 45,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0311",
+      "ans_tokens": 42,
+      "unans_tokens": 43,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0312",
+      "ans_tokens": 41,
+      "unans_tokens": 42,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0313",
+      "ans_tokens": 45,
+      "unans_tokens": 44,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0314",
+      "ans_tokens": 48,
+      "unans_tokens": 47,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0315",
+      "ans_tokens": 46,
+      "unans_tokens": 45,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0316",
+      "ans_tokens": 44,
+      "unans_tokens": 43,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0317",
+      "ans_tokens": 39,
+      "unans_tokens": 39,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0318",
+      "ans_tokens": 39,
+      "unans_tokens": 39,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0319",
+      "ans_tokens": 38,
+      "unans_tokens": 38,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0320",
+      "ans_tokens": 40,
+      "unans_tokens": 40,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0321",
+      "ans_tokens": 45,
+      "unans_tokens": 43,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0322",
+      "ans_tokens": 47,
+      "unans_tokens": 45,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0323",
+      "ans_tokens": 44,
+      "unans_tokens": 42,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0324",
+      "ans_tokens": 45,
+      "unans_tokens": 43,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0325",
+      "ans_tokens": 44,
+      "unans_tokens": 44,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0326",
+      "ans_tokens": 45,
+      "unans_tokens": 45,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0327",
+      "ans_tokens": 44,
+      "unans_tokens": 44,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0328",
+      "ans_tokens": 48,
+      "unans_tokens": 48,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0329",
+      "ans_tokens": 45,
+      "unans_tokens": 45,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0330",
+      "ans_tokens": 44,
+      "unans_tokens": 44,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0331",
+      "ans_tokens": 52,
+      "unans_tokens": 52,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0332",
+      "ans_tokens": 45,
+      "unans_tokens": 45,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0333",
+      "ans_tokens": 40,
+      "unans_tokens": 39,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0334",
+      "ans_tokens": 44,
+      "unans_tokens": 43,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0335",
+      "ans_tokens": 42,
+      "unans_tokens": 41,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0336",
+      "ans_tokens": 41,
+      "unans_tokens": 40,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0337",
+      "ans_tokens": 39,
+      "unans_tokens": 39,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0338",
+      "ans_tokens": 43,
+      "unans_tokens": 43,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0339",
+      "ans_tokens": 38,
+      "unans_tokens": 38,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0340",
+      "ans_tokens": 40,
+      "unans_tokens": 40,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0341",
+      "ans_tokens": 51,
+      "unans_tokens": 49,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0342",
+      "ans_tokens": 48,
+      "unans_tokens": 46,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0343",
+      "ans_tokens": 47,
+      "unans_tokens": 45,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0344",
+      "ans_tokens": 51,
+      "unans_tokens": 49,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0345",
+      "ans_tokens": 40,
+      "unans_tokens": 40,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0346",
+      "ans_tokens": 40,
+      "unans_tokens": 40,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0347",
+      "ans_tokens": 41,
+      "unans_tokens": 41,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0348",
+      "ans_tokens": 44,
+      "unans_tokens": 44,
+      "delta_tokens": 0
+    },
+    {
+      "pair_id": "pair_0349",
+      "ans_tokens": 40,
+      "unans_tokens": 38,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0350",
+      "ans_tokens": 41,
+      "unans_tokens": 39,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0351",
+      "ans_tokens": 40,
+      "unans_tokens": 38,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0352",
+      "ans_tokens": 40,
+      "unans_tokens": 38,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0353",
+      "ans_tokens": 44,
+      "unans_tokens": 43,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0354",
+      "ans_tokens": 47,
+      "unans_tokens": 46,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0355",
+      "ans_tokens": 48,
+      "unans_tokens": 47,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0356",
+      "ans_tokens": 44,
+      "unans_tokens": 43,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0357",
+      "ans_tokens": 40,
+      "unans_tokens": 39,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0358",
+      "ans_tokens": 40,
+      "unans_tokens": 39,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0359",
+      "ans_tokens": 41,
+      "unans_tokens": 40,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0360",
+      "ans_tokens": 44,
+      "unans_tokens": 43,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0361",
+      "ans_tokens": 43,
+      "unans_tokens": 44,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0362",
+      "ans_tokens": 48,
+      "unans_tokens": 49,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0363",
+      "ans_tokens": 47,
+      "unans_tokens": 48,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0364",
+      "ans_tokens": 46,
+      "unans_tokens": 47,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0365",
+      "ans_tokens": 40,
+      "unans_tokens": 38,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0366",
+      "ans_tokens": 40,
+      "unans_tokens": 38,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0367",
+      "ans_tokens": 48,
+      "unans_tokens": 46,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0368",
+      "ans_tokens": 42,
+      "unans_tokens": 40,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0369",
+      "ans_tokens": 42,
+      "unans_tokens": 40,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0370",
+      "ans_tokens": 45,
+      "unans_tokens": 43,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0371",
+      "ans_tokens": 45,
+      "unans_tokens": 43,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0372",
+      "ans_tokens": 44,
+      "unans_tokens": 42,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0373",
+      "ans_tokens": 39,
+      "unans_tokens": 40,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0374",
+      "ans_tokens": 45,
+      "unans_tokens": 46,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0375",
+      "ans_tokens": 40,
+      "unans_tokens": 41,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0376",
+      "ans_tokens": 40,
+      "unans_tokens": 41,
+      "delta_tokens": -1
+    },
+    {
+      "pair_id": "pair_0377",
+      "ans_tokens": 40,
+      "unans_tokens": 39,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0378",
+      "ans_tokens": 41,
+      "unans_tokens": 40,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0379",
+      "ans_tokens": 44,
+      "unans_tokens": 43,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0380",
+      "ans_tokens": 44,
+      "unans_tokens": 43,
+      "delta_tokens": 1
+    },
+    {
+      "pair_id": "pair_0381",
+      "ans_tokens": 47,
+      "unans_tokens": 45,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0382",
+      "ans_tokens": 44,
+      "unans_tokens": 42,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0383",
+      "ans_tokens": 46,
+      "unans_tokens": 44,
+      "delta_tokens": 2
+    },
+    {
+      "pair_id": "pair_0384",
+      "ans_tokens": 46,
+      "unans_tokens": 44,
+      "delta_tokens": 2
+    }
+  ],
+  "b_ctrl_prompt_count": 48,
+  "b_ctrl_token_length_min": 43,
+  "b_ctrl_token_length_median": 50.0,
+  "b_ctrl_token_length_max": 63,
+  "b_ctrl_token_length_distribution": {
+    "43": 1,
+    "44": 2,
+    "45": 3,
+    "46": 3,
+    "47": 5,
+    "48": 3,
+    "49": 5,
+    "50": 3,
+    "51": 6,
+    "52": 3,
+    "53": 3,
+    "54": 3,
+    "56": 1,
+    "57": 3,
+    "58": 2,
+    "60": 1,
+    "63": 1
+  }
+}
