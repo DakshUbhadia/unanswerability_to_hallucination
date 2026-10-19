@@ -133,15 +133,22 @@ def main(argv=None) -> int:
         llm, inputs, int(contract["n_layers"]), int(contract["k_suffix"]),
         bool(contract["is_layer_output_tuple"]))[0]
 
+    parity = diagnose(cache["train_pair_acts_ans"][0], single, int(contract["k_suffix"]), args.top_n)
+    parity_passed = (
+        parity["allclose_passed"]
+        and parity["min_cosine"] >= CFG.stage3_min_batch_single_cosine
+        and parity["max_relative_l2"] <= CFG.stage3_max_batch_single_rel_l2
+        and parity["max_absolute_difference"] <= CFG.stage3_max_batch_single_abs_fp16
+    )
     report = {
         "stage": 3,
         "diagnostic_only": True,
-        "decision": "review_required",
+        "decision": "parity_passed" if parity_passed else "review_required",
         "model_name": contract["model_name"],
         "runtime_dtype": dtype_name.replace("torch.", ""),
         "pair_id": pairs[0]["pair_id"],
         "cache_sha256": json.loads(args.manifest_path.read_text(encoding="utf-8"))["cache_sha256"],
-        **diagnose(cache["train_pair_acts_ans"][0], single, int(contract["k_suffix"]), args.top_n),
+        **parity,
     }
     args.output_path.parent.mkdir(parents=True, exist_ok=True)
     args.output_path.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
