@@ -31,6 +31,14 @@ def push_git_artifacts(stage_label: str) -> None:
                 target = Path("/kaggle/working") / Path(artifact).name
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(source, target)
+    if stage_label in ("3", "stage3"):
+        manifest = CONFIG.results_dir / "stage3_manifest.json"
+        if manifest.exists():
+            paths.append(str(manifest.relative_to(CONFIG.root_dir)))
+            import shutil
+            target = Path("/kaggle/working") / manifest.name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(manifest, target)
     if paths:
         run_cmd(["git", "add", "-f", "--", *paths])
     status = subprocess.run(
@@ -70,6 +78,10 @@ def sync_pt_tensors_hf(action: str, hf_repo_id: str) -> None:
                     repo_id=hf_repo_id,
                     repo_type="dataset",
                 )
+        manifest = CONFIG.results_dir / "stage3_manifest.json"
+        if manifest.exists():
+            api.upload_file(path_or_fileobj=str(manifest), path_in_repo="results/stage3_manifest.json",
+                            repo_id=hf_repo_id, repo_type="dataset")
     elif action == "pull":
         repo_files = set(api.list_repo_files(repo_id=hf_repo_id, repo_type="dataset"))
         for fname in pt_files:
@@ -84,14 +96,35 @@ def sync_pt_tensors_hf(action: str, hf_repo_id: str) -> None:
                 )
 
 
+def ensure_stage3_cache_present(repo_dir: Path, hf_repo_id: str) -> Path:
+    """Download the Stage 3 cache from the configured private HF dataset when absent."""
+    target = Path(repo_dir) / "results" / "stage3_caches.pt"
+    if target.exists():
+        return target
+    token = os.environ.get("HF_TOKEN")
+    if not token:
+        raise RuntimeError("HF_TOKEN is required to restore the Stage 3 cache")
+    if not hf_repo_id:
+        raise RuntimeError("HF_TENSOR_REPO_ID is required to restore the Stage 3 cache")
+    api = HfApi(token=token)
+    api.hf_hub_download(repo_id=hf_repo_id, filename="results/stage3_caches.pt",
+                        repo_type="dataset", local_dir=str(repo_dir))
+    if not target.exists():
+        raise FileNotFoundError(f"HF download did not create {target}")
+    return target
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Sync Kaggle outputs with GitHub and HF Hub")
     parser.add_argument("--action", choices=["pull", "push"], required=True)
     parser.add_argument("--stage", type=str, default="stage0")
     parser.add_argument("--hf-repo", type=str, default=os.environ.get("HF_TENSOR_REPO_ID", ""))
+    parser.add_argument("--pull-cache", type=str, choices=["3"], default="")
     args = parser.parse_args()
 
-    if args.action == "pull" and args.hf_repo:
+    if args.pull_cache == "3":
+        ensure_stage3_cache_present(CONFIG.root_dir, args.hf_repo)
+    elif args.action == "pull" and args.hf_repo:
         sync_pt_tensors_hf("pull", args.hf_repo)
     elif args.action == "push":
         if args.hf_repo:

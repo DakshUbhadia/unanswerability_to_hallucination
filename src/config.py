@@ -12,6 +12,8 @@ class MasterConfig:
     results_dir: Path = root_dir / "results"
     stage0_out_path: Path = results_dir / "stage0_env.json"
     stage2_out_path: Path = results_dir / "stage2_pilot.json"
+    stage3_out_path: Path = results_dir / "stage3_caches.pt"
+    stage3_manifest_path: Path = results_dir / "stage3_manifest.json"
     figures_dir: Path = root_dir / "figures"
     tables_dir: Path = root_dir / "tables"
 

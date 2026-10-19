@@ -154,6 +154,11 @@ def _read_layer_resid_envoy(layer_envoy: Any, is_tuple_output: bool) -> Any:
     return layer_envoy.output[0] if is_tuple_output else layer_envoy.output
 
 
+def read_layer_residual_proxy(layer_envoy: Any, is_tuple_output: bool) -> Any:
+    """Read a decoder layer's residual stream proxy inside an nnsight trace."""
+    return _read_layer_resid_envoy(layer_envoy, is_tuple_output)
+
+
 def _write_layer_resid_envoy(layer_envoy: Any, new_resid: Any, is_tuple_output: bool) -> None:
     if is_tuple_output:
         layer_envoy.output[0][:] = new_resid
