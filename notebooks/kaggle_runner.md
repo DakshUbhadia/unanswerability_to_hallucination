@@ -15,6 +15,12 @@ except Exception:
 subprocess.run("rm -rf /tmp/repo && git clone -q https://x-access-token:$GITHUB_TOKEN@github.com/DakshUbhadia/unanswerability_to_hallucination.git /tmp/repo && cd /tmp/repo && bash scripts/kaggle_run.sh 0 2", shell=True, check=True)
 ```
 
+Stage 3 runs activation caching after Stage 2. It can be run with `bash scripts/kaggle_run.sh 3`; the runner restores tensor artifacts from the private HF dataset before execution and syncs the Stage 3 cache and manifest after completion. To run Stage 3 directly:
+
+```bash
+python scripts/stage3_cache_activations.py
+```
+
 Stage 2 can also be run independently after Stage 0 and Stage 1 with:
 
 ```bash
