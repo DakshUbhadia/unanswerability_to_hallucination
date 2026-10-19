@@ -22,7 +22,8 @@ MANIFEST_KEYS = {
     "n_family_a_pairs", "n_family_b_pairs", "n_layers", "k_suffix", "d_model",
     "suffix_indices", "suffix_token_ids", "train_ans_shape", "train_pair_acts_shape",
     "batch_vs_single_min_cosine", "batch_vs_single_max_rel_l2_diff",
-    "batch_vs_single_max_abs_diff", "min_prompt_std_ans",
+    "batch_vs_single_max_abs_diff", "batch_vs_single_allclose_passed",
+    "batch_vs_single_allclose_mismatch_count", "min_prompt_std_ans",
     "min_prompt_std_unans", "min_diff_in_means_norm", "max_diff_in_means_norm",
     "cache_file_size_bytes", "cache_sha256", "elapsed_sec", "passed_acceptance_gate",
 }
@@ -59,6 +60,7 @@ def format_and_verify_batch_inputs(tokenizer: Any, user_prompts: List[str], syst
         inputs = inputs.to(device)
     else:
         inputs = {k: v.to(device) for k, v in inputs.items()}
+    inputs["position_ids"] = _position_ids_from_attention_mask(inputs["attention_mask"])
     k = len(expected_suffix_token_ids)
     assert k > 0 and inputs["input_ids"].shape[1] > k, "Input sequence is shorter than suffix"
     expected = torch.tensor(expected_suffix_token_ids, dtype=inputs["input_ids"].dtype)
@@ -89,12 +91,23 @@ def _single_prompt_inputs(tokenizer: Any, prompt: str, system_prompt: str, devic
         tokenize=False, add_generation_prompt=True)
     encoded = tokenizer([text], return_tensors="pt", padding=False, add_special_tokens=False)
     if hasattr(encoded, "to"):
-        return encoded.to(device)
-    return {k: v.to(device) for k, v in encoded.items()}
+        encoded = encoded.to(device)
+    else:
+        encoded = {k: v.to(device) for k, v in encoded.items()}
+    encoded["position_ids"] = _position_ids_from_attention_mask(encoded["attention_mask"])
+    return encoded
+
+
+def _position_ids_from_attention_mask(attention_mask: torch.Tensor) -> torch.Tensor:
+    """Give non-padding tokens the same positions as an unpadded prompt (Llama/RoPE)."""
+    if attention_mask.ndim != 2:
+        raise ValueError(f"Expected a 2D attention mask, got shape {tuple(attention_mask.shape)}")
+    position_ids = attention_mask.to(torch.long).cumsum(dim=-1) - 1
+    return position_ids.masked_fill(attention_mask == 0, 0)
 
 
 def _check_batch_single_parity(batched_first: torch.Tensor, single_first: torch.Tensor,
-                               runtime_dtype_str: str) -> Tuple[float, float, float]:
+                               runtime_dtype_str: str) -> Tuple[float, float, float, int]:
     min_cos = float(F.cosine_similarity(batched_first, single_first, dim=-1).min().item())
     diff_norm = torch.norm(batched_first - single_first, p=2, dim=-1)
     ref_norm = torch.norm(single_first, p=2, dim=-1).clamp(min=CFG.eps_norm)
@@ -102,13 +115,19 @@ def _check_batch_single_parity(batched_first: torch.Tensor, single_first: torch.
     max_diff = float(torch.max(torch.abs(batched_first - single_first)).item())
     max_abs_limit = (CFG.stage3_max_batch_single_abs_fp16 if runtime_dtype_str == "float16"
                      else CFG.stage3_max_batch_single_abs_fp32)
+    allclose_mismatch_count = int((~torch.isclose(
+        batched_first, single_first, rtol=CFG.stage3_allclose_rtol,
+        atol=CFG.stage3_allclose_atol)).sum().item())
     assert min_cos >= CFG.stage3_min_batch_single_cosine, (
         f"Batch/single min cosine {min_cos:.6f} < {CFG.stage3_min_batch_single_cosine}")
     assert max_rel_l2 <= CFG.stage3_max_batch_single_rel_l2, (
         f"Batch/single max rel L2 diff {max_rel_l2:.6g} > {CFG.stage3_max_batch_single_rel_l2}")
-    # Relative L2, cosine, and dtype-specific absolute checks gate parity.
+    assert allclose_mismatch_count == 0, (
+        f"Batch/single has {allclose_mismatch_count} coordinates outside "
+        f"allclose(rtol={CFG.stage3_allclose_rtol}, atol={CFG.stage3_allclose_atol}); "
+        f"max_abs_diff={max_diff:.6g}, max_rel_l2={max_rel_l2:.6g}")
     assert max_diff <= max_abs_limit, f"Batch/single max abs diff {max_diff:.6g} > {max_abs_limit}"
-    return min_cos, max_rel_l2, max_diff
+    return min_cos, max_rel_l2, max_diff, allclose_mismatch_count
 
 
 def run_training_activation_caching(llm: Any, contract: Dict[str, Any], train_pairs: List[Dict[str, Any]],
@@ -145,7 +164,7 @@ def run_training_activation_caching(llm: Any, contract: Dict[str, Any], train_pa
                 torch.cuda.empty_cache()
 
     runtime_dtype_str = str(contract.get("dtype", "torch.float16")).replace("torch.", "")
-    min_cos, max_rel_l2, max_diff = _check_batch_single_parity(
+    min_cos, max_rel_l2, max_diff, allclose_mismatch_count = _check_batch_single_parity(
         ans_acts[0], single_ref[0], runtime_dtype_str)
     train_ans = ans_acts.to(torch.float64).mean(dim=0).to(torch.float32)
     train_unans = unans_acts.to(torch.float64).mean(dim=0).to(torch.float32)
@@ -173,6 +192,8 @@ def run_training_activation_caching(llm: Any, contract: Dict[str, Any], train_pa
         "batch_vs_single_min_cosine": min_cos,
         "batch_vs_single_max_rel_l2_diff": max_rel_l2,
         "batch_vs_single_max_abs_diff": max_diff,
+        "batch_vs_single_allclose_passed": allclose_mismatch_count == 0,
+        "batch_vs_single_allclose_mismatch_count": allclose_mismatch_count,
         "min_prompt_std_ans": std_ans, "min_prompt_std_unans": std_unans,
         "min_diff_in_means_norm": float(diff_norms.min().item()),
         "max_diff_in_means_norm": float(diff_norms.max().item()),
@@ -244,6 +265,8 @@ def verify_stage3_outputs(cache_path: Path = CFG.stage3_out_path,
     assert manifest["min_diff_in_means_norm"] > 1e-3
     assert manifest["batch_vs_single_min_cosine"] >= CFG.stage3_min_batch_single_cosine
     assert manifest.get("batch_vs_single_max_rel_l2_diff", 0.0) <= CFG.stage3_max_batch_single_rel_l2
+    assert manifest["batch_vs_single_allclose_passed"] is True
+    assert manifest["batch_vs_single_allclose_mismatch_count"] == 0
     max_abs_limit = (CFG.stage3_max_batch_single_abs_fp16 if manifest.get("runtime_dtype") == "float16"
                      else CFG.stage3_max_batch_single_abs_fp32)
     assert manifest["batch_vs_single_max_abs_diff"] <= max_abs_limit

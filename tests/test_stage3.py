@@ -6,7 +6,7 @@ import torch
 
 from src.activation_cache import (format_and_verify_batch_inputs, load_and_validate_train_pairs,
                                   save_stage3_artifacts, verify_stage3_outputs,
-                                  _check_batch_single_parity)
+                                  _check_batch_single_parity, _position_ids_from_attention_mask)
 from src.config import CFG
 
 
@@ -46,6 +46,7 @@ def _synthetic(n=8, layers=4, k=5, d=16):
         "suffix_token_ids": [1, 2, 3, 4, 5], "train_ans_shape": [layers, k, d],
         "train_pair_acts_shape": [n, layers, k, d], "batch_vs_single_min_cosine": 1.0,
         "batch_vs_single_max_rel_l2_diff": 0.0, "batch_vs_single_max_abs_diff": 0.0,
+        "batch_vs_single_allclose_passed": True, "batch_vs_single_allclose_mismatch_count": 0,
         "min_prompt_std_ans": float(a.std(0).min()),
         "min_prompt_std_unans": float(u.std(0).min()), "min_diff_in_means_norm": float(diff.min()),
         "max_diff_in_means_norm": float(diff.max()), "elapsed_sec": 0.1, "passed_acceptance_gate": True,
@@ -73,10 +74,17 @@ def test_load_and_validate_train_pairs_real_repo_data():
 def test_format_and_verify_batch_inputs_suffix_alignment():
     got = format_and_verify_batch_inputs(DummyTokenizer(), ["a", "b"], "sys", [7, 8], "cpu")
     assert got["input_ids"].shape == (2, 4)
+    assert torch.equal(got["position_ids"], torch.tensor([[0, 1, 2, 3], [0, 1, 2, 3]]))
     with pytest.raises(AssertionError):
         format_and_verify_batch_inputs(DummyTokenizer(right=True), ["a"], "sys", [7, 8], "cpu")
     with pytest.raises(AssertionError):
         format_and_verify_batch_inputs(DummyTokenizer(corrupt=True), ["a", "b"], "sys", [7, 8], "cpu")
+
+
+def test_position_ids_ignore_left_padding():
+    mask = torch.tensor([[0, 0, 1, 1, 1], [0, 1, 1, 1, 1]])
+    expected = torch.tensor([[0, 0, 0, 1, 2], [0, 0, 1, 2, 3]])
+    assert torch.equal(_position_ids_from_attention_mask(mask), expected)
 
 
 def test_verify_stage3_outputs_valid_synthetic_cache(tmp_path):
@@ -88,15 +96,16 @@ def test_float16_ulp_parity_gate_accepts_single_ulp_shift():
     single = torch.full((1, 1, 3072), 40.0, dtype=torch.float32)
     batched = single.clone()
     batched[0, 0, 0] += 0.03125  # One float16 ULP at magnitude 40.
-    min_cos, max_rel_l2, max_diff = _check_batch_single_parity(batched, single, "float16")
+    min_cos, max_rel_l2, max_diff, mismatch_count = _check_batch_single_parity(batched, single, "float16")
     assert min_cos >= CFG.stage3_min_batch_single_cosine
     assert max_rel_l2 <= CFG.stage3_max_batch_single_rel_l2
     assert torch.allclose(batched, single, rtol=CFG.stage3_allclose_rtol, atol=CFG.stage3_allclose_atol)
     assert max_diff <= CFG.stage3_max_batch_single_abs_fp16
+    assert mismatch_count == 0
 
     corrupted = single.clone()
     corrupted[0, 0, 0] += 0.5
-    with pytest.raises(AssertionError, match="max abs diff"):
+    with pytest.raises(AssertionError, match="coordinates outside allclose"):
         _check_batch_single_parity(corrupted, single, "float16")
 
 
@@ -144,5 +153,7 @@ def test_stage3_real_artifacts_verified():
     assert manifest["d_model"] == 3072 and manifest["k_suffix"] == 5
     assert manifest["batch_vs_single_min_cosine"] >= CFG.stage3_min_batch_single_cosine
     assert manifest["batch_vs_single_max_rel_l2_diff"] <= CFG.stage3_max_batch_single_rel_l2
+    assert manifest["batch_vs_single_allclose_passed"] is True
+    assert manifest["batch_vs_single_allclose_mismatch_count"] == 0
     if CFG.stage3_out_path.exists():
         verify_stage3_outputs()
