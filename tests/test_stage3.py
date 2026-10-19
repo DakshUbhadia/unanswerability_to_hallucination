@@ -5,7 +5,9 @@ import pytest
 import torch
 
 from src.activation_cache import (format_and_verify_batch_inputs, load_and_validate_train_pairs,
-                                  save_stage3_artifacts, verify_stage3_outputs)
+                                  save_stage3_artifacts, verify_stage3_outputs,
+                                  _check_batch_single_parity)
+from src.config import CFG
 
 
 class DummyTokenizer:
@@ -43,7 +45,8 @@ def _synthetic(n=8, layers=4, k=5, d=16):
         "n_layers": layers, "k_suffix": k, "d_model": d, "suffix_indices": list(range(-k, 0)),
         "suffix_token_ids": [1, 2, 3, 4, 5], "train_ans_shape": [layers, k, d],
         "train_pair_acts_shape": [n, layers, k, d], "batch_vs_single_min_cosine": 1.0,
-        "batch_vs_single_max_abs_diff": 0.0, "min_prompt_std_ans": float(a.std(0).min()),
+        "batch_vs_single_max_rel_l2_diff": 0.0, "batch_vs_single_max_abs_diff": 0.0,
+        "min_prompt_std_ans": float(a.std(0).min()),
         "min_prompt_std_unans": float(u.std(0).min()), "min_diff_in_means_norm": float(diff.min()),
         "max_diff_in_means_norm": float(diff.max()), "elapsed_sec": 0.1, "passed_acceptance_gate": True,
     }
@@ -79,6 +82,22 @@ def test_format_and_verify_batch_inputs_suffix_alignment():
 def test_verify_stage3_outputs_valid_synthetic_cache(tmp_path):
     cp, mp = _write(tmp_path)
     assert verify_stage3_outputs(cp, mp, expected_n_pairs=8)["passed_acceptance_gate"] is True
+
+
+def test_float16_ulp_parity_gate_accepts_single_ulp_shift():
+    single = torch.full((1, 1, 3072), 40.0, dtype=torch.float32)
+    batched = single.clone()
+    batched[0, 0, 0] += 0.03125  # One float16 ULP at magnitude 40.
+    min_cos, max_rel_l2, max_diff = _check_batch_single_parity(batched, single, "float16")
+    assert min_cos >= CFG.stage3_min_batch_single_cosine
+    assert max_rel_l2 <= CFG.stage3_max_batch_single_rel_l2
+    assert torch.allclose(batched, single, rtol=CFG.stage3_allclose_rtol, atol=CFG.stage3_allclose_atol)
+    assert max_diff <= CFG.stage3_max_batch_single_abs_fp16
+
+    corrupted = single.clone()
+    corrupted[0, 0, 0] += 0.5
+    with pytest.raises(AssertionError, match="max abs diff"):
+        _check_batch_single_parity(corrupted, single, "float16")
 
 
 @pytest.mark.parametrize("mutation", ["nan", "constant", "mean"])
@@ -123,6 +142,7 @@ def test_stage3_real_artifacts_verified():
     assert manifest["passed_acceptance_gate"] is True
     assert manifest["n_train_pairs"] == 192 and manifest["n_layers"] == 28
     assert manifest["d_model"] == 3072 and manifest["k_suffix"] == 5
-    assert manifest["batch_vs_single_min_cosine"] >= 0.9995
+    assert manifest["batch_vs_single_min_cosine"] >= CFG.stage3_min_batch_single_cosine
+    assert manifest["batch_vs_single_max_rel_l2_diff"] <= CFG.stage3_max_batch_single_rel_l2
     if CFG.stage3_out_path.exists():
         verify_stage3_outputs()

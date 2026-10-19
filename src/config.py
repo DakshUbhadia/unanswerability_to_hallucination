@@ -63,6 +63,14 @@ class MasterConfig:
     atol_zero: float = 1e-5
     rtol_zero: float = 1e-4
 
+    # --- Stage 3 batch-vs-single parity tolerances (DEV-005) ---
+    stage3_min_batch_single_cosine: float = 0.9995
+    stage3_max_batch_single_rel_l2: float = 0.005
+    stage3_max_batch_single_abs_fp16: float = 0.0625
+    stage3_max_batch_single_abs_fp32: float = 0.005
+    stage3_allclose_rtol: float = 0.005
+    stage3_allclose_atol: float = 0.005
+
     # --- Dataset & Quality Gate Parameters (Table 3.1) ---
     n_templates_total: int = 96
     n_templates_train: int = 48
