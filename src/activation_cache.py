@@ -21,7 +21,8 @@ MANIFEST_KEYS = {
     "stage", "model_name", "runtime_dtype", "cache_dtype", "n_train_pairs",
     "n_family_a_pairs", "n_family_b_pairs", "n_layers", "k_suffix", "d_model",
     "suffix_indices", "suffix_token_ids", "train_ans_shape", "train_pair_acts_shape",
-    "batch_vs_single_min_cosine", "batch_vs_single_max_abs_diff", "min_prompt_std_ans",
+    "batch_vs_single_min_cosine", "batch_vs_single_max_rel_l2_diff",
+    "batch_vs_single_max_abs_diff", "min_prompt_std_ans",
     "min_prompt_std_unans", "min_diff_in_means_norm", "max_diff_in_means_norm",
     "cache_file_size_bytes", "cache_sha256", "elapsed_sec", "passed_acceptance_gate",
 }
@@ -92,6 +93,27 @@ def _single_prompt_inputs(tokenizer: Any, prompt: str, system_prompt: str, devic
     return {k: v.to(device) for k, v in encoded.items()}
 
 
+def _check_batch_single_parity(batched_first: torch.Tensor, single_first: torch.Tensor,
+                               runtime_dtype_str: str) -> Tuple[float, float, float]:
+    min_cos = float(F.cosine_similarity(batched_first, single_first, dim=-1).min().item())
+    diff_norm = torch.norm(batched_first - single_first, p=2, dim=-1)
+    ref_norm = torch.norm(single_first, p=2, dim=-1).clamp(min=CFG.eps_norm)
+    max_rel_l2 = float((diff_norm / ref_norm).max().item())
+    max_diff = float(torch.max(torch.abs(batched_first - single_first)).item())
+    max_abs_limit = (CFG.stage3_max_batch_single_abs_fp16 if runtime_dtype_str == "float16"
+                     else CFG.stage3_max_batch_single_abs_fp32)
+    assert min_cos >= CFG.stage3_min_batch_single_cosine, (
+        f"Batch/single min cosine {min_cos:.6f} < {CFG.stage3_min_batch_single_cosine}")
+    assert max_rel_l2 <= CFG.stage3_max_batch_single_rel_l2, (
+        f"Batch/single max rel L2 diff {max_rel_l2:.6g} > {CFG.stage3_max_batch_single_rel_l2}")
+    assert torch.allclose(batched_first, single_first, rtol=CFG.stage3_allclose_rtol,
+                          atol=CFG.stage3_allclose_atol), (
+        "Batch/single failed allclose(rtol=5e-3, atol=5e-3); "
+        f"max_abs_diff={max_diff:.6g}, max_rel_l2={max_rel_l2:.6g}")
+    assert max_diff <= max_abs_limit, f"Batch/single max abs diff {max_diff:.6g} > {max_abs_limit}"
+    return min_cos, max_rel_l2, max_diff
+
+
 def run_training_activation_caching(llm: Any, contract: Dict[str, Any], train_pairs: List[Dict[str, Any]],
                                     batch_size: int = CFG.batch_size_forward) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     started = time.perf_counter()
@@ -125,11 +147,9 @@ def run_training_activation_caching(llm: Any, contract: Dict[str, Any], train_pa
             if torch.cuda.is_available() and (start // batch_size + 1) % 4 == 0:
                 torch.cuda.empty_cache()
 
-    cos = F.cosine_similarity(ans_acts[0], single_ref[0], dim=-1)
-    min_cos = float(cos.min().item())
-    max_diff = float((ans_acts[0] - single_ref[0]).abs().max().item())
-    assert min_cos >= 0.9995, f"Batch/single minimum cosine {min_cos:.6f} < 0.9995"
-    assert max_diff <= 5e-3, f"Batch/single max abs diff {max_diff:.6g} > 0.005"
+    runtime_dtype_str = str(contract.get("dtype", "torch.float16")).replace("torch.", "")
+    min_cos, max_rel_l2, max_diff = _check_batch_single_parity(
+        ans_acts[0], single_ref[0], runtime_dtype_str)
     train_ans = ans_acts.to(torch.float64).mean(dim=0).to(torch.float32)
     train_unans = unans_acts.to(torch.float64).mean(dim=0).to(torch.float32)
     diff_norms = torch.linalg.vector_norm(train_unans - train_ans, dim=-1)
@@ -153,7 +173,9 @@ def run_training_activation_caching(llm: Any, contract: Dict[str, Any], train_pa
         "n_layers": n_layers, "k_suffix": k, "d_model": d_model,
         "suffix_indices": list(range(-k, 0)), "suffix_token_ids": suffix_ids,
         "train_ans_shape": list(train_ans.shape), "train_pair_acts_shape": list(ans_acts.shape),
-        "batch_vs_single_min_cosine": min_cos, "batch_vs_single_max_abs_diff": max_diff,
+        "batch_vs_single_min_cosine": min_cos,
+        "batch_vs_single_max_rel_l2_diff": max_rel_l2,
+        "batch_vs_single_max_abs_diff": max_diff,
         "min_prompt_std_ans": std_ans, "min_prompt_std_unans": std_unans,
         "min_diff_in_means_norm": float(diff_norms.min().item()),
         "max_diff_in_means_norm": float(diff_norms.max().item()),
@@ -223,6 +245,11 @@ def verify_stage3_outputs(cache_path: Path = CFG.stage3_out_path,
     assert manifest["train_pair_acts_shape"] == list(shapes["train_pair_acts_ans"])
     assert manifest["min_prompt_std_ans"] > 1e-4 and manifest["min_prompt_std_unans"] > 1e-4
     assert manifest["min_diff_in_means_norm"] > 1e-3
+    assert manifest["batch_vs_single_min_cosine"] >= CFG.stage3_min_batch_single_cosine
+    assert manifest.get("batch_vs_single_max_rel_l2_diff", 0.0) <= CFG.stage3_max_batch_single_rel_l2
+    max_abs_limit = (CFG.stage3_max_batch_single_abs_fp16 if manifest.get("runtime_dtype") == "float16"
+                     else CFG.stage3_max_batch_single_abs_fp32)
+    assert manifest["batch_vs_single_max_abs_diff"] <= max_abs_limit
     assert manifest["cache_file_size_bytes"] == cache_path.stat().st_size
     digest = hashlib.sha256()
     with cache_path.open("rb") as f:
