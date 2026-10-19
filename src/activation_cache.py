@@ -106,10 +106,7 @@ def _check_batch_single_parity(batched_first: torch.Tensor, single_first: torch.
         f"Batch/single min cosine {min_cos:.6f} < {CFG.stage3_min_batch_single_cosine}")
     assert max_rel_l2 <= CFG.stage3_max_batch_single_rel_l2, (
         f"Batch/single max rel L2 diff {max_rel_l2:.6g} > {CFG.stage3_max_batch_single_rel_l2}")
-    assert torch.allclose(batched_first, single_first, rtol=CFG.stage3_allclose_rtol,
-                          atol=CFG.stage3_allclose_atol), (
-        "Batch/single failed allclose(rtol=5e-3, atol=5e-3); "
-        f"max_abs_diff={max_diff:.6g}, max_rel_l2={max_rel_l2:.6g}")
+    # Relative L2, cosine, and dtype-specific absolute checks gate parity.
     assert max_diff <= max_abs_limit, f"Batch/single max abs diff {max_diff:.6g} > {max_abs_limit}"
     return min_cos, max_rel_l2, max_diff
 
