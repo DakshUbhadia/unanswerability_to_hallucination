@@ -21,6 +21,14 @@ Stage 3 runs activation caching after Stage 2. It can be run with `bash scripts/
 python scripts/stage3_cache_activations.py
 ```
 
+Stage 4 extracts candidate abstention directions and the random, shuffled-label, and orthogonalized concept controls from the verified Stage 3 cache. The Kaggle runner restores `results/stage3_caches.pt` from the private HF dataset when needed, then saves and syncs the Stage 4 manifest and tensor artifact:
+
+```bash
+bash scripts/kaggle_run.sh 4
+```
+
+To run Stage 4 directly after restoring the cache, use `python -u scripts/stage4_extract_directions.py`. The local CPU suite includes `tests/test_stage4.py`.
+
 Stage 2 can also be run independently after Stage 0 and Stage 1 with:
 
 ```bash
