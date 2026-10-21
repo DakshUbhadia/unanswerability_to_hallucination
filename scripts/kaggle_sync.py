@@ -31,8 +31,9 @@ def push_git_artifacts(stage_label: str) -> None:
                 target = Path("/kaggle/working") / Path(artifact).name
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(source, target)
-    if stage_label in ("3", "stage3"):
-        manifest = CONFIG.results_dir / "stage3_manifest.json"
+    if stage_label in ("3", "stage3", "4", "stage4"):
+        stage_num = "3" if stage_label in ("3", "stage3") else "4"
+        manifest = CONFIG.results_dir / f"stage{stage_num}_manifest.json"
         if manifest.exists():
             paths.append(str(manifest.relative_to(CONFIG.root_dir)))
             import shutil
@@ -78,10 +79,11 @@ def sync_pt_tensors_hf(action: str, hf_repo_id: str) -> None:
                     repo_id=hf_repo_id,
                     repo_type="dataset",
                 )
-        manifest = CONFIG.results_dir / "stage3_manifest.json"
-        if manifest.exists():
-            api.upload_file(path_or_fileobj=str(manifest), path_in_repo="results/stage3_manifest.json",
-                            repo_id=hf_repo_id, repo_type="dataset")
+        for stage_num in (3, 4):
+            manifest = CONFIG.results_dir / f"stage{stage_num}_manifest.json"
+            if manifest.exists():
+                api.upload_file(path_or_fileobj=str(manifest), path_in_repo=f"results/stage{stage_num}_manifest.json",
+                                repo_id=hf_repo_id, repo_type="dataset")
     elif action == "pull":
         repo_files = set(api.list_repo_files(repo_id=hf_repo_id, repo_type="dataset"))
         for fname in pt_files:
@@ -114,15 +116,37 @@ def ensure_stage3_cache_present(repo_dir: Path, hf_repo_id: str) -> Path:
     return target
 
 
+def ensure_tensor_cached_from_hf(filename: str, hf_repo_id: str = "", repo_dir: Path = CONFIG.root_dir) -> Path:
+    """Ensure a results tensor exists locally, restoring it from the HF dataset if needed."""
+    if Path(filename).name != filename or not filename.endswith(".pt"):
+        raise ValueError("filename must be a .pt basename")
+    target = Path(repo_dir) / "results" / filename
+    if target.exists():
+        return target
+    token = os.environ.get("HF_TOKEN")
+    repo_id = hf_repo_id or os.environ.get("HF_TENSOR_REPO_ID", "")
+    if not token or not repo_id:
+        raise RuntimeError("HF_TOKEN and HF_TENSOR_REPO_ID are required to restore tensor artifacts")
+    from huggingface_hub import hf_hub_download
+    hf_hub_download(repo_id=repo_id, filename=f"results/{filename}", repo_type="dataset",
+                    token=token, local_dir=str(repo_dir))
+    if not target.is_file():
+        raise FileNotFoundError(f"HF download did not create {target}")
+    return target
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Sync Kaggle outputs with GitHub and HF Hub")
     parser.add_argument("--action", choices=["pull", "push"], required=True)
     parser.add_argument("--stage", type=str, default="stage0")
     parser.add_argument("--hf-repo", type=str, default=os.environ.get("HF_TENSOR_REPO_ID", ""))
     parser.add_argument("--pull-cache", type=str, choices=["3"], default="")
+    parser.add_argument("--ensure-tensor", type=str, default="")
     args = parser.parse_args()
 
-    if args.pull_cache == "3":
+    if args.ensure_tensor:
+        ensure_tensor_cached_from_hf(args.ensure_tensor, args.hf_repo)
+    elif args.pull_cache == "3":
         ensure_stage3_cache_present(CONFIG.root_dir, args.hf_repo)
     elif args.action == "pull" and args.hf_repo:
         sync_pt_tensors_hf("pull", args.hf_repo)

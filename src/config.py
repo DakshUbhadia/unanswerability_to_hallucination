@@ -14,6 +14,8 @@ class MasterConfig:
     stage2_out_path: Path = results_dir / "stage2_pilot.json"
     stage3_out_path: Path = results_dir / "stage3_caches.pt"
     stage3_manifest_path: Path = results_dir / "stage3_manifest.json"
+    stage4_out_path: Path = results_dir / "stage4_directions.pt"
+    stage4_manifest_path: Path = results_dir / "stage4_manifest.json"
     figures_dir: Path = root_dir / "figures"
     tables_dir: Path = root_dir / "tables"
 
@@ -60,6 +62,7 @@ class MasterConfig:
     batch_size_gen: int = 16
     max_new_tokens: int = 16
     eps_norm: float = 1e-8
+    stage4_ortho_tol: float = 1e-5
     atol_zero: float = 1e-5
     rtol_zero: float = 1e-4
 

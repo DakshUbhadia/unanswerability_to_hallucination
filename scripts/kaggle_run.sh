@@ -58,7 +58,7 @@ fi
 git push origin main
 
 set +e
-pytest -q tests/test_stage0.py tests/test_stage1.py tests/test_stage2.py tests/test_stage3.py -m "not integration and not slow"
+pytest -q tests/test_stage0.py tests/test_stage1.py tests/test_stage2.py tests/test_stage3.py tests/test_stage4.py -m "not integration and not slow"
 pytest_status=$?
 set -e
 exit "$pytest_status"
