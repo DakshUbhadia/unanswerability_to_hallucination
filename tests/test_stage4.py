@@ -84,8 +84,9 @@ def test_orthogonalized_concept_control_orthogonality_and_pre_cosine():
     orth=torch.randn_like(unit); orth=orth-(orth*unit).sum(-1,keepdim=True)*unit
     orth=orth/torch.linalg.vector_norm(orth,dim=-1,keepdim=True)
     raw=.65*unit+(1-.65**2)**.5*orth
-    acts=torch.randn(n,l,k,d)*.1
-    acts[:8]+=raw.unsqueeze(0)/2; acts[8:]-=raw.unsqueeze(0)/2
+    shared_noise=torch.randn(8,l,k,d)*.1
+    acts=torch.cat([shared_noise+raw.unsqueeze(0)/2,
+                    shared_noise-raw.unsqueeze(0)/2],dim=0)
     norms=torch.ones(l,k)*2
     _, cu, scaled, cosine=compute_orthogonalized_concept_control(acts,["A"]*8+["B"]*8,unit,norms)
     assert torch.allclose(cosine,torch.full((l,k),.65),atol=1e-5)
