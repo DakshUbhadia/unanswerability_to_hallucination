@@ -16,8 +16,12 @@ class MasterConfig:
     stage3_manifest_path: Path = results_dir / "stage3_manifest.json"
     stage4_out_path: Path = results_dir / "stage4_directions.pt"
     stage4_manifest_path: Path = results_dir / "stage4_manifest.json"
+    stage5_out_path: Path = results_dir / "stage5_selection.json"
+    stage5_checkpoint_path: Path = results_dir / "stage5_checkpoint.pt"
     figures_dir: Path = root_dir / "figures"
     tables_dir: Path = root_dir / "tables"
+    table2_csv_path: Path = tables_dir / "table2_sensitivity_grid.csv"
+    table2_md_path: Path = tables_dir / "table2_sensitivity_grid.md"
 
     # --- Models & Precision (Section 2.1 + DEV-001 for Kaggle T4) ---
     primary_model_name: str = "Qwen/Qwen2.5-3B-Instruct"

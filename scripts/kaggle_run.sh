@@ -10,7 +10,7 @@ pip install -q -r requirements-kaggle.txt
 stages=("$@")
 tensor_stage_requested=0
 for stage in "${stages[@]}"; do
-  if [[ "$stage" == 3 || "$stage" == 4 ]]; then tensor_stage_requested=1; fi
+  if [[ "$stage" == 3 || "$stage" == 4 || "$stage" == 5 ]]; then tensor_stage_requested=1; fi
 done
 if (( tensor_stage_requested )); then
   : "${HF_TENSOR_REPO_ID:?Set HF_TENSOR_REPO_ID to the private HF dataset repository (owner/name).}"
@@ -42,6 +42,10 @@ for stage in "${stages[@]}"; do
   if [[ "$stage" == 3 || "$stage" == 4 ]]; then
     python scripts/kaggle_sync.py --action push --stage "$stage" --hf-repo "$HF_TENSOR_REPO_ID"
   fi
+  if [[ "$stage" == 5 ]]; then
+    pytest -q tests/test_stage5.py -m "not integration"
+    python scripts/kaggle_sync.py --action push --stage "$stage" --hf-repo "$HF_TENSOR_REPO_ID"
+  fi
 done
 
 # Save completed artifacts before tests so a failing test run does not discard Kaggle work.
@@ -58,7 +62,7 @@ fi
 git push origin main
 
 set +e
-pytest -q tests/test_stage0.py tests/test_stage1.py tests/test_stage2.py tests/test_stage3.py tests/test_stage4.py -m "not integration and not slow"
+pytest -q tests/test_stage0.py tests/test_stage1.py tests/test_stage2.py tests/test_stage3.py tests/test_stage4.py tests/test_stage5.py -m "not integration and not slow"
 pytest_status=$?
 set -e
 exit "$pytest_status"

@@ -40,6 +40,14 @@ def push_git_artifacts(stage_label: str) -> None:
             target = Path("/kaggle/working") / manifest.name
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(manifest, target)
+    if stage_label in ("5", "stage5"):
+        import shutil
+        for artifact in ("results/stage5_selection.json", "tables/table2_sensitivity_grid.csv", "tables/table2_sensitivity_grid.md"):
+            source = CONFIG.root_dir / artifact
+            if source.exists():
+                target = Path("/kaggle/working") / Path(artifact).name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, target)
     if paths:
         run_cmd(["git", "add", "-f", "--", *paths])
     status = subprocess.run(
@@ -84,6 +92,10 @@ def sync_pt_tensors_hf(action: str, hf_repo_id: str) -> None:
             if manifest.exists():
                 api.upload_file(path_or_fileobj=str(manifest), path_in_repo=f"results/stage{stage_num}_manifest.json",
                                 repo_id=hf_repo_id, repo_type="dataset")
+        stage5_json = CONFIG.results_dir / "stage5_selection.json"
+        if stage5_json.exists():
+            api.upload_file(path_or_fileobj=str(stage5_json), path_in_repo="results/stage5_selection.json",
+                            repo_id=hf_repo_id, repo_type="dataset")
     elif action == "pull":
         repo_files = set(api.list_repo_files(repo_id=hf_repo_id, repo_type="dataset"))
         for fname in pt_files:

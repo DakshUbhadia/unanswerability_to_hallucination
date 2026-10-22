@@ -42,3 +42,11 @@ python scripts/measure_stage2_tokenizer_parity.py
 ```
 
 This writes `results/stage2_llama_parity.json` and updates the measured summary in `DEVIATIONS.md`. The Stage 2 runner also invokes this check after Stage 2 completes.
+
+Stage 5 selects the validation coordinate, writes the selection JSON and Table 2 in CSV and Markdown, runs its CPU unit tests, and syncs the outputs. The runner restores Stage 4 directions from the private HF dataset when absent:
+
+```bash
+bash scripts/kaggle_run.sh 5
+```
+
+This requires `HF_TENSOR_REPO_ID` and `HF_TOKEN` as for the earlier tensor stages.
