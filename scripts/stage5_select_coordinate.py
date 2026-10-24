@@ -10,14 +10,13 @@ from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parent.parent))
 
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
 from nnsight import LanguageModel
 from src.config import CFG
 from src.stage_contract import load_stage2_model_contract
 from src.direction_extraction import verify_stage4_outputs
 from src.coordinate_selection import (load_and_validate_val_pairs, run_validation_coordinate_sweep,
  save_stage5_artifacts, verify_stage5_outputs)
-from src.model_utils import resolve_runtime_dtype
+from src.eval_common import load_stage_model
 
 
 def _sha(path):
@@ -49,13 +48,12 @@ def main(argv=None):
  stage2=load_stage2_model_contract(a.stage2_path)
  stage0=json.loads(a.stage0_path.read_text(encoding="utf-8")); contract={**stage0,**stage2}
  val=load_and_validate_val_pairs(a.pairs_path,a.splits_path)
- dtype,dtype_str,_=resolve_runtime_dtype(a.dtype,a.device)
- tokenizer=AutoTokenizer.from_pretrained(contract["model_name"]); tokenizer.padding_side="left"
- raw=AutoModelForCausalLM.from_pretrained(contract["model_name"],torch_dtype=dtype).to(a.device).eval()
+ raw,tokenizer,_=load_stage_model(contract,a.device,a.dtype)
  llm=LanguageModel(raw, tokenizer=tokenizer, dispatch=True)
  result=run_validation_coordinate_sweep(llm,contract,directions,val,a.batch_size,CFG.stage5_checkpoint_path,a.force,stage2,_sha(a.stage4_directions_path))
- save_stage5_artifacts(result,a.output_path,a.table2_csv_path,a.table2_md_path,CFG.stage5_checkpoint_path)
+ save_stage5_artifacts(result,a.output_path,a.table2_csv_path,a.table2_md_path,None)
  checked=verify_stage5_outputs(a.output_path,a.table2_csv_path,a.table2_md_path,a.stage0_path,a.stage4_manifest_path)
+ if CFG.stage5_checkpoint_path.exists(): CFG.stage5_checkpoint_path.unlink()
  print(f"[Stage 5] coordinate=({checked['l_star']}, {checked['i_star']}, {checked['pos_idx']}) norm={checked['r_norm_at_star']:.6g}")
  print(f"ablation={checked['selected_ablation_log_odds']:.4f}, steering={checked['selected_steering_log_odds']:.4f}, KL={checked['selected_kl_val']:.6f}")
  print(a.table2_md_path.read_text(encoding="utf-8"))

@@ -50,3 +50,22 @@ bash scripts/kaggle_run.sh 5
 ```
 
 This requires `HF_TENSOR_REPO_ID` and `HF_TOKEN` as for the earlier tensor stages.
+
+## Stages 5-10 (notebook)
+
+Import `notebooks/kaggle_stages_5_to_10.ipynb` into Kaggle (File -> Import Notebook), then run the setup cell and each stage cell in order. Each cell calls `bash scripts/kaggle_run.sh <stage>`. The runner restores Stage 4 directions from HF, runs the stage, runs its CPU unit tests and artifact check, and commits and pushes the outputs to GitHub `main`. Stages that already verified print `[SKIP]`.
+
+The runner also accepts ranges and `all`:
+
+```bash
+bash scripts/kaggle_run.sh 5-9   # Stages 5, 6, 7, 8, 9 with a sync after each
+bash scripts/kaggle_run.sh all   # Stages 5-10
+```
+
+| Stage | Script | Main outputs |
+|---|---|---|
+| 6 | `scripts/stage6_test_evaluation.py` | `results/stage6_test_h1_h2_h3.json`, `results/stage6_generation_samples.jsonl`, Tables 1 and 4 |
+| 7 | `scripts/stage7_capability_eval.py` | `results/stage7_capability.json`, Table 1 capability columns (`SKIP_MMLU=1` applies Cut 2) |
+| 8 | `scripts/stage8_popqa_uncertainty.py` | `results/stage8_popqa_core.json`, Table 3, Holm-Bonferroni H1-H5 in Table 1 |
+| 9 | `scripts/stage9_generate_figures_and_tables.py` | Figures 1, 2A, S1; `results/stage9_summary.json`; README results block |
+| 10 | `scripts/stage10_popqa_steering.py` | `results/stage10_popqa_steering.json`, Figure 2B (optional stretch) |
