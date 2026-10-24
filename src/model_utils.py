@@ -6,6 +6,7 @@ import os
 import platform
 import subprocess
 import time
+from contextlib import contextmanager
 from typing import Any, Dict, List, Optional, Tuple
 
 import torch
@@ -203,6 +204,96 @@ def forward_with_intervention(
         saved_logits = llm.lm_head.output[:, -1, :].save()
 
     return _deref_saved(saved_logits).detach()
+
+
+# ----------------------------- native PyTorch hooks --------------------------
+# Same operators as forward_with_intervention, attached as plain forward hooks so the
+# thousands of Stage 5-10 passes skip nnsight graph construction and also work in generate().
+@contextmanager
+def native_intervention_hooks(
+    raw_model: Any,
+    is_layer_output_tuple: bool,
+    mode: str = "none",
+    r_vec: Optional[torch.Tensor] = None,
+    target_layer: Optional[int] = None,
+    alpha: float = 0.0,
+    capture_layers: Optional[List[int]] = None,
+    capture_pos: Optional[int] = None,
+    captured: Optional[Dict[int, torch.Tensor]] = None,
+):
+    """Context manager: optional intervention plus optional float32 residual capture.
+
+    Captured residuals are post-intervention layer outputs at sequence index `capture_pos`
+    (a negative suffix offset under left padding), stored as captured[layer] = [batch, d_model].
+    """
+    layers = raw_model.model.layers
+    n_layers = len(layers)
+    if mode == "ablate_all":
+        assert r_vec is not None, "r_vec required for mode='ablate_all'"
+        edit_layers = set(range(n_layers))
+    elif mode == "steer_layer":
+        assert r_vec is not None and target_layer is not None, "r_vec and target_layer required"
+        assert 0 <= int(target_layer) < n_layers
+        edit_layers = {int(target_layer)}
+    elif mode == "none":
+        edit_layers = set()
+    else:
+        raise ValueError(f"Unsupported intervention mode: {mode}")
+    capture = set(capture_layers or [])
+    if capture:
+        assert capture_pos is not None and captured is not None, "capture needs capture_pos and a dict"
+    dev = next(raw_model.parameters()).device
+    r = None if r_vec is None else r_vec.detach().to(device=dev, dtype=torch.float32)
+
+    def make_hook(idx: int):
+        def hook(module: Any, inputs: Any, output: Any) -> Any:
+            hidden = output[0] if is_layer_output_tuple else output
+            if idx in edit_layers:
+                hidden = (apply_orthogonal_projection(hidden, r) if mode == "ablate_all"
+                          else apply_norm_scaled_steering(hidden, r, alpha))
+            if idx in capture and hidden.shape[1] > abs(int(capture_pos)):
+                captured[idx] = hidden[:, int(capture_pos), :].detach().to(torch.float32)
+            if idx not in edit_layers:
+                return None
+            return (hidden, *output[1:]) if is_layer_output_tuple else hidden
+        return hook
+
+    handles = [layers[i].register_forward_hook(make_hook(i)) for i in sorted(edit_layers | capture)]
+    try:
+        yield
+    finally:
+        for h in handles:
+            h.remove()
+
+
+@torch.no_grad()
+def forward_with_native_hooks(
+    raw_model: Any,
+    inputs: Dict[str, torch.Tensor],
+    is_layer_output_tuple: bool,
+    mode: str = "none",
+    r_vec: Optional[torch.Tensor] = None,
+    target_layer: Optional[int] = None,
+    alpha: float = 0.0,
+) -> torch.Tensor:
+    """Final-token logits [batch, vocab] under an optional native-hook intervention."""
+    with native_intervention_hooks(raw_model, is_layer_output_tuple, mode, r_vec, target_layer, alpha):
+        out = raw_model(**inputs, use_cache=False, **last_token_logits_kwargs(raw_model))
+    return out.logits[:, -1, :].detach()
+
+
+def last_token_logits_kwargs(raw_model: Any) -> Dict[str, int]:
+    """`num_logits_to_keep=1` when the model supports it (lm_head runs on the final position only)."""
+    import inspect
+    cached = getattr(raw_model, "_last_token_kwargs", None)
+    if cached is None:
+        params = inspect.signature(raw_model.forward).parameters
+        cached = {"num_logits_to_keep": 1} if "num_logits_to_keep" in params else {}
+        try:
+            raw_model._last_token_kwargs = cached
+        except AttributeError:
+            pass
+    return cached
 
 
 @torch.no_grad()

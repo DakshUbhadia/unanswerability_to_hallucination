@@ -22,6 +22,26 @@ class MasterConfig:
     tables_dir: Path = root_dir / "tables"
     table2_csv_path: Path = tables_dir / "table2_sensitivity_grid.csv"
     table2_md_path: Path = tables_dir / "table2_sensitivity_grid.md"
+    stage6_out_path: Path = results_dir / "stage6_test_h1_h2_h3.json"
+    stage6_gen_path: Path = results_dir / "stage6_generation_samples.jsonl"
+    stage6_checkpoint_path: Path = results_dir / "stage6_checkpoint.pt"
+    table1_csv_path: Path = tables_dir / "table1_main_results.csv"
+    table1_md_path: Path = tables_dir / "table1_main_results.md"
+    table4_csv_path: Path = tables_dir / "table4_generation_audit.csv"
+    table4_md_path: Path = tables_dir / "table4_generation_audit.md"
+    stage7_out_path: Path = results_dir / "stage7_capability.json"
+    stage7_checkpoint_path: Path = results_dir / "stage7_checkpoint.pt"
+    stage8_out_path: Path = results_dir / "stage8_popqa_core.json"
+    table3_csv_path: Path = tables_dir / "table3_popqa_auroc.csv"
+    table3_md_path: Path = tables_dir / "table3_popqa_auroc.md"
+    stage9_out_path: Path = results_dir / "stage9_summary.json"
+    stage10_out_path: Path = results_dir / "stage10_popqa_steering.json"
+    stage10_checkpoint_path: Path = results_dir / "stage10_checkpoint.pt"
+    fig1_png_path: Path = figures_dir / "fig1_intervention_pareto.png"
+    fig2a_png_path: Path = figures_dir / "fig2a_popqa_violin.png"
+    figS1_png_path: Path = figures_dir / "figS1_layerwise_auroc.png"
+    fig2b_png_path: Path = figures_dir / "fig2b_selective_steering.png"
+    readme_path: Path = root_dir / "README.md"
 
     # --- Models & Precision (Section 2.1 + DEV-001 for Kaggle T4) ---
     primary_model_name: str = "Qwen/Qwen2.5-3B-Instruct"
@@ -120,10 +140,17 @@ class MasterConfig:
     n_gen_audit: int = 50
     discrepancy_log_odds: float = 2.0
     discrepancy_rate: float = 0.10
+    alpha_primary_neg: float = -1.0
+    alpha_primary_pos: float = 1.0
+    concept_effect_ratio_max: float = 0.25  # Section 6.3: r_concept > 25% of learned shift = confound
+    b_ctrl_abstention_max: float = 0.15
+    h4_auroc_min: float = 0.60
 
     # --- Capability & PopQA Parameters (Table 3.1) ---
     n_wikitext_kl: int = 200
     len_wikitext_tokens: int = 256
+    min_wikitext_words: int = 64
+    batch_size_wikitext: int = 8  # 256-token full-vocabulary KL at every position fits a 16 GB T4
     n_mmlu: int = 200
     n_popqa_init: int = 1000
     w_popqa_bottom5: float = 0.06

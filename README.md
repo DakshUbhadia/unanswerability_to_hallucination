@@ -8,8 +8,8 @@ The frozen research protocol is in [documentation.md](documentation.md). Impleme
 
 | Stage | Status |
 |---|---|
-| Stage 0 | Passed |
-| Stage 1 | Pending human review |
+| Stages 0-4 | Passed (Stage 2 fallback to `meta-llama/Llama-3.2-3B-Instruct`, see DEV-004) |
+| Stages 5-10 | Implemented; run on Kaggle with `notebooks/kaggle_stages_5_to_10.ipynb` |
 
 ## Kaggle setup
 

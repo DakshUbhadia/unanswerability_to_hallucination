@@ -10,6 +10,21 @@ from huggingface_hub import HfApi
 from src.config import CONFIG
 
 
+STAGE_GIT_FILES = {
+    "5": ["results/stage5_selection.json", "tables/table2_sensitivity_grid.csv", "tables/table2_sensitivity_grid.md"],
+    "6": ["results/stage6_test_h1_h2_h3.json", "results/stage6_generation_samples.jsonl",
+          "tables/table1_main_results.csv", "tables/table1_main_results.md",
+          "tables/table4_generation_audit.csv", "tables/table4_generation_audit.md"],
+    "7": ["results/stage7_capability.json", "tables/table1_main_results.csv", "tables/table1_main_results.md"],
+    "8": ["results/stage8_popqa_core.json", "tables/table3_popqa_auroc.csv", "tables/table3_popqa_auroc.md",
+          "tables/table1_main_results.csv", "tables/table1_main_results.md"],
+    "9": ["results/stage9_summary.json", "README.md"] + [f"figures/{n}.{e}" for n in (
+        "fig1_intervention_pareto", "fig2a_popqa_violin", "figS1_layerwise_auroc") for e in ("png", "pdf")],
+    "10": ["results/stage10_popqa_steering.json", "figures/fig2b_selective_steering.png",
+           "figures/fig2b_selective_steering.pdf", "README.md", "results/stage9_summary.json"],
+}
+
+
 def run_cmd(cmd: list[str]) -> None:
     print(f"[Sync] Running: {' '.join(cmd)}")
     subprocess.run(cmd, check=True, cwd=CONFIG.root_dir)
@@ -40,14 +55,20 @@ def push_git_artifacts(stage_label: str) -> None:
             target = Path("/kaggle/working") / manifest.name
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(manifest, target)
-    if stage_label in ("5", "stage5"):
+    stage_num = stage_label.replace("stage", "")
+    if stage_num in STAGE_GIT_FILES:
         import shutil
-        for artifact in ("results/stage5_selection.json", "tables/table2_sensitivity_grid.csv", "tables/table2_sensitivity_grid.md"):
+        for artifact in STAGE_GIT_FILES[stage_num]:
             source = CONFIG.root_dir / artifact
             if source.exists():
+                if artifact not in paths:
+                    paths.append(artifact)
                 target = Path("/kaggle/working") / Path(artifact).name
-                target.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(source, target)
+                try:
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(source, target)
+                except OSError:
+                    pass  # /kaggle/working exists only on Kaggle
     if paths:
         run_cmd(["git", "add", "-f", "--", *paths])
     status = subprocess.run(
