@@ -111,6 +111,9 @@
     "mmlu_baseline_acc": 0.59,
     "mmlu_ablate_all_acc": 0.57
   },
-  "stage10_ran": false,
+  "stage10_ran": true,
+  "stage10": {
+    "max_selective_gain": 0.23809523809523814
+  },
   "passed_acceptance_gate": true
 }

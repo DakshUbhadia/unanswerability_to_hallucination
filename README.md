@@ -72,6 +72,8 @@ Model: `meta-llama/Llama-3.2-3B-Instruct`; locked coordinate l* = 11, i* = -4.
 
 ![Figure S1](figures/figS1_layerwise_auroc.png)
 
+![Figure 2B](figures/fig2b_selective_steering.png)
+
 ### Tables
 
 **Table 1. Pre-registered tests H1-H5 (Holm-Bonferroni, alpha_FWER = 0.05) and secondary controls**
