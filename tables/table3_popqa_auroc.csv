@@ -1,0 +1,8 @@
+score,description,auroc,ci_95_low,ci_95_high,delta_vs_proj,delta_ci_95_low,delta_ci_95_high,p_value,p_value_test
+proj_learned,x_{i*}^{(l*)} . r_hat (H4),0.693045,0.636393,0.746375,,,,5.24159e-09,one-sided Mann-Whitney U
+neg_maxp,-max first-token probability (H5 baseline),0.773567,0.719468,0.825443,-0.080522,-0.142605,-0.020674,0.996004,"paired bootstrap, one-sided"
+entropy,first-token predictive entropy,0.777361,0.724651,0.829055,-0.084317,-0.141753,-0.033626,0.999001,"paired bootstrap, one-sided"
+abstention_log_odds,first-token abstention log-odds S(p),0.685779,0.626983,0.742099,0.007265,-0.039947,0.055081,0.386613,"paired bootstrap, one-sided"
+random_99_mean,mean AUROC of 99 random unit directions,0.493345,0.379303,0.663416,,,,0.010000,Monte Carlo rank of learned AUROC
+shuffled_19_mean,mean AUROC of 19 label-shuffled directions,0.476887,0.307233,0.702485,,,,0.200000,permutation rank of learned AUROC
+r_concept,orthogonalized concept direction,0.568189,,,,,,,
