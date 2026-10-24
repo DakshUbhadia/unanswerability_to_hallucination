@@ -1,7 +1,7 @@
 test_id,hypothesis_or_control,metric,point_estimate,ci_95_low,ci_95_high,raw_p_value,holm_threshold,passed_holm_bonferroni,confirmed,mc_rank_out_of_100,mc_p_value,mc_z_score,shuffled_p_value,shuffled_z_score,r_concept_effect_ratio,wikitext2_kl_nats,mmlu_accuracy
-H1,Causal necessity: all-layer ablation on D_test^unans,mean log-odds shift (hypothesised direction > 0),6.803711,5.722554,7.858726,5.96046e-08,,,,1,0.010000,59.646009,0.050000,1.851114,0.005891,,
-H2,Causal sufficiency: +1.0 r at l* on D_test^ans,mean log-odds shift (hypothesised direction > 0),20.308767,19.409710,21.175348,5.96046e-08,,,,1,0.010000,9.160111,0.050000,12.816835,0.130870,,
+H1,Causal necessity: all-layer ablation on D_test^unans,mean log-odds shift (hypothesised direction > 0),6.803711,5.722554,7.858726,5.96046e-08,,,,1,0.010000,59.646009,0.050000,1.851114,0.005891,0.019173,0.570000
+H2,Causal sufficiency: +1.0 r at l* on D_test^ans,mean log-odds shift (hypothesised direction > 0),20.308767,19.409710,21.175348,5.96046e-08,,,,1,0.010000,9.160111,0.050000,12.816835,0.130870,0.106044,0.305000
 H3,Private-detail de-confounding (Family B unans - B-ctrl projection),mean template projection difference,4.114333,3.412537,4.711470,0.000244141,,,,,,,,,,,
 H3_bctrl_rate,B-ctrl generation abstention rate (criterion <= 0.15),regex abstention rate,0.083333,,,,,,,,,,,,,,
-S1_H1b,[secondary] Single-layer subtraction -1.0 r on D_test^unans,mean log-odds shift (hypothesised direction > 0),8.001988,6.596849,9.411691,5.96046e-08,,,,1,0.010000,7.750442,0.050000,14.176341,0.161016,,
+S1_H1b,[secondary] Single-layer subtraction -1.0 r on D_test^unans,mean log-odds shift (hypothesised direction > 0),8.001988,6.596849,9.411691,5.96046e-08,,,,1,0.010000,7.750442,0.050000,14.176341,0.161016,0.102547,0.415000
 S2_concept,[secondary] r_concept pre-orthogonalization cosine,cos(theta_pre),-0.236176,,,,,,,,,,,,,,
