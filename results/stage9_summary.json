@@ -1,0 +1,116 @@
+{
+  "stage": 9,
+  "model_name": "meta-llama/Llama-3.2-3B-Instruct",
+  "l_star": 11,
+  "i_star": -4,
+  "filter_relaxed": false,
+  "r_norm_at_star": 3.807962656021118,
+  "hypotheses": {
+    "H1": {
+      "effect": 6.8037110005194945,
+      "p": 5.960464477539063e-08,
+      "p_mc": 0.01,
+      "confirmed": true
+    },
+    "H2": {
+      "effect": 20.308767224351566,
+      "p": 5.960464477539063e-08,
+      "p_mc": 0.01,
+      "confirmed": true
+    },
+    "H3": {
+      "effect": 4.114332992945038,
+      "p": 0.000244140625,
+      "b_ctrl_abstention_rate": 0.08333333333333333,
+      "confirmed": true
+    },
+    "H4": {
+      "auroc_proj": 0.6930445647646813,
+      "ci": [
+        0.6363934008977742,
+        0.7463753528622333
+      ],
+      "p": 5.241588265219784e-09,
+      "confirmed": true
+    },
+    "H5": {
+      "delta_auroc": -0.0805220047202555,
+      "p": 0.996003996003996,
+      "confirmed": false
+    }
+  },
+  "holm_bonferroni": [
+    {
+      "test_id": "H4",
+      "raw_p_value": 5.241588265219784e-09,
+      "rank": 1,
+      "holm_threshold": 0.01,
+      "passed_holm_bonferroni": true,
+      "extra_criteria_met": true,
+      "confirmed": true
+    },
+    {
+      "test_id": "H1",
+      "raw_p_value": 5.960464477539063e-08,
+      "rank": 2,
+      "holm_threshold": 0.0125,
+      "passed_holm_bonferroni": true,
+      "extra_criteria_met": true,
+      "confirmed": true
+    },
+    {
+      "test_id": "H2",
+      "raw_p_value": 5.960464477539063e-08,
+      "rank": 3,
+      "holm_threshold": 0.016666666666666666,
+      "passed_holm_bonferroni": true,
+      "extra_criteria_met": true,
+      "confirmed": true
+    },
+    {
+      "test_id": "H3",
+      "raw_p_value": 0.000244140625,
+      "rank": 4,
+      "holm_threshold": 0.025,
+      "passed_holm_bonferroni": true,
+      "extra_criteria_met": true,
+      "confirmed": true
+    },
+    {
+      "test_id": "H5",
+      "raw_p_value": 0.996003996003996,
+      "rank": 5,
+      "holm_threshold": 0.05,
+      "passed_holm_bonferroni": false,
+      "extra_criteria_met": true,
+      "confirmed": false
+    }
+  ],
+  "confirmed": {
+    "H4": true,
+    "H1": true,
+    "H2": true,
+    "H3": true,
+    "H5": false
+  },
+  "interpretation": {
+    "overall": "Hypothesis_B_Internal_Uncertainty_Detector",
+    "dimension_1_causal_mediation": "mediates",
+    "concept_confound_flag": false,
+    "dimension_2_private_detail": "passes",
+    "dimension_3_closed_book": "B",
+    "dimension_4_value_over_confidence": "A",
+    "earlier_layers_beating_maxp": [],
+    "logit_gen_discrepancy": false,
+    "note": ""
+  },
+  "logit_gen_discrepancy": false,
+  "capability": {
+    "wikitext_baseline_nll": 2.9773031499934386,
+    "ablate_all_kl": 0.019173484790342,
+    "mmlu_baseline_acc": 0.59,
+    "mmlu_ablate_all_acc": 0.57
+  },
+  "stage10_ran": false,
+  "passed_acceptance_gate": true
+}
