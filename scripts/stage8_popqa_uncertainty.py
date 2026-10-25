@@ -54,6 +54,9 @@ def main(argv=None) -> int:
     raw_model, tokenizer, _ = load_stage_model(contract, a.device, a.dtype)
     result = run_stage8_popqa_uncertainty(raw_model, tokenizer, contract, directions, selection, groups, test_pairs,
                                           b_ctrl, stage6, a.batch_size, stage4_sha, sha256_file(a.stage6_path))
+    v4_path = CFG.results_dir / "archive_v4" / "results" / "stage8_popqa_core.json"
+    if v4_path.exists():
+        result["v4_stage8"] = read_json(v4_path)
     save_stage8_artifacts(result, a.output_path, a.table3_csv_path, a.table3_md_path)
     d = verify_stage8_outputs(a.output_path, a.table3_csv_path, a.table3_md_path, a.stage5_path)
     print(f"[Stage 8] AUROC_proj={d['auroc_proj']:.4f} CI={d['auroc_proj_ci']} AUROC_maxp={d['auroc_maxp']:.4f} "

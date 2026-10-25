@@ -43,6 +43,25 @@ class MasterConfig:
     fig2b_png_path: Path = figures_dir / "fig2b_selective_steering.png"
     readme_path: Path = root_dir / "README.md"
 
+    # --- Tier 1 measurement correction protocol (v4.2) ---
+    judge_backend: str = "local"
+    judge_model_id: str = "Qwen/Qwen2.5-7B-Instruct"
+    judge_model_revision: str = ""
+    judge_model_pin_path: Path = results_dir / "judge_model.json"
+    judge_quantization: str = "auto"
+    judge_batch_size: int = 8
+    judge_local_model_id: str = "Qwen/Qwen2.5-7B-Instruct"  # compatibility alias
+    judge_local_revision: str = ""
+    judge_cache_path: Path = data_dir / "judge_cache.jsonl"
+    judge_pass_summary_path: Path = results_dir / "judge_pass_summary.json"
+    stage10_generation_path: Path = results_dir / "stage10_generations.jsonl"
+    judge_inputs: Tuple[Path, ...] = (data_dir / "popqa_sample.jsonl", stage6_gen_path,
+                                     results_dir / "stage10_generations.jsonl")
+    judge_validation_seed: int = 20260408
+    grader_validation_seed: int = 20260409
+    wikitext_passage_rule: str = "full_length_256"
+    mmlu_neutral_system_prompt: str = "You are a helpful assistant."
+
     # --- Models & Precision (Section 2.1 + DEV-001 for Kaggle T4) ---
     primary_model_name: str = "Qwen/Qwen2.5-3B-Instruct"
     fallback_model_name: str = "meta-llama/Llama-3.2-3B-Instruct"
@@ -184,6 +203,29 @@ class MasterConfig:
         " Whenever the prompt contains the required fact, you must state the "
         "answer directly and never output Unknown."
     )
+
+
+    # --- Tier 2: controls and statistics (v5; additive protocol fields) ---
+    seed_cov_null: int = 20260410
+    seed_labelfree_null: int = 20260411
+    seed_template_partition_null: int = 20260412
+    seed_popqa_fresh: int = 20260413
+    seed_incremental_cv: int = 20260414
+    seed_power_sim: int = 20260415
+    n_null_cov: int = 499
+    n_null_labelfree: int = 199
+    n_null_template_partition: int = 199
+    n_null_gen_subset: int = 19
+    n_null_dose_subset: int = 20
+    n_pca_null: int = 50
+    n_popqa_fresh_batch: int = 1000
+    n_popqa_fresh_cap: int = 9000
+    n_popqa_matched_target: int = 750
+    min_relation_pool: int = 30
+    sesoi_delta_auroc: float = 0.02
+    n_perm_stratified: int = 9999
+    n_cv_folds: int = 5
+    n_cv_repeats: int = 20
 
 
 CONFIG = MasterConfig()

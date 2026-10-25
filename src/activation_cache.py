@@ -9,6 +9,7 @@ import torch
 import torch.nn.functional as F
 
 from src.config import CFG
+from src.tokenization_contract import canonical_input_ids
 from src.model_utils import read_layer_residual_proxy
 
 
@@ -51,11 +52,9 @@ def load_and_validate_train_pairs(pairs_path: Path = CFG.data_dir / "pairs.jsonl
 def format_and_verify_batch_inputs(tokenizer: Any, user_prompts: List[str], system_prompt: str,
                                    expected_suffix_token_ids: List[int], device: str) -> Dict[str, torch.Tensor]:
     assert tokenizer.padding_side == "left", "Stage 3 requires left padding"
-    conversations = [[{"role": "system", "content": system_prompt}, {"role": "user", "content": p}]
-                     for p in user_prompts]
-    formatted = [tokenizer.apply_chat_template(c, tokenize=False, add_generation_prompt=True)
-                 for c in conversations]
-    inputs = tokenizer(formatted, return_tensors="pt", padding=True, add_special_tokens=False)
+    rows = [canonical_input_ids(tokenizer, prompt, system_prompt, expected_suffix_token_ids)
+            for prompt in user_prompts]
+    inputs = tokenizer.pad({"input_ids": rows}, return_tensors="pt", padding=True)
     if hasattr(inputs, "to"):
         inputs = inputs.to(device)
     else:
@@ -86,10 +85,9 @@ def extract_batch_post_instruction_activations(llm: Any, inputs: Dict[str, torch
 
 
 def _single_prompt_inputs(tokenizer: Any, prompt: str, system_prompt: str, device: str) -> Dict[str, torch.Tensor]:
-    text = tokenizer.apply_chat_template(
-        [{"role": "system", "content": system_prompt}, {"role": "user", "content": prompt}],
-        tokenize=False, add_generation_prompt=True)
-    encoded = tokenizer([text], return_tensors="pt", padding=False, add_special_tokens=False)
+    ids = canonical_input_ids(tokenizer, prompt, system_prompt)
+    encoded = {"input_ids": torch.tensor([ids], dtype=torch.long),
+               "attention_mask": torch.ones((1, len(ids)), dtype=torch.long)}
     if hasattr(encoded, "to"):
         encoded = encoded.to(device)
     else:

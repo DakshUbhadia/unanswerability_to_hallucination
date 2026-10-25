@@ -1,0 +1,585 @@
+{
+  "seed": 20260415,
+  "repetitions": 200,
+  "grid": [
+    {
+      "true_auroc": 0.6,
+      "matched_pairs": 150,
+      "power_stratified_perm_p_lt_0_01": 0.775,
+      "power_point_auroc_ge_0_60": 0.555,
+      "power_ci_lower_gt_0_60": 0.03,
+      "ci_half_width": 0.06383590630149566,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.6,
+      "matched_pairs": 300,
+      "power_stratified_perm_p_lt_0_01": 0.97,
+      "power_point_auroc_ge_0_60": 0.46,
+      "power_ci_lower_gt_0_60": 0.02,
+      "ci_half_width": 0.04510028529104149,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.6,
+      "matched_pairs": 500,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 0.52,
+      "power_ci_lower_gt_0_60": 0.03,
+      "ci_half_width": 0.034922589594702166,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.6,
+      "matched_pairs": 750,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 0.505,
+      "power_ci_lower_gt_0_60": 0.03,
+      "ci_half_width": 0.028509298787120906,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.6,
+      "matched_pairs": 1000,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 0.545,
+      "power_ci_lower_gt_0_60": 0.035,
+      "ci_half_width": 0.02468766526020636,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.6,
+      "matched_pairs": 1250,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 0.53,
+      "power_ci_lower_gt_0_60": 0.025,
+      "ci_half_width": 0.022080185738349214,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.62,
+      "matched_pairs": 150,
+      "power_stratified_perm_p_lt_0_01": 0.92,
+      "power_point_auroc_ge_0_60": 0.755,
+      "power_ci_lower_gt_0_60": 0.155,
+      "ci_half_width": 0.06312301814666671,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.62,
+      "matched_pairs": 300,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 0.795,
+      "power_ci_lower_gt_0_60": 0.13,
+      "ci_half_width": 0.04459617910124954,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.62,
+      "matched_pairs": 500,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 0.845,
+      "power_ci_lower_gt_0_60": 0.215,
+      "ci_half_width": 0.0345321049107708,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.62,
+      "matched_pairs": 750,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 0.93,
+      "power_ci_lower_gt_0_60": 0.285,
+      "ci_half_width": 0.028190467032001003,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.62,
+      "matched_pairs": 1000,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 0.945,
+      "power_ci_lower_gt_0_60": 0.435,
+      "ci_half_width": 0.024411547841656975,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.62,
+      "matched_pairs": 1250,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 0.95,
+      "power_ci_lower_gt_0_60": 0.385,
+      "ci_half_width": 0.021833218263439966,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.64,
+      "matched_pairs": 150,
+      "power_stratified_perm_p_lt_0_01": 0.97,
+      "power_point_auroc_ge_0_60": 0.85,
+      "power_ci_lower_gt_0_60": 0.225,
+      "ci_half_width": 0.06227547031606841,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.64,
+      "matched_pairs": 300,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 0.98,
+      "power_ci_lower_gt_0_60": 0.49,
+      "ci_half_width": 0.04399686019004647,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.64,
+      "matched_pairs": 500,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 0.985,
+      "power_ci_lower_gt_0_60": 0.695,
+      "ci_half_width": 0.034067870628479185,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.64,
+      "matched_pairs": 750,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 1.0,
+      "power_ci_lower_gt_0_60": 0.845,
+      "ci_half_width": 0.027811419737983453,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.64,
+      "matched_pairs": 1000,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 1.0,
+      "power_ci_lower_gt_0_60": 0.885,
+      "ci_half_width": 0.02408328256348963,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.64,
+      "matched_pairs": 1250,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 1.0,
+      "power_ci_lower_gt_0_60": 0.965,
+      "ci_half_width": 0.02153960850012982,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.66,
+      "matched_pairs": 150,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 0.985,
+      "power_ci_lower_gt_0_60": 0.44,
+      "ci_half_width": 0.061290511723640244,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.66,
+      "matched_pairs": 300,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 1.0,
+      "power_ci_lower_gt_0_60": 0.725,
+      "ci_half_width": 0.04330038841868115,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.66,
+      "matched_pairs": 500,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 1.0,
+      "power_ci_lower_gt_0_60": 0.92,
+      "ci_half_width": 0.0335283855259061,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.66,
+      "matched_pairs": 750,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 1.0,
+      "power_ci_lower_gt_0_60": 0.985,
+      "ci_half_width": 0.02737093181702183,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.66,
+      "matched_pairs": 1000,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 1.0,
+      "power_ci_lower_gt_0_60": 1.0,
+      "ci_half_width": 0.023701808751762345,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.66,
+      "matched_pairs": 1250,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 1.0,
+      "power_ci_lower_gt_0_60": 1.0,
+      "ci_half_width": 0.021198407904911398,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.68,
+      "matched_pairs": 150,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 0.99,
+      "power_ci_lower_gt_0_60": 0.71,
+      "ci_half_width": 0.060164768404762044,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.68,
+      "matched_pairs": 300,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 1.0,
+      "power_ci_lower_gt_0_60": 0.98,
+      "ci_half_width": 0.04250438443108334,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.68,
+      "matched_pairs": 500,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 1.0,
+      "power_ci_lower_gt_0_60": 1.0,
+      "ci_half_width": 0.0329118085443968,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.68,
+      "matched_pairs": 750,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 1.0,
+      "power_ci_lower_gt_0_60": 1.0,
+      "ci_half_width": 0.026867500860518576,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.68,
+      "matched_pairs": 1000,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 1.0,
+      "power_ci_lower_gt_0_60": 1.0,
+      "ci_half_width": 0.023265825633006335,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.68,
+      "matched_pairs": 1250,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 1.0,
+      "power_ci_lower_gt_0_60": 1.0,
+      "ci_half_width": 0.020808453218752083,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.7,
+      "matched_pairs": 150,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 1.0,
+      "power_ci_lower_gt_0_60": 0.9,
+      "ci_half_width": 0.0588941307884521,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.7,
+      "matched_pairs": 300,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 1.0,
+      "power_ci_lower_gt_0_60": 1.0,
+      "ci_half_width": 0.041605950177782014,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.7,
+      "matched_pairs": 500,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 1.0,
+      "power_ci_lower_gt_0_60": 1.0,
+      "ci_half_width": 0.0322158972993991,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.7,
+      "matched_pairs": 750,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 1.0,
+      "power_ci_lower_gt_0_60": 1.0,
+      "ci_half_width": 0.026299296963345133,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.7,
+      "matched_pairs": 1000,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 1.0,
+      "power_ci_lower_gt_0_60": 1.0,
+      "ci_half_width": 0.022773748893421868,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    },
+    {
+      "true_auroc": 0.7,
+      "matched_pairs": 1250,
+      "power_stratified_perm_p_lt_0_01": 1.0,
+      "power_point_auroc_ge_0_60": 1.0,
+      "power_ci_lower_gt_0_60": 1.0,
+      "ci_half_width": 0.020368327619364676,
+      "relation_weights": [
+        0.28,
+        0.24,
+        0.2,
+        0.16,
+        0.12
+      ],
+      "relation_stratification": "matched pair relation preserved; pair-shared offset cancels"
+    }
+  ],
+  "target_pairs_for_auc_0_64_ci_lower_0_60": 750,
+  "method": "Hanley-McNeil AUROC CI simulation with registered five-stratum relation mix",
+  "limitations": "planning approximation; replace with relation-distribution calibration using archived v4.2 matched rows before protocol freeze"
+}

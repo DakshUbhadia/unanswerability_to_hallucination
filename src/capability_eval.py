@@ -1,6 +1,7 @@
 """Stage 7: capability retention (WikiText-2 token-level KL for all directions, chat MMLU accuracy)."""
 import hashlib
 import random
+import re
 import time
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
@@ -17,7 +18,8 @@ from src.stats_utils import item_bootstrap_mean, summarize_null
 
 OPTION_LETTERS = ("A", "B", "C", "D")
 STAGE7_KEYS = {"stage", "model_name", "l_star", "i_star", "pos_idx", "n_wikitext_passages", "wikitext_tokens",
-               "n_kl_positions", "wikitext_baseline_nll", "mmlu_evaluated", "mmlu_n_questions", "mmlu_baseline_acc",
+               "n_kl_positions", "wikitext_passage_rule_used", "wikitext_baseline_nll", "mmlu_evaluated", "mmlu_n_questions", "mmlu_baseline_acc",
+               "mmlu_neutral_system_prompt",
                "mmlu_baseline_ci", "learned_direction_capability", "controls_wikitext_kl", "concept_capability",
                "source_stage4_sha256", "source_stage5_sha256", "elapsed_sec", "passed_acceptance_gate"}
 
@@ -29,21 +31,71 @@ def _wikitext_rows() -> Iterable[str]:
     return (row["text"] for row in ds)
 
 
+def _is_top_level_article_header(text: str) -> bool:
+    return bool(re.match(r"^=\s+[^=].*?\s+=$", text.strip()))
+
+
 def load_wikitext2_passages(tokenizer: Any, n_passages: int = CFG.n_wikitext_kl, max_tokens: int = CFG.len_wikitext_tokens,
-                            min_words: int = CFG.min_wikitext_words, rows: Optional[Iterable[str]] = None) -> List[List[int]]:
-    """First `n_passages` non-header paragraphs with >= `min_words` words, truncated to `max_tokens` (no BOS/chat)."""
+                            min_words: int = CFG.min_wikitext_words, rows: Optional[Iterable[str]] = None,
+                            passage_rule: Optional[str] = None, return_rule: bool = False):
+    """Load full 256-token paragraphs, falling back deterministically to article chunks.
+
+    Smaller custom max_tokens retain the legacy truncation behavior for compact test fixtures.
+    """
+    rule = passage_rule or CFG.wikitext_passage_rule
+    source = list(rows if rows is not None else _wikitext_rows())
+    if max_tokens != CFG.len_wikitext_tokens and passage_rule is None:
+        passages = []
+        for text in source:
+            stripped = text.strip()
+            if not stripped or stripped.startswith("=") or len(stripped.split()) < min_words:
+                continue
+            ids = tokenizer.encode(stripped, add_special_tokens=False)[:max_tokens]
+            if len(ids) >= 2:
+                passages.append([int(x) for x in ids])
+            if len(passages) == n_passages:
+                break
+        assert len(passages) == n_passages, f"Only {len(passages)} WikiText-2 passages found (need {n_passages})"
+        return (passages, "legacy_custom") if return_rule else passages
+    if rule != "full_length_256":
+        raise ValueError(f"Unsupported WikiText passage rule: {rule}")
     passages = []
-    for text in (rows if rows is not None else _wikitext_rows()):
+    for text in source:
         stripped = text.strip()
         if not stripped or stripped.startswith("=") or len(stripped.split()) < min_words:
             continue
-        ids = tokenizer.encode(stripped, add_special_tokens=False)[:max_tokens]
-        if len(ids) >= 2:
-            passages.append([int(x) for x in ids])
-        if len(passages) == n_passages:
-            break
-    assert len(passages) == n_passages, f"Only {len(passages)} WikiText-2 passages found (need {n_passages})"
-    return passages
+        ids = [int(x) for x in tokenizer.encode(stripped, add_special_tokens=False)]
+        if len(ids) >= max_tokens:
+            passages.append(ids[:max_tokens])
+            if len(passages) == n_passages:
+                break
+    used = "full_length_256"
+    if len(passages) < n_passages:
+        passages = []
+        article_parts, current = [], []
+        for text in source:
+            stripped = text.strip()
+            if _is_top_level_article_header(stripped):
+                if current:
+                    article_parts.append(current)
+                current = []
+                continue
+            if not stripped:
+                continue
+            current.append(stripped)
+        if current:
+            article_parts.append(current)
+        chunks = []
+        for paragraphs in article_parts:
+            text = " ".join(paragraphs)
+            ids = [int(x) for x in tokenizer.encode(text, add_special_tokens=False)]
+            chunks.extend(ids[i:i + max_tokens] for i in range(0, len(ids) - max_tokens + 1, max_tokens))
+        if len(chunks) < n_passages:
+            raise AssertionError(f"Only {len(chunks)} contiguous WikiText chunks found (need {n_passages})")
+        passages = chunks[:n_passages]
+        used = "contiguous_chunks_256"
+    assert len(passages) == n_passages and all(len(p) == max_tokens for p in passages)
+    return (passages, used) if return_rule else passages
 
 
 def build_wikitext_batches(passages: List[List[int]], pad_token_id: int, batch_size: int) -> List[Dict[str, torch.Tensor]]:
@@ -249,21 +301,47 @@ def summarize_stage7(wt: Dict[str, Any], mmlu: Optional[Dict[str, Dict[str, Any]
 
     def mm(name):
         if not mmlu or name not in mmlu:
-            return None, None, None
-        c = mmlu[name]["correct"]
+            return {"acc": None, "ci": None, "false_abs": None, "non_abstained_acc": None,
+                    "secondary_acc": None, "secondary_ci": None, "secondary_false_abs": None,
+                    "secondary_non_abstained_acc": None}
+        primary = mmlu[name]["neutral"]
+        c = primary["correct"]
         b = item_bootstrap_mean(c, n_boot, seed)
-        return float(c.mean()), [b["ci95_low"], b["ci95_high"]], float(np.mean(mmlu[name]["false_abstention"]))
+        fa = primary["false_abstention"]
+        non_abs = c[fa == 0]
+        secondary = mmlu[name]["abstention_prompt"]
+        sc = secondary["correct"]
+        sb = item_bootstrap_mean(sc, n_boot, seed)
+        sfa = secondary["false_abstention"]
+        snon_abs = sc[sfa == 0]
+        return {"acc": float(c.mean()), "ci": [b["ci95_low"], b["ci95_high"]],
+                "false_abs": float(np.mean(fa)), "non_abstained_acc": float(non_abs.mean()) if len(non_abs) else None,
+                "secondary_acc": float(sc.mean()), "secondary_ci": [sb["ci95_low"], sb["ci95_high"]],
+                "secondary_false_abs": float(np.mean(sfa)),
+                "secondary_non_abstained_acc": float(snon_abs.mean()) if len(snon_abs) else None}
 
     learned = []
-    base_acc, base_ci, base_fa = mm("learned|none|0|+0.00")
+    base = mm("learned|none|0|+0.00")
     learned.append({"mode": "none", "alpha": 0.0, "wikitext_kl": 0.0, "wikitext_kl_ci": [0.0, 0.0],
-                    "mmlu_acc": base_acc, "mmlu_ci": base_ci, "mmlu_false_abstention_rate": base_fa})
+                    "mmlu_acc": base["acc"], "mmlu_ci": base["ci"],
+                    "mmlu_false_abstention_rate": base["false_abs"],
+                    "mmlu_non_abstained_acc": base["non_abstained_acc"],
+                    "mmlu_abstention_prompt_acc": base["secondary_acc"],
+                    "mmlu_abstention_prompt_ci": base["secondary_ci"],
+                    "mmlu_abstention_prompt_false_abstention_rate": base["secondary_false_abs"],
+                    "mmlu_abstention_prompt_non_abstained_acc": base["secondary_non_abstained_acc"]})
     for name, mode, _, _, alpha in conditions_wt:
         if not name.startswith("learned|"):
             continue
-        acc, ci, fa = mm(name)
+        metrics = mm(name)
         learned.append({"mode": mode, "alpha": float(alpha), "wikitext_kl": kl[name], "wikitext_kl_ci": kl_ci[name],
-                        "mmlu_acc": acc, "mmlu_ci": ci, "mmlu_false_abstention_rate": fa})
+                        "mmlu_acc": metrics["acc"], "mmlu_ci": metrics["ci"],
+                        "mmlu_false_abstention_rate": metrics["false_abs"],
+                        "mmlu_non_abstained_acc": metrics["non_abstained_acc"],
+                        "mmlu_abstention_prompt_acc": metrics["secondary_acc"],
+                        "mmlu_abstention_prompt_ci": metrics["secondary_ci"],
+                        "mmlu_abstention_prompt_false_abstention_rate": metrics["secondary_false_abs"],
+                        "mmlu_abstention_prompt_non_abstained_acc": metrics["secondary_non_abstained_acc"]})
     controls = {}
     learned_by_op = {"ablate_all": kl["learned|ablate_all|0|+0.00"]}
     for a in CFG.ctrl_operating_alphas:
@@ -281,11 +359,23 @@ def summarize_stage7(wt: Dict[str, Any], mmlu: Optional[Dict[str, Dict[str, Any]
     concept = []
     for name in ("concept|ablate_all|0|+0.00", *[f"concept|steer_layer|0|{a:+.2f}" for a in CFG.ctrl_operating_alphas]):
         _, mode, _, alpha = name.split("|")
-        acc, ci, fa = mm(name)
+        metrics = mm(name)
         concept.append({"mode": mode, "alpha": float(alpha), "wikitext_kl": kl[name], "wikitext_kl_ci": kl_ci[name],
-                        "mmlu_acc": acc, "mmlu_ci": ci, "mmlu_false_abstention_rate": fa})
+                        "mmlu_acc": metrics["acc"], "mmlu_ci": metrics["ci"],
+                        "mmlu_false_abstention_rate": metrics["false_abs"],
+                        "mmlu_non_abstained_acc": metrics["non_abstained_acc"],
+                        "mmlu_abstention_prompt_acc": metrics["secondary_acc"],
+                        "mmlu_abstention_prompt_ci": metrics["secondary_ci"],
+                        "mmlu_abstention_prompt_false_abstention_rate": metrics["secondary_false_abs"],
+                        "mmlu_abstention_prompt_non_abstained_acc": metrics["secondary_non_abstained_acc"]})
     return {"wikitext_baseline_nll": float(wt["nll_sums"].sum() / counts.sum()), "n_kl_positions": int(counts.sum()),
-            "mmlu_baseline_acc": base_acc, "mmlu_baseline_ci": base_ci, "mmlu_baseline_false_abstention_rate": base_fa,
+            "mmlu_baseline_acc": base["acc"], "mmlu_baseline_ci": base["ci"],
+            "mmlu_baseline_false_abstention_rate": base["false_abs"],
+            "mmlu_baseline_non_abstained_acc": base["non_abstained_acc"],
+            "mmlu_abstention_prompt_baseline_acc": base["secondary_acc"],
+            "mmlu_abstention_prompt_baseline_ci": base["secondary_ci"],
+            "mmlu_abstention_prompt_baseline_false_abstention_rate": base["secondary_false_abs"],
+            "mmlu_abstention_prompt_baseline_non_abstained_acc": base["secondary_non_abstained_acc"],
             "learned_direction_capability": learned, "controls_wikitext_kl": controls, "concept_capability": concept}
 
 
@@ -298,7 +388,13 @@ def run_stage7_capability_evaluation(raw_model, tokenizer, contract, directions_
     l_star, i_star, pos_idx = int(selection_dict["l_star"]), int(selection_dict["i_star"]), int(selection_dict["pos_idx"])
     vectors = slice_vectors_at_star(directions_dict, l_star, pos_idx)
     is_tuple = bool(contract["is_layer_output_tuple"])
-    passages = wikitext_passages if wikitext_passages is not None else load_wikitext2_passages(tokenizer)
+    if wikitext_passages is not None:
+        passages, passage_rule_used = wikitext_passages, "provided"
+    else:
+        passages, passage_rule_used = load_wikitext2_passages(tokenizer, return_rule=True)
+    expected_positions = len(passages) * (int(CFG.len_wikitext_tokens) - 1)
+    if passage_rule_used in {"full_length_256", "contiguous_chunks_256"}:
+        assert len(passages) == CFG.n_wikitext_kl and expected_positions == 51000
     wt_batches = build_wikitext_batches(passages, tokenizer.pad_token_id, wikitext_batch_size)
     conds_wt = wikitext_conditions(vectors, l_star)
     fp = hashlib.sha256(f"{source_stage4_sha256}|{source_stage5_sha256}|{l_star}|{pos_idx}|{len(passages)}|"
@@ -312,26 +408,34 @@ def run_stage7_capability_evaluation(raw_model, tokenizer, contract, directions_
     if run_mmlu:
         questions = mmlu_questions if mmlu_questions is not None else load_stratified_mmlu_questions()
         n_mmlu = len(questions)
-        batches = build_chat_batches(tokenizer, [format_mmlu_prompt(q) for q in questions],
-                                     contract["system_prompt_used"], list(contract["suffix_token_ids"]), batch_size)
+        mmlu_prompts = [format_mmlu_prompt(q) for q in questions]
+        batches_by_prompt = {
+            "neutral": build_chat_batches(tokenizer, mmlu_prompts, CFG.mmlu_neutral_system_prompt,
+                                           list(contract["suffix_token_ids"]), batch_size),
+            "abstention_prompt": build_chat_batches(tokenizer, mmlu_prompts, contract["system_prompt_used"],
+                                                     list(contract["suffix_token_ids"]), batch_size),
+        }
         gold = [int(q["answer"]) for q in questions]
         opt_ids = mmlu_option_token_ids(tokenizer)
         mmlu_results = {}
         for name, mode, vec, layer, alpha in mmlu_conditions(vectors, l_star):
-            key = f"mmlu|{name}"
-            if key not in ckpt:
-                r = evaluate_mmlu_accuracy_for_intervention(raw_model, tokenizer, batches, gold, opt_ids,
-                                                            contract["unknown_token_ids"], is_tuple, mode, vec, layer, alpha)
-                ckpt.put(key, {"correct": r["correct"], "false_abstention": r["false_abstention"]})
-            got = ckpt.get(key)
-            mmlu_results[name] = {"correct": np.asarray(got["correct"]),
-                                  "false_abstention": np.asarray(got["false_abstention"])}
+            mmlu_results[name] = {}
+            for prompt_key, batches in batches_by_prompt.items():
+                key = f"mmlu|{prompt_key}|{name}"
+                if key not in ckpt:
+                    r = evaluate_mmlu_accuracy_for_intervention(raw_model, tokenizer, batches, gold, opt_ids,
+                                                                contract["unknown_token_ids"], is_tuple, mode, vec, layer, alpha)
+                    ckpt.put(key, {"correct": r["correct"], "false_abstention": r["false_abstention"]})
+                got = ckpt.get(key)
+                mmlu_results[name][prompt_key] = {"correct": np.asarray(got["correct"]),
+                                                  "false_abstention": np.asarray(got["false_abstention"])}
         ckpt.flush()
-        print(f"[Stage 7] MMLU baseline acc = {mmlu_results['learned|none|0|+0.00']['correct'].mean():.3f}", flush=True)
+        print(f"[Stage 7] neutral MMLU baseline acc = {mmlu_results['learned|none|0|+0.00']['neutral']['correct'].mean():.3f}", flush=True)
 
     summary = summarize_stage7(wt, mmlu_results, conds_wt)
     return {"stage": 7, "model_name": contract["model_name"], "l_star": l_star, "i_star": i_star, "pos_idx": pos_idx,
             "n_wikitext_passages": len(passages), "wikitext_tokens": CFG.len_wikitext_tokens,
+            "wikitext_passage_rule_used": passage_rule_used, "mmlu_neutral_system_prompt": CFG.mmlu_neutral_system_prompt,
             "wikitext_batch_size": wikitext_batch_size, "mmlu_evaluated": bool(run_mmlu), "mmlu_n_questions": n_mmlu,
             "mmlu_sampling": "stratified across all subjects (floor(n/S) each, +1 for first n mod S in seeded order)",
             **summary, "n_bootstrap": CFG.n_bootstrap, "source_stage4_sha256": source_stage4_sha256,
@@ -353,6 +457,10 @@ def verify_stage7_outputs(output_path=CFG.stage7_out_path, stage5_path=None) -> 
     missing = STAGE7_KEYS - d.keys()
     assert not missing, f"Stage 7 JSON missing keys: {sorted(missing)}"
     assert d["stage"] == 7 and d["passed_acceptance_gate"] is True
+    assert d["mmlu_neutral_system_prompt"] == CFG.mmlu_neutral_system_prompt
+    assert d["wikitext_passage_rule_used"] in {"full_length_256", "contiguous_chunks_256", "provided", "legacy_custom"}
+    if d["wikitext_passage_rule_used"] in {"full_length_256", "contiguous_chunks_256"}:
+        assert d["n_kl_positions"] == 51000
     assert d["n_wikitext_passages"] > 0 and d["n_kl_positions"] > 0 and d["wikitext_baseline_nll"] > 0
     expected_learned = 1 + 1 + len({a for a in CFG.grid_alpha_nec + CFG.grid_alpha_suf if a != 0.0})
     assert len(d["learned_direction_capability"]) == expected_learned

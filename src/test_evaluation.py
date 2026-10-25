@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 
 from src.config import CFG
+from src.abstention_classifier import classify_texts
 from src.eval_common import (ConditionCheckpoint, atomic_write_json, atomic_write_jsonl, build_chat_batches,
                              capture_residuals_and_logits, control_specs, evaluate_condition,
                              generate_with_hooks, load_b_ctrl_rows, load_split_pairs, log_odds_and_p_abs,
@@ -17,11 +18,13 @@ from src.stats_utils import (binary_auroc, cluster_bootstrap, cluster_means, hol
 
 TABLE4_COLUMNS = ["condition", "dataset_partition", "n_prompts", "mean_log_odds", "log_odds_ci_95_low",
                   "log_odds_ci_95_high", "mean_p_unknown", "gen_abstention_rate_strict",
-                  "gen_abstention_rate_regex", "gen_rate_ci_95_low", "gen_rate_ci_95_high", "discrepancy_flagged"]
+                  "gen_abstention_rate_regex_v4", "gen_abstention_rate_judged", "gen_degenerate_rate",
+                  "regex_judge_agreement", "unparseable_count", "gen_rate_ci_95_low", "gen_rate_ci_95_high",
+                  "discrepancy_flagged"]
 STAGE6_KEYS = {"stage", "model_name", "l_star", "i_star", "pos_idx", "n_test_pairs", "n_b_ctrl", "primary_tests",
                "secondary_tests", "necessity_curve", "sufficiency_curve", "controls_summary", "b_ctrl_summary",
                "family_breakdown", "generation_audit", "logit_gen_discrepancy", "branch_rule4", "projections",
-               "per_prompt", "native_vs_nnsight_max_abs_diff", "source_stage4_sha256", "source_stage5_sha256",
+               "per_prompt", "generation_rates", "classifier", "native_vs_nnsight_max_abs_diff", "source_stage4_sha256", "source_stage5_sha256",
                "elapsed_sec", "passed_acceptance_gate"}
 
 
@@ -128,9 +131,9 @@ def _rate(flags: List[bool]) -> float:
 def analyze_stage6(cond: Dict[str, Dict[str, np.ndarray]], gens: Dict[str, List[str]],
                    test_pairs: List[Dict[str, Any]], b_ctrl_rows: List[Dict[str, Any]],
                    n_ctrl_random: int = CFG.n_ctrl_random, n_ctrl_shuffled: int = CFG.n_ctrl_shuffled,
-                   n_boot: int = CFG.n_bootstrap, seed: int = CFG.seed_bootstrap) -> Dict[str, Any]:
+                   n_boot: int = CFG.n_bootstrap, seed: int = CFG.seed_bootstrap, offline: bool = False, backend: Optional[str] = None) -> Dict[str, Any]:
     """Pure-numpy H1-H3 analysis from cached per-prompt log-odds, projections and generations."""
-    from src.pilot_check import classify_abstention_response
+    from src.pilot_check import legacy_v4_abstention_flags
     tids = [p["template_id"] for p in test_pairs]
     fams = np.array([p["family"] for p in test_pairs])
     S = {k: np.asarray(v["log_odds"], dtype=np.float64) for k, v in cond.items() if "log_odds" in v}
@@ -177,23 +180,41 @@ def analyze_stage6(cond: Dict[str, Dict[str, np.ndarray]], gens: Dict[str, List[
                        for name, eff in (("H1", h1_eff), ("H1b", h1b_eff), ("H2", h2_eff))}
 
     # Generation rates per audited condition.
-    audit_rows, rates = [], {}
+    audit_rows, rates, labels_by_key = [], {}, {}
     item_tids = {"unans": tids, "ans": tids, "bctrl": [r["template_id"] for r in b_ctrl_rows]}
     for name, part, key in generation_conditions():
         if key not in gens or key not in S:
             continue
-        cls = [classify_abstention_response(t) for t in gens[key]]
-        strict = [c[0] for c in cls]
-        regex = [c[1] for c in cls]
+        part_prompts = ([p["unans_prompt"] for p in test_pairs] if part == "unans" else
+                        [p["ans_prompt"] for p in test_pairs] if part == "ans" else
+                        [r["prompt"] for r in b_ctrl_rows])
+        records = classify_texts([{"uid": f"{name}:{i}", "question": q, "response": text}
+                                  for i, (q, text) in enumerate(zip(part_prompts, gens[key]))], offline=offline, backend=backend)
+        legacy = [legacy_v4_abstention_flags(t) for t in gens[key]]
+        strict = [c[0] for c in legacy]
+        regex = [c[1] for c in legacy]
+        unparseable = sum(r["final_label"] == "UNPARSEABLE" for r in records)
+        if len(records) and unparseable / len(records) > 0.01:
+            raise RuntimeError(f"{name} has {unparseable}/{len(records)} UNPARSEABLE judge outputs (>1%)")
+        valid_idx = [i for i, r in enumerate(records) if r["final_label"] != "UNPARSEABLE"]
+        judged = [records[i]["final_label"] == "ABSTAIN" for i in valid_idx]
+        degenerate = [records[i]["final_label"] == "DEGENERATE" for i in valid_idx]
+        agreement = [records[i]["agree"] for i in valid_idx]
+        labels_by_key[key] = records
         lo_b = cluster_bootstrap(S[key], item_tids[part], n_boot, seed)
-        rb = cluster_bootstrap(np.asarray(regex, dtype=np.float64), item_tids[part], n_boot, seed)
-        rates[name] = {"strict": _rate(strict), "regex": _rate(regex)}
+        rb = cluster_bootstrap(np.asarray(judged, dtype=np.float64), [item_tids[part][i] for i in valid_idx], n_boot, seed)
+        rates[name] = {"strict": _rate(strict), "regex": _rate(regex), "regex_v4": _rate(regex),
+                       "judged": _rate(judged), "degenerate": _rate(degenerate),
+                       "regex_judge_agreement": _rate([x is True for x in agreement]),
+                       "unparseable_count": unparseable}
         audit_rows.append({"condition": name, "dataset_partition": part, "n_prompts": len(regex),
                            "mean_log_odds": float(S[key].mean()), "log_odds_ci_95_low": lo_b["ci95_low"],
                            "log_odds_ci_95_high": lo_b["ci95_high"], "mean_p_unknown": float(P[key].mean()),
                            "gen_abstention_rate_strict": _rate(strict), "gen_abstention_rate_regex": _rate(regex),
-                           "gen_rate_ci_95_low": rb["ci95_low"], "gen_rate_ci_95_high": rb["ci95_high"],
-                           "discrepancy_flagged": False, "_key": key})
+                           "gen_abstention_rate_regex_v4": _rate(regex), "gen_abstention_rate_judged": _rate(judged),
+                           "gen_degenerate_rate": _rate(degenerate), "regex_judge_agreement": rates[name]["regex_judge_agreement"],
+                           "unparseable_count": unparseable, "gen_rate_ci_95_low": rb["ci95_low"],
+                           "gen_rate_ci_95_high": rb["ci95_high"], "discrepancy_flagged": False, "_key": key})
 
     # Branch Rule 4: logit vs. generation discrepancy at the primary operating points.
     br4 = {}
@@ -205,11 +226,13 @@ def analyze_stage6(cond: Dict[str, Dict[str, np.ndarray]], gens: Dict[str, List[
         if row is None or base is None:
             continue
         d_s = row["mean_log_odds"] - base["mean_log_odds"]
-        d_r = row["gen_abstention_rate_regex"] - base["gen_abstention_rate_regex"]
+        d_r = row["gen_abstention_rate_judged"] - base["gen_abstention_rate_judged"]
         flag = bool((np.sign(d_s) != np.sign(d_r)) or
                     (abs(d_s) >= CFG.discrepancy_log_odds and abs(d_r) < CFG.discrepancy_rate))
         row["discrepancy_flagged"] = flag
-        br4[label] = {"delta_log_odds": float(d_s), "delta_gen_rate_regex": float(d_r), "flagged": flag}
+        br4[label] = {"delta_log_odds": float(d_s), "delta_gen_rate_judged": float(d_r),
+                      "delta_gen_rate_regex_v4": row["gen_abstention_rate_regex_v4"] - base["gen_abstention_rate_regex_v4"],
+                      "flagged": flag}
     discrepancy = any(v["flagged"] for v in br4.values())
 
     # Dose-response curves.
@@ -227,11 +250,17 @@ def analyze_stage6(cond: Dict[str, Dict[str, np.ndarray]], gens: Dict[str, List[
                 key, gname = ckey(part, mode), "test_unans_ablate_learned"
             b = cluster_bootstrap(S[key], tids, n_boot, seed)
             eff = cluster_bootstrap(S[key] - S[BASE[part]], tids, n_boot, seed)
+            rate = rates.get(gname, {})
             rows.append({"mode": mode, "alpha": a, "mean_log_odds": b["mean"], "log_odds_ci95": [b["ci95_low"], b["ci95_high"]],
                          "mean_delta_log_odds": eff["mean"], "delta_ci95": [eff["ci95_low"], eff["ci95_high"]],
                          "first_token_abstention_rate": float((S[key] > 0).mean()),
-                         "gen_abstention_rate_regex": rates.get(gname, {}).get("regex"),
-                         "gen_abstention_rate_strict": rates.get(gname, {}).get("strict")})
+                         "gen_abstention_rate_regex": rate.get("regex_v4"),
+                         "gen_abstention_rate_regex_v4": rate.get("regex_v4"),
+                         "gen_abstention_rate_judged": rate.get("judged"),
+                         "gen_degenerate_rate": rate.get("degenerate"),
+                         "regex_judge_agreement": rate.get("regex_judge_agreement"),
+                         "unparseable_count": rate.get("unparseable_count", 0),
+                         "gen_abstention_rate_strict": rate.get("strict")})
         return rows
 
     nec = curve("unans", CFG.grid_alpha_nec, "test_unans_baseline", "test_unans_steer_{}_learned")
@@ -259,12 +288,18 @@ def analyze_stage6(cond: Dict[str, Dict[str, np.ndarray]], gens: Dict[str, List[
     assert ids_u == ids_c, "Family B test templates must match B-ctrl templates"
     h3_w = wilcoxon_greater(cm_u - cm_c)
     bctrl_key = BASE["bctrl"]
-    bctrl_regex = [classify_abstention_response(t)[1] for t in gens.get(bctrl_key, [])]
-    bctrl_rate = _rate(bctrl_regex) if bctrl_regex else float("nan")
+    bctrl_records = labels_by_key.get(bctrl_key, [])
+    bctrl_regex = [legacy_v4_abstention_flags(t)[1] for t in gens.get(bctrl_key, [])]
+    bctrl_valid = [r for r in bctrl_records if r["final_label"] != "UNPARSEABLE"]
+    bctrl_judged = [r["final_label"] == "ABSTAIN" for r in bctrl_valid]
+    bctrl_degenerate = [r["final_label"] == "DEGENERATE" for r in bctrl_valid]
+    bctrl_rate = _rate(bctrl_judged) if bctrl_judged else float("nan")
     h3 = {"test_id": "H3", "mean_effect": float((cm_u - cm_c).mean()), "cluster_differences": (cm_u - cm_c).tolist(),
           "wilcoxon_statistic": h3_w["statistic"], "p_wilcoxon": h3_w["p_value"], "n_clusters": h3_w["n"],
           "bootstrap": cluster_bootstrap(paired_u - proj_c, b_tids, n_boot, seed),
-          "b_ctrl_gen_abstention_rate_regex": bctrl_rate,
+          "b_ctrl_gen_abstention_rate_regex": _rate(bctrl_regex),
+          "b_ctrl_gen_abstention_rate_judged": bctrl_rate,
+          "b_ctrl_gen_degenerate_rate": _rate(bctrl_degenerate),
           "b_ctrl_first_token_abstention_rate": float((S[bctrl_key] > 0).mean()),
           "b_ctrl_abstention_ok": bool(bctrl_rate <= CFG.b_ctrl_abstention_max),
           "auroc_unansB_vs_bctrl": binary_auroc(proj_u[b_mask], proj_c),
@@ -274,7 +309,7 @@ def analyze_stage6(cond: Dict[str, Dict[str, np.ndarray]], gens: Dict[str, List[
                  "mean_proj_b_ctrl": float(proj_c.mean()), "mean_log_odds_unans_B": float(base_u[b_mask].mean()),
                  "mean_log_odds_ans_B": float(base_a[b_mask].mean()), "mean_log_odds_b_ctrl": float(S[bctrl_key].mean()),
                  "b_ctrl_gen_abstention_rate_regex": bctrl_rate,
-                 "b_ctrl_gen_abstention_rate_strict": _rate([classify_abstention_response(t)[0] for t in gens.get(bctrl_key, [])])
+                 "b_ctrl_gen_abstention_rate_strict": _rate([legacy_v4_abstention_flags(t)[0] for t in gens.get(bctrl_key, [])])
                  if bctrl_regex else None}
 
     prelim = holm_bonferroni({"H1": h1["p_wilcoxon"], "H2": h2["p_wilcoxon"], "H3": h3["p_wilcoxon"]},
@@ -284,7 +319,7 @@ def analyze_stage6(cond: Dict[str, Dict[str, np.ndarray]], gens: Dict[str, List[
             "preliminary_holm_h1_h3": prelim, "necessity_curve": nec, "sufficiency_curve": suf,
             "controls_summary": controls, "b_ctrl_summary": b_summary, "family_breakdown": family,
             "generation_audit": [{k: v for k, v in r.items() if k != "_key"} for r in audit_rows],
-            "generation_rates": rates, "branch_rule4": br4, "logit_gen_discrepancy": discrepancy,
+            "generation_rates": rates, "generation_classifier_records": labels_by_key, "branch_rule4": br4, "logit_gen_discrepancy": discrepancy,
             "projections": {"test_unans": proj_u.tolist(), "test_ans": proj_a.tolist(), "b_ctrl": proj_c.tolist()},
             "per_prompt": {"test_unans_baseline": base_u.tolist(), "test_ans_baseline": base_a.tolist(),
                            "test_unans_ablate_learned": S[ckey("unans", "ablate_all")].tolist(),
@@ -320,7 +355,7 @@ def _condition_plan(vectors: Dict[str, Any], l_star: int) -> List[Tuple[str, str
 
 def run_stage6_test_evaluation(raw_model, tokenizer, contract, directions_dict, selection_dict, test_pairs, b_ctrl_rows,
                                batch_size=CFG.batch_size_forward, checkpoint_path=CFG.stage6_checkpoint_path,
-                               force=False, source_stage4_sha256="", source_stage5_sha256="", verify_nnsight=True):
+                               force=False, source_stage4_sha256="", source_stage5_sha256="", verify_nnsight=True, offline=False, generation_only=False):
     started = time.perf_counter()
     l_star, i_star, pos_idx = int(selection_dict["l_star"]), int(selection_dict["i_star"]), int(selection_dict["pos_idx"])
     vectors = slice_vectors_at_star(directions_dict, l_star, pos_idx)
@@ -371,36 +406,72 @@ def run_stage6_test_evaluation(raw_model, tokenizer, contract, directions_dict, 
     ckpt.flush()
 
     cond = {k: v for k, v in ckpt.results.items() if not k.startswith("gen|")}
-    analysis = analyze_stage6(cond, gens, test_pairs, b_ctrl_rows)
-    gen_samples = build_generation_samples(cond, gens, test_pairs, b_ctrl_rows)
+    analysis = analyze_stage6(cond, gens, test_pairs, b_ctrl_rows, offline=offline, backend=("regex_only" if generation_only else None))
+    classifier_records = analysis.pop("generation_classifier_records")
+    gen_samples = build_generation_samples(cond, gens, test_pairs, b_ctrl_rows, classifier_records, offline=offline)
+    if generation_only:
+        for row in gen_samples:
+            row.update(judge_label=None, final_label=None, classifier_final=False, regex_judge_agree=None, judge_margin=None)
+    flat_records = [r for group in classifier_records.values() for r in group]
     result = {"stage": 6, "model_name": contract["model_name"], "l_star": l_star, "i_star": i_star, "pos_idx": pos_idx,
+              "classifier": {"backend": flat_records[0].get("classifier_backend", CFG.judge_backend) if flat_records else CFG.judge_backend,
+                             "model_id": flat_records[0].get("judge_model_id", CFG.judge_model_id) if flat_records else CFG.judge_model_id,
+                             "prompt_version": "v1",
+                             "unparseable_count": sum(r["final_label"] == "UNPARSEABLE" for r in flat_records),
+                             "unparseable_by_condition": {name: sum(r["final_label"] == "UNPARSEABLE" for r in group)
+                                                          for name, group in classifier_records.items()},
+                             "classifier_final": all(r["classifier_final"] for r in flat_records)},
               "r_norm_at_star": vectors["norm"], "cos_concept_pre_ortho_at_star": float(selection_dict["cos_concept_pre_ortho_at_star"]),
               "n_test_pairs": len(test_pairs), "n_b_ctrl": len(b_ctrl_rows), "n_bootstrap": CFG.n_bootstrap,
               "seed_bootstrap": CFG.seed_bootstrap, "grid_alpha_nec": list(CFG.grid_alpha_nec),
               "grid_alpha_suf": list(CFG.grid_alpha_suf), **analysis, "native_vs_nnsight_max_abs_diff": parity,
               "source_stage4_sha256": source_stage4_sha256, "source_stage5_sha256": source_stage5_sha256,
-              "elapsed_sec": time.perf_counter() - started, "passed_acceptance_gate": True}
+              "elapsed_sec": time.perf_counter() - started, "passed_acceptance_gate": bool(all(r["classifier_final"] for r in flat_records))}
     return result, gen_samples
 
 
-def build_generation_samples(cond, gens, test_pairs, b_ctrl_rows) -> List[Dict[str, Any]]:
-    from src.pilot_check import classify_abstention_response
+def build_generation_samples(cond, gens, test_pairs, b_ctrl_rows, labels_by_key=None, offline=False, generation_only=False) -> List[Dict[str, Any]]:
+    from src.pilot_check import legacy_v4_abstention_flags
+    from src.abstention_classifier import regex_label
+    labels_by_key = labels_by_key or {}
     rows = []
     for name, part, key in generation_conditions():
         if key not in gens:
             continue
         items = b_ctrl_rows if part == "bctrl" else test_pairs
+        prompts = ([p["unans_prompt"] for p in test_pairs] if part == "unans" else
+                   [p["ans_prompt"] for p in test_pairs] if part == "ans" else [r["prompt"] for r in b_ctrl_rows])
+        records = labels_by_key.get(key)
+        if records is None and not generation_only:
+            records = classify_texts([{"uid": f"{name}:{i}", "question": q, "response": t}
+                                      for i, (q, t) in enumerate(zip(prompts, gens[key]))], offline=offline)
         for i, (item, text) in enumerate(zip(items, gens[key])):
-            strict, regex = classify_abstention_response(text)
+            strict, regex = legacy_v4_abstention_flags(text)
+            if generation_only:
+                rows.append({"condition":name,"dataset_part":part,
+                             "item_id":item.get("b_ctrl_id",item.get("pair_id")),"pair_id":item["pair_id"],
+                             "template_id":item["template_id"],"family":item.get("family","B"),
+                             "log_odds":float(cond[key]["log_odds"][i]),"p_unknown":float(cond[key]["p_abs"][i]),
+                             "generated_text":text,"abstained_strict":bool(strict),"abstained_regex":bool(regex),
+                             "abstained_regex_v4":bool(regex),"regex_label":regex_label(text),
+                             "judge_label":None,"final_label":None,"classifier_final":False,
+                             "judge_margin":None,"generation_batch_size":None})
+                continue
+            record = records[i]
             rows.append({"condition": name, "dataset_part": part,
                          "item_id": item.get("b_ctrl_id", item.get("pair_id")), "pair_id": item["pair_id"],
                          "template_id": item["template_id"], "family": item.get("family", "B"),
                          "log_odds": float(cond[key]["log_odds"][i]), "p_unknown": float(cond[key]["p_abs"][i]),
-                         "generated_text": text, "abstained_strict": bool(strict), "abstained_regex": bool(regex)})
+                         "generated_text": text, "abstained_strict": bool(strict), "abstained_regex": bool(regex),
+                         "abstained_regex_v4": bool(regex), "regex_label": record["regex_label"],
+                         "judge_label": record["judge_label"], "final_label": record["final_label"],
+                         "classifier_final": record["classifier_final"], "regex_judge_agree": record["agree"],
+                         "judge_prompt_sha256": record.get("judge_prompt_sha256"),
+                         "judge_model_id": record.get("judge_model_id"), "judge_model_revision": record.get("judge_model_revision"),
+                         "judge_quantization": record.get("judge_quantization"), "judge_logprobs": record.get("judge_logprobs"),
+                         "judge_margin": record.get("judge_margin"), "judge_prompt_version": record.get("judge_prompt_version")})
     return rows
 
-
-# ----------------------------- artifacts -------------------------------------
 def save_stage6_artifacts(results_dict, gen_samples, results_path=CFG.stage6_out_path, gen_path=CFG.stage6_gen_path,
                           table1_csv_path=CFG.table1_csv_path, table1_md_path=CFG.table1_md_path,
                           checkpoint_path=None, table4_csv_path=CFG.table4_csv_path,

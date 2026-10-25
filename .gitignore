@@ -57,3 +57,6 @@ stage_*_plan.md
 *.tmp
 .ipynb_checkpoints/
 results/*_checkpoint.pt
+# One-off local agent instructions and task notes
+tier0_agent_instructions.md
+tier1_free_judge_backend.md

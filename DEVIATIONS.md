@@ -16,6 +16,9 @@ This log records implementation choices that differ from the frozen protocol in 
 | DEV-010 | 6.1 statistics | H1-H5 tests as registered | The confirmatory family is exactly as registered: H1/H2 template-cluster Wilcoxon plus Monte Carlo rank 1/100; H3 Wilcoxon plus B-ctrl regex generation abstention <= 0.15; H4 one-sided MWU plus AUROC >= 0.60; H5 one-sided paired bootstrap; Holm-Bonferroni across H1-H5 (`n_bootstrap = 1000`, `seed_bootstrap`). The plan's extra statistics are reported as secondary only: cluster-bootstrap CIs, Cohen's d_z, H3 AUROC, two-sided bootstrap p-values, family breakdowns, and AUROC control nulls for H4. | Preserves the pre-registration. The plan's 5,000-resample, two-sided, and H3 AUROC >= 0.85 variants are not used for confirmation. |
 | DEV-011 | 5.5 capability details | WikiText: first 200 paragraphs with >= 64 words truncated to 256 tokens; MMLU stratified over 57 subjects | Section headers (`= ... =`) are excluded. Paragraphs with fewer than 256 tokens are kept and padding is masked out of the KL. MMLU allocates floor(200/57) = 3 questions per subject, plus one more for the first 29 subjects in `seed_mmlu` order. MMLU prompts use the locked abstention system prompt, and false abstention (`P(Unknown)` > best option) is also reported. | Removes ambiguity in the frozen text. The locked system prompt keeps the intervention context identical to the test stages. |
 | DEV-012 | Stages 8 and 10 PopQA labels | Correct/wrong partitions from the Stage 2 baseline | Stage 8 uses the Stage 2 partitions and matched pairs, with features computed under DEV-007 tokenization. Stage 10 regenerates at every alpha, including alpha = 0, under DEV-007 tokenization. Regenerated `ambiguous` grades count as answered but not correct. | Keeps the registered labels while making steering runs internally consistent. Stage 10 is an exploratory stretch analysis. |
+| DEV-013 | Section 6.3, Stage 8/9 interpretation | Derive verdict from H4 once H1-H3 pass | v4.1 treats H1-H3 as prerequisites and requires H4 and H5 to agree | Post-hoc after viewing results: v4 ignored H5, yielding B while H5 pointed to A. Both verdicts retained in overall and overall_as_registered_v4. No statistic or threshold changed. |
+| DEV-014 | Section 5.2 Tier 2 control | Within-pair label-permutation null | Report shuffle results with a design caveat; retain results unchanged | Flipping pair labels preserves the shared axis, so shuffled directions approximate +/- r-hat. H4 AUROCs are bimodal near 0.31 and 0.70; shuffled ablation reaches 6.23 versus learned 6.80 on H1. Steering shuffles use natural norms far below learned norm; WikiText KL is about 0.0009 versus 0.065 for norm-matched random directions. Corrected null remains Tier 2. |
+| DEV-015 | README framing | Match title and claims to active model and results | Correct title, summarize findings, describe Stage 10 as negative | Prior title named Qwen although Llama was active; previous framing omitted H5 disagreement and Stage 10 result. |
 
 ### DEV-003 details: token parity, log-popularity matching, and PopQA answer grading
 
@@ -44,3 +47,29 @@ This log records implementation choices that differ from the frozen protocol in 
 - Qwen Attempt 1 and Attempt 2 both observed an unanswerable abstention rate of `1.0000` (above the `0.95` ceiling) and an answerable rate of `0.0000`. The ceiling did not have its own targeted remedy; the implementation followed the generic narrow-gap calibration rule on Attempt 2, so the prompt changed but the measured rates repeated. It then followed the pre-registered Attempt 3 fallback rule.
 - `meta-llama/Llama-3.2-3B-Instruct` passed Stage 0 checks (`28` layers, `d_model = 3072`, `k_suffix = 5`) and the Stage 2 validation pilot (`0.9479` unanswerable, `0.0104` answerable, `0.9375` gap; mean log-odds separation approximately `15.01` nats). It is the active model locked in `results/stage2_pilot.json`.
 - `data/pairs.jsonl` was built using the primary Qwen tokenizer and then checked using the locked Llama tokenizer; the measured Llama parity results are recorded under DEV-003.
+
+
+### DEV-013 details: post-hoc interpretation correction
+
+H1-H3 are prerequisites because both hypotheses predict them. The v4.1 rule uses H4 and H5 as discriminating tests and returns a hypothesis verdict only when they agree. This correction was made after viewing results. It changes no statistic or threshold; the v4 verdict remains in overall_as_registered_v4.
+
+### DEV-014 details: paired label-shuffle null
+
+Within-pair flips preserve the shared axis of pair differences, so shuffled directions approximate plus or minus r-hat, not a valid null. H4 shuffled AUROCs are bimodal near 0.31 and 0.70. Shuffled ablation reaches 6.23 versus 6.80 for the learned direction on H1. Steering shuffles use natural norms far below learned norm; WikiText KL is about 0.0009 versus 0.065 for norm-matched random directions. Results remain unchanged; corrected null is Tier 2.
+
+### DEV-015 details: README framing
+
+The title reflects the active Llama model. The summary reports the H4/H5 disagreement, confidence comparison, and open issues. Stage 10 is described as a negative result from the committed selective-accuracy comparison.
+
+## Tier 2 deviations (v5 controls and statistics)
+
+- **DEV-023** Covariance-matched null. The isotropic random null is superseded by 499 Gaussian directions sampled from a centered Ledoit–Wolf covariance fitted to the preregistered training, validation, and archived PopQA activation pool. The locked coordinate is layer 11, position -4.
+- **DEV-024** Label-free null. The within-pair shuffled null is superseded because its sign-flip construction can retain the answerability axis. The replacement randomizes 2/2 instance assignments separately within every template and label, then averages the label-specific differences; n=199.
+- **DEV-025** Specificity controls. The single concept control is supplemented by 199 family-stratified template-partition directions and a named family of label-balanced prompt-attribute contrasts, with each contrast and group count reported.
+- **DEV-026** Steering scale. Steering is reported as alpha times the learned-direction norm divided by median non-BOS and i* residual norms. Net effect subtracts the mean covariance-null effect at each alpha.
+- **DEV-027** Causal outcomes and IUT. H1′/H2′ primary outcomes use judged generated abstention changes and compare nulls on probability changes. Composite decisions use the intersection–union maximum component p-value, followed by Holm correction.
+- **DEV-028** Incremental value. H5′ tests cross-validated AUROC improvement over maxp, entropy, and abstention log-odds; the prior v4 H5 comparisons remain secondary.
+- **DEV-029** Relation control. H4′ uses exact relation matching and relation-stratified AUROC, with within-relation label permutation.
+- **DEV-030** Fresh PopQA and power. H4′/H5′ use a fresh sample, a registered relation-exact match, and a target of 750 matched pairs, subject to the 9,000-question cap and grader transfer gate.
+- **DEV-031** Interpretation. Rule v5 retains v4 and v4.1 verdicts and adds an equivalence-based output-confidence interpretation using SESOI delta-AUROC 0.02.
+| DEV-018 | Tier 1 A2.3, A2.5, A5, Stage 10, Phase C | Paid API judge with in-stage classification | `Qwen/Qwen2.5-7B-Instruct` locally, revision pinned in `results/judge_model.json`; teacher-forced scoring of ABSTAIN/ANSWER/DEGENERATE; separate `judge_pass.py`; offline cache consumption; low-margin validation and human override path | Free, reproducible labels with cacheable score vectors. Record actual revision and precision in every result; quantization is a judge-only deviation. |

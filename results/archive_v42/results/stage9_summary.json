@@ -1,0 +1,210 @@
+{
+  "stage": 9,
+  "model_name": "meta-llama/Llama-3.2-3B-Instruct",
+  "l_star": 11,
+  "i_star": -4,
+  "filter_relaxed": false,
+  "r_norm_at_star": 3.807962656021118,
+  "hypotheses": {
+    "H1": {
+      "effect": 6.8037110005194945,
+      "p": 5.960464477539063e-08,
+      "p_mc": 0.01,
+      "confirmed": true
+    },
+    "H2": {
+      "effect": 20.308767224351566,
+      "p": 5.960464477539063e-08,
+      "p_mc": 0.01,
+      "confirmed": true
+    },
+    "H3": {
+      "effect": 4.114332992945038,
+      "p": 0.000244140625,
+      "b_ctrl_abstention_rate": 0.08333333333333333,
+      "confirmed": true
+    },
+    "H4": {
+      "auroc_proj": 0.6930445647646813,
+      "ci": [
+        0.6363934008977742,
+        0.7463753528622333
+      ],
+      "p": 5.241588265219784e-09,
+      "confirmed": true
+    },
+    "H5": {
+      "delta_auroc": -0.0805220047202555,
+      "p": 0.996003996003996,
+      "confirmed": false
+    }
+  },
+  "holm_bonferroni": [
+    {
+      "test_id": "H4",
+      "raw_p_value": 5.241588265219784e-09,
+      "rank": 1,
+      "holm_threshold": 0.01,
+      "passed_holm_bonferroni": true,
+      "extra_criteria_met": true,
+      "confirmed": true
+    },
+    {
+      "test_id": "H1",
+      "raw_p_value": 5.960464477539063e-08,
+      "rank": 2,
+      "holm_threshold": 0.0125,
+      "passed_holm_bonferroni": true,
+      "extra_criteria_met": true,
+      "confirmed": true
+    },
+    {
+      "test_id": "H2",
+      "raw_p_value": 5.960464477539063e-08,
+      "rank": 3,
+      "holm_threshold": 0.016666666666666666,
+      "passed_holm_bonferroni": true,
+      "extra_criteria_met": true,
+      "confirmed": true
+    },
+    {
+      "test_id": "H3",
+      "raw_p_value": 0.000244140625,
+      "rank": 4,
+      "holm_threshold": 0.025,
+      "passed_holm_bonferroni": true,
+      "extra_criteria_met": true,
+      "confirmed": true
+    },
+    {
+      "test_id": "H5",
+      "raw_p_value": 0.996003996003996,
+      "rank": 5,
+      "holm_threshold": 0.05,
+      "passed_holm_bonferroni": false,
+      "extra_criteria_met": true,
+      "confirmed": false
+    }
+  ],
+  "confirmed": {
+    "H4": true,
+    "H1": true,
+    "H2": true,
+    "H3": true,
+    "H5": false
+  },
+  "interpretation": {
+    "overall": "Mixed_Not_Supported_Discriminating_Tests_Disagree",
+    "overall_as_registered_v4": "Hypothesis_B_Internal_Uncertainty_Detector",
+    "rule_version": "v4.1-posthoc",
+    "prerequisites_met": true,
+    "discriminating_tests": {
+      "H4_closed_book": "B",
+      "H5_value_over_confidence": "A"
+    },
+    "verdict_explanation": "Prerequisites H1–H3 pass. H4 points to B (closed-book separation confirmed) but H5 points to A (the projection does not add value over output confidence, and no earlier layer beats max-probability AUROC). The discriminating tests disagree, so neither hypothesis is supported.",
+    "dimension_1_causal_mediation": "mediates",
+    "concept_confound_flag": false,
+    "dimension_2_private_detail": "passes",
+    "dimension_3_closed_book": "B",
+    "dimension_4_value_over_confidence": "A",
+    "earlier_layers_beating_maxp": [],
+    "logit_gen_discrepancy": false,
+    "note": ""
+  },
+  "logit_gen_discrepancy": false,
+  "capability": {
+    "wikitext_baseline_nll": 2.9773031499934386,
+    "ablate_all_kl": 0.019173484790342,
+    "mmlu_baseline_acc": 0.59,
+    "mmlu_ablate_all_acc": 0.57
+  },
+  "stage10_ran": true,
+  "h4_controls": {
+    "random_rank": 1,
+    "random_p": 0.01,
+    "shuffled_rank": 4,
+    "shuffled_n": 19,
+    "shuffled_p": 0.2,
+    "shuffled_max_auroc": 0.7024850756629182,
+    "shuffled_min_auroc": 0.30723309732056087,
+    "n_shuffled_above_learned": 3
+  },
+  "confidence_baselines": {
+    "auroc_maxp": 0.7735665694849369,
+    "auroc_maxp_ci": [
+      0.719467582951548,
+      0.8254431024110325
+    ],
+    "auroc_ent": 0.7773612846499144,
+    "auroc_ent_ci": [
+      0.7246506085427368,
+      0.8290550233698922
+    ],
+    "delta_maxp_ci": [
+      -0.14260493312971437,
+      -0.020674256096996555
+    ]
+  },
+  "stage10_assessment": {
+    "confidence_coverage_range": [
+      0.10204081632653061,
+      1.0
+    ],
+    "comparable_points": [
+      {
+        "alpha": 0.0,
+        "coverage": 0.8027210884353742,
+        "learned_selective_acc": 0.5550847457627118,
+        "threshold_selective_acc": 0.593879921741257,
+        "gap_points": 3.8795175978545204
+      },
+      {
+        "alpha": 0.25,
+        "coverage": 0.29591836734693877,
+        "learned_selective_acc": 0.6666666666666666,
+        "threshold_selective_acc": 0.8070506349290686,
+        "gap_points": 14.038396826240195
+      }
+    ],
+    "not_comparable_points": [
+      {
+        "alpha": 0.5,
+        "coverage": 0.034013605442176874
+      },
+      {
+        "alpha": 0.75,
+        "coverage": 0.0
+      },
+      {
+        "alpha": 1.0,
+        "coverage": 0.0
+      },
+      {
+        "alpha": 1.25,
+        "coverage": 0.0
+      },
+      {
+        "alpha": 1.5,
+        "coverage": 0.027210884353741496
+      },
+      {
+        "alpha": 2.0,
+        "coverage": 1.0
+      }
+    ],
+    "dominated_at_all_comparable_points": true,
+    "largest_gap_points": 14.038396826240195,
+    "largest_gap_coverage": 0.29591836734693877,
+    "largest_gap_alpha": 0.25,
+    "learned_max_gain": 0.23809523809523814,
+    "learned_max_gain_alpha": 0.25,
+    "concept_max_gain": 0.36734693877551017,
+    "concept_max_gain_alpha": 1.25,
+    "concept_beats_learned_gain": true
+  },
+  "stage10": {
+    "max_selective_gain": 0.23809523809523814
+  },
+  "passed_acceptance_gate": true
+}

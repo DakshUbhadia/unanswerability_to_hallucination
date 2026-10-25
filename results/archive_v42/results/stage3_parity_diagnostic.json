@@ -1,0 +1,20 @@
+{
+  "stage": 3,
+  "diagnostic_only": true,
+  "decision": "parity_passed",
+  "model_name": "meta-llama/Llama-3.2-3B-Instruct",
+  "runtime_dtype": "float16",
+  "pair_id": "pair_0001",
+  "cache_sha256": "1c8a312235e3aa93baf3002f811fb177fccf5ca01209579e754478f03a39ded2",
+  "allclose_rtol": 0.005,
+  "allclose_atol": 0.005,
+  "allclose_passed": true,
+  "allclose_mismatch_count": 0,
+  "coordinate_count": 430080,
+  "allclose_mismatch_fraction": 0.0,
+  "min_cosine": 0.9999994039535522,
+  "max_relative_l2": 0.0,
+  "max_absolute_difference": 0.0,
+  "max_allclose_violation_ratio": 0.0,
+  "worst_mismatches": []
+}

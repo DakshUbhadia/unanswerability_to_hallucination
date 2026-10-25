@@ -265,7 +265,15 @@
     }
   ],
   "interpretation": {
-    "overall": "Hypothesis_B_Internal_Uncertainty_Detector",
+    "overall": "Mixed_Not_Supported_Discriminating_Tests_Disagree",
+    "overall_as_registered_v4": "Hypothesis_B_Internal_Uncertainty_Detector",
+    "rule_version": "v4.1-posthoc",
+    "prerequisites_met": true,
+    "discriminating_tests": {
+      "H4_closed_book": "B",
+      "H5_value_over_confidence": "A"
+    },
+    "verdict_explanation": "Prerequisites H1–H3 pass. H4 points to B (closed-book separation confirmed) but H5 points to A (the projection does not add value over output confidence, and no earlier layer beats max-probability AUROC). The discriminating tests disagree, so neither hypothesis is supported.",
     "dimension_1_causal_mediation": "mediates",
     "concept_confound_flag": false,
     "dimension_2_private_detail": "passes",

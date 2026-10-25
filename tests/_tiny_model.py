@@ -9,13 +9,16 @@ N_SPECIAL = 3       # 0 = pad, 1 = eos, 2 = bos
 
 class StubTokenizer:
     padding_side = "left"
+    chat_template = "tiny-stub-chat-template-v1"
+    bos_token_id = 2
     pad_token_id = 0
     eos_token_id = 1
     pad_token = "<pad>"
     eos_token = "<eos>"
 
     def encode(self, text, add_special_tokens=False):
-        return [b + N_SPECIAL for b in str(text).encode("utf-8")]
+        ids = [b + N_SPECIAL for b in str(text).encode("utf-8")]
+        return [self.bos_token_id, *ids] if str(text).startswith("S:") else ids
 
     def apply_chat_template(self, conv, tokenize=False, add_generation_prompt=True):
         system = conv[0]["content"][:12]
@@ -35,6 +38,16 @@ class StubTokenizer:
                 input_ids[i, :len(row)] = torch.tensor(row)
                 mask[i, :len(row)] = 1
         return {"input_ids": input_ids, "attention_mask": mask}
+
+    def pad(self, features, return_tensors="pt", padding=True):
+        rows = features["input_ids"]
+        width = max(len(row) for row in rows)
+        input_ids = torch.full((len(rows), width), self.pad_token_id, dtype=torch.long)
+        attention_mask = torch.zeros((len(rows), width), dtype=torch.long)
+        for i, row in enumerate(rows):
+            input_ids[i, width-len(row):] = torch.tensor(row)
+            attention_mask[i, width-len(row):] = 1
+        return {"input_ids": input_ids, "attention_mask": attention_mask}
 
     def decode(self, ids, skip_special_tokens=True):
         return bytes(int(i) - N_SPECIAL for i in ids if int(i) >= N_SPECIAL).decode("utf-8", errors="ignore")

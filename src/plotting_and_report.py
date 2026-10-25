@@ -220,70 +220,102 @@ def plot_figure2b_selective_steering(stage10_dict, out_png_path=CFG.fig2b_png_pa
 
 
 # ----------------------------- summary & README ------------------------------
+def assess_stage10(stage10_dict: Dict[str, Any]) -> Dict[str, Any]:
+    threshold = sorted(stage10_dict["confidence_threshold_curve"], key=lambda r: r["coverage"])
+    cov_min, cov_max = threshold[0]["coverage"], threshold[-1]["coverage"]
+    learned = stage10_dict["coverage_curve"]["learned"]
+    comparable, not_comparable = [], []
+    for row in learned:
+        cov, acc = row["coverage"], row["selective_acc"]
+        if acc is None or not (cov_min <= cov < cov_max):
+            not_comparable.append({"alpha": row["alpha"], "coverage": cov})
+            continue
+        threshold_acc = float(np.interp(cov, [r["coverage"] for r in threshold], [r["selective_acc"] for r in threshold]))
+        comparable.append({"alpha": row["alpha"], "coverage": cov, "learned_selective_acc": acc,
+                           "threshold_selective_acc": threshold_acc, "gap_points": (threshold_acc-acc)*100})
+    largest = max(comparable, key=lambda r:r["gap_points"]) if comparable else None
+    learned_gains = stage10_dict["coverage_curve"]["learned"]
+    concept_gains = stage10_dict["coverage_curve"]["concept"]
+    lmax=max(learned_gains,key=lambda r:r["selective_abstention_gain"])
+    cmax=max(concept_gains,key=lambda r:r["selective_abstention_gain"])
+    return {"confidence_coverage_range":[cov_min,cov_max], "comparable_points":comparable,
+            "not_comparable_points":not_comparable,
+            "dominated_at_all_comparable_points":bool(comparable and all(r["gap_points"]>0 for r in comparable)),
+            "largest_gap_points":None if largest is None else largest["gap_points"],
+            "largest_gap_coverage":None if largest is None else largest["coverage"],
+            "largest_gap_alpha":None if largest is None else largest["alpha"],
+            "learned_max_gain":lmax["selective_abstention_gain"],"learned_max_gain_alpha":lmax["alpha"],
+            "concept_max_gain":cmax["selective_abstention_gain"],"concept_max_gain_alpha":cmax["alpha"],
+            "concept_beats_learned_gain":cmax["selective_abstention_gain"]>lmax["selective_abstention_gain"]}
+
+
 def build_stage9_executive_summary(stage5_dict, stage6_dict, stage7_dict, stage8_dict, stage10_dict=None) -> Dict[str, Any]:
-    holm = {r["test_id"]: r for r in stage8_dict["holm_bonferroni_table"]}
-    pt = stage6_dict["primary_tests"]
-    summary = {
-        "stage": 9, "model_name": stage6_dict["model_name"], "l_star": stage5_dict["l_star"], "i_star": stage5_dict["i_star"],
-        "filter_relaxed": stage5_dict["filter_relaxed"], "r_norm_at_star": stage5_dict["r_norm_at_star"],
-        "hypotheses": {
-            "H1": {"effect": pt["H1"]["mean_effect"], "p": pt["H1"]["p_wilcoxon"], "p_mc": pt["H1"]["p_mc"]},
-            "H2": {"effect": pt["H2"]["mean_effect"], "p": pt["H2"]["p_wilcoxon"], "p_mc": pt["H2"]["p_mc"]},
-            "H3": {"effect": pt["H3"]["mean_effect"], "p": pt["H3"]["p_wilcoxon"],
-                   "b_ctrl_abstention_rate": pt["H3"]["b_ctrl_gen_abstention_rate_regex"]},
-            "H4": {"auroc_proj": stage8_dict["auroc_proj"], "ci": stage8_dict["auroc_proj_ci"], "p": stage8_dict["h4_mwu_p"]},
-            "H5": {"delta_auroc": stage8_dict["delta_auroc_proj_minus_maxp"], "p": stage8_dict["h5_boot_p"]},
-        },
-        "holm_bonferroni": stage8_dict["holm_bonferroni_table"],
-        "confirmed": {k: bool(v["confirmed"]) for k, v in holm.items()},
-        "interpretation": stage8_dict["interpretation"],
-        "logit_gen_discrepancy": stage6_dict["logit_gen_discrepancy"],
-        "capability": None, "stage10_ran": stage10_dict is not None,
-    }
-    for k in summary["hypotheses"]:
-        summary["hypotheses"][k]["confirmed"] = summary["confirmed"].get(k)
+    holm={r["test_id"]:r for r in stage8_dict["holm_bonferroni_table"]}
+    pt=stage6_dict["primary_tests"]; h4=stage8_dict["h4"]; h5=stage8_dict["h5"]
+    shuf=h4["controls"]["shuffled"]; shuf_au=shuf["aurocs"]
+    summary={"stage":9,"model_name":stage6_dict["model_name"],"l_star":stage5_dict["l_star"],"i_star":stage5_dict["i_star"],
+      "filter_relaxed":stage5_dict["filter_relaxed"],"r_norm_at_star":stage5_dict["r_norm_at_star"],
+      "hypotheses":{"H1":{"effect":pt["H1"]["mean_effect"],"p":pt["H1"]["p_wilcoxon"],"p_mc":pt["H1"]["p_mc"]},
+      "H2":{"effect":pt["H2"]["mean_effect"],"p":pt["H2"]["p_wilcoxon"],"p_mc":pt["H2"]["p_mc"]},
+      "H3":{"effect":pt["H3"]["mean_effect"],"p":pt["H3"]["p_wilcoxon"],"b_ctrl_abstention_rate":pt["H3"]["b_ctrl_gen_abstention_rate_regex"]},
+      "H4":{"auroc_proj":stage8_dict["auroc_proj"],"ci":stage8_dict["auroc_proj_ci"],"p":stage8_dict["h4_mwu_p"]},
+      "H5":{"delta_auroc":stage8_dict["delta_auroc_proj_minus_maxp"],"p":stage8_dict["h5_boot_p"]}},
+      "holm_bonferroni":stage8_dict["holm_bonferroni_table"],"confirmed":{k:bool(v["confirmed"]) for k,v in holm.items()},
+      "interpretation":stage8_dict["interpretation"],"logit_gen_discrepancy":stage6_dict["logit_gen_discrepancy"],
+      "capability":None,"stage10_ran":stage10_dict is not None,
+      "h4_controls":{"random_rank":h4["controls"]["random"]["rank_of_observed"],"random_p":h4["controls"]["random"]["p_rank"],
+      "shuffled_rank":shuf["rank_of_observed"],"shuffled_n":shuf["n"],"shuffled_p":shuf["p_rank"],
+      "shuffled_max_auroc":shuf["max"],"shuffled_min_auroc":shuf["min"],
+      "n_shuffled_above_learned":sum(x>stage8_dict["auroc_proj"] for x in shuf_au)},
+      "confidence_baselines":{"auroc_maxp":stage8_dict["auroc_maxp"],"auroc_maxp_ci":stage8_dict["auroc_maxp_ci"],
+      "auroc_ent":stage8_dict["auroc_ent"],"auroc_ent_ci":stage8_dict["auroc_ent_ci"],
+      "delta_maxp_ci":h5["delta_auroc_maxp_ci"]}}
+    for k in summary["hypotheses"]: summary["hypotheses"][k]["confirmed"]=summary["confirmed"].get(k)
     if stage7_dict:
-        abl = next((r for r in stage7_dict["learned_direction_capability"] if r["mode"] == "ablate_all"), {})
-        summary["capability"] = {"wikitext_baseline_nll": stage7_dict["wikitext_baseline_nll"],
-                                 "ablate_all_kl": abl.get("wikitext_kl"), "mmlu_baseline_acc": stage7_dict["mmlu_baseline_acc"],
-                                 "mmlu_ablate_all_acc": abl.get("mmlu_acc")}
+        abl=next((r for r in stage7_dict["learned_direction_capability"] if r["mode"]=="ablate_all"),{})
+        summary["capability"]={"wikitext_baseline_nll":stage7_dict["wikitext_baseline_nll"],"ablate_all_kl":abl.get("wikitext_kl"),
+        "mmlu_baseline_acc":stage7_dict["mmlu_baseline_acc"],"mmlu_ablate_all_acc":abl.get("mmlu_acc")}
     if stage10_dict:
-        summary["stage10"] = {"max_selective_gain": max(r["selective_abstention_gain"] for r in stage10_dict["coverage_curve"]["learned"])}
+        summary["stage10_assessment"]=assess_stage10(stage10_dict)
+        summary["stage10"]={"max_selective_gain":summary["stage10_assessment"]["learned_max_gain"]}
     return summary
+
+
+def render_results_markdown(summary: Dict[str, Any], table1_md: str, table2_md: str, table3_md: str,
+                            table4_md: str = "", has_fig2b: bool = False) -> str:
+    h=summary["hypotheses"]; interp=summary["interpretation"]
+    tick=lambda k:"confirmed" if summary["confirmed"].get(k) else "not confirmed"
+    lines=[README_BEGIN,"## Results (auto-generated by Stage 9)","",
+      f"Model: `{summary['model_name']}`; locked coordinate l* = {summary['l_star']}, i* = {summary['i_star']}{' (validation filter relaxed)' if summary['filter_relaxed'] else ''}.","",
+      f"- **H1 necessity**: mean log-odds reduction {h['H1']['effect']:.3f}, Wilcoxon p = {_fmt_p(h['H1']['p'])}, Monte Carlo p = {h['H1']['p_mc']:.2f} -> {tick('H1')}.",
+      f"- **H2 sufficiency**: mean log-odds increase {h['H2']['effect']:.3f}, Wilcoxon p = {_fmt_p(h['H2']['p'])}, Monte Carlo p = {h['H2']['p_mc']:.2f} -> {tick('H2')}.",
+      f"- **H3 private-detail control**: projection gap {h['H3']['effect']:.3f}, p = {_fmt_p(h['H3']['p'])}, B-ctrl abstention rate {h['H3']['b_ctrl_abstention_rate']:.3f} -> {tick('H3')}.",
+      f"- **H4 closed-book separation**: AUROC_proj = {h['H4']['auroc_proj']:.3f} [{h['H4']['ci'][0]:.3f}, {h['H4']['ci'][1]:.3f}], MWU p = {_fmt_p(h['H4']['p'])} -> {tick('H4')}.",
+      f"- H4 specificity: rank {summary['h4_controls']['random_rank']}/100 against covariance-free random directions (p = {summary['h4_controls']['random_p']}); rank {summary['h4_controls']['shuffled_rank']}/{summary['h4_controls']['shuffled_n']+1} against within-pair label-shuffled directions (p = {summary['h4_controls']['shuffled_p']}; {summary['h4_controls']['n_shuffled_above_learned']} shuffled directions exceed the learned AUROC, max {summary['h4_controls']['shuffled_max_auroc']:.3f}). The shuffled null is not valid for this paired design (see DEV-014) and is reported for transparency, not as evidence.",
+      f"- **H5 vs. output confidence**: dAUROC = {h['H5']['delta_auroc']:+.3f}, p_boot = {_fmt_p(h['H5']['p'])} -> {tick('H5')}.",
+      f"- Output confidence separates wrong from correct better than the projection: AUROC_maxp = {summary['confidence_baselines']['auroc_maxp']:.3f}, AUROC_entropy = {summary['confidence_baselines']['auroc_ent']:.3f}, versus AUROC_proj = {h['H4']['auroc_proj']:.3f}.",
+      "",f"**Interpretation (rule v4.1, post hoc; see DEV-013):** `{interp['overall']}`.","",interp["verdict_explanation"]]
+    if interp.get("overall_as_registered_v4")!=interp["overall"]:
+        lines += ["",f"Under the original v4 aggregation rule this would read `{interp['overall_as_registered_v4']}`; that rule ignored H5 and is superseded."]
+    if summary.get("stage10_assessment"):
+        a=summary["stage10_assessment"]
+        if a["dominated_at_all_comparable_points"]:
+            msg=(f"Stage 10 (exploratory) is a negative result: at every comparable operating point, learned steering has lower selective accuracy than max-probability thresholding at the same coverage (largest gap {a['largest_gap_points']:.1f} points at coverage {a['largest_gap_coverage']:.2f}).")
+        else: msg="Stage 10 (exploratory): learned steering is not dominated at every comparable operating point by max-probability thresholding."
+        msg+=f" The orthogonal concept control reaches a higher selective-abstention gain ({a['concept_max_gain']:.3f} at alpha = {a['concept_max_gain_alpha']}) than the learned direction ({a['learned_max_gain']:.3f} at alpha = {a['learned_max_gain_alpha']}). Points at alpha >= 1.5 are affected by a known abstention-parser gap (Tier 1, open)."
+        lines += ["","- "+msg]
+    if summary["logit_gen_discrepancy"]: lines += ["","> Branch Rule 4 flagged a logit/generation discrepancy; qualitative claims defer to generation rates (Table 4)."]
+    lines += ["","### Figures","","![Figure 1](figures/fig1_intervention_pareto.png)","","![Figure 2A](figures/fig2a_popqa_violin.png)","","![Figure S1](figures/figS1_layerwise_auroc.png)",""]
+    if has_fig2b: lines += ["![Figure 2B](figures/fig2b_selective_steering.png)",""]
+    lines += ["### Tables","",table1_md.strip(),"",table2_md.strip(),"",table3_md.strip(),""]
+    if table4_md: lines += [table4_md.strip(),""]
+    lines.append(README_END); return "\n".join(lines)+"\n"
 
 
 def _fmt_p(p: Optional[float]) -> str:
     return "n/a" if p is None else (f"{p:.2e}" if p < 1e-3 else f"{p:.4f}")
 
 
-def render_results_markdown(summary: Dict[str, Any], table1_md: str, table2_md: str, table3_md: str,
-                            table4_md: str = "", has_fig2b: bool = False) -> str:
-    h = summary["hypotheses"]
-    tick = lambda k: "confirmed" if summary["confirmed"].get(k) else "not confirmed"
-    lines = [README_BEGIN, "## Results (auto-generated by Stage 9)", "",
-             f"Model: `{summary['model_name']}`; locked coordinate l* = {summary['l_star']}, i* = {summary['i_star']}"
-             f"{' (validation filter relaxed)' if summary['filter_relaxed'] else ''}.", "",
-             f"- **H1 necessity**: mean log-odds reduction {h['H1']['effect']:.3f}, Wilcoxon p = {_fmt_p(h['H1']['p'])}, "
-             f"Monte Carlo p = {h['H1']['p_mc']:.2f} -> {tick('H1')}.",
-             f"- **H2 sufficiency**: mean log-odds increase {h['H2']['effect']:.3f}, Wilcoxon p = {_fmt_p(h['H2']['p'])}, "
-             f"Monte Carlo p = {h['H2']['p_mc']:.2f} -> {tick('H2')}.",
-             f"- **H3 private-detail control**: projection gap {h['H3']['effect']:.3f}, p = {_fmt_p(h['H3']['p'])}, "
-             f"B-ctrl abstention rate {h['H3']['b_ctrl_abstention_rate']:.3f} -> {tick('H3')}.",
-             f"- **H4 closed-book separation**: AUROC_proj = {h['H4']['auroc_proj']:.3f} "
-             f"[{h['H4']['ci'][0]:.3f}, {h['H4']['ci'][1]:.3f}], MWU p = {_fmt_p(h['H4']['p'])} -> {tick('H4')}.",
-             f"- **H5 vs. output confidence**: dAUROC = {h['H5']['delta_auroc']:+.3f}, p_boot = {_fmt_p(h['H5']['p'])} -> {tick('H5')}.",
-             "", f"**Pre-registered interpretation (Section 6.3):** `{summary['interpretation']['overall']}`.", ""]
-    if summary["logit_gen_discrepancy"]:
-        lines += ["> Branch Rule 4 flagged a logit/generation discrepancy; qualitative claims defer to generation rates (Table 4).", ""]
-    lines += ["### Figures", "", "![Figure 1](figures/fig1_intervention_pareto.png)", "",
-              "![Figure 2A](figures/fig2a_popqa_violin.png)", "", "![Figure S1](figures/figS1_layerwise_auroc.png)", ""]
-    if has_fig2b:
-        lines += ["![Figure 2B](figures/fig2b_selective_steering.png)", ""]
-    lines += ["### Tables", "", table1_md.strip(), "", table2_md.strip(), "", table3_md.strip(), ""]
-    if table4_md:
-        lines += [table4_md.strip(), ""]
-    lines.append(README_END)
-    return "\n".join(lines) + "\n"
 
 
 def update_readme_with_final_results(readme_path, summary_dict, table1_md_path, table2_md_path, table3_md_path,

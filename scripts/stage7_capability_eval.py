@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Run Stage 7: WikiText-2 KL for the learned direction and all 119 controls, plus chat MMLU accuracy."""
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -41,6 +42,9 @@ def main(argv=None) -> int:
             return 0
 
     contract = load_runtime_contract(a.stage0_path, a.stage2_path)
+    archive_path = CFG.results_dir / "archive_v4" / "results" / "stage7_capability.json"
+    v4 = json.loads(archive_path.read_text(encoding="utf-8")) if archive_path.exists() else (
+        json.loads(a.output_path.read_text(encoding="utf-8")) if a.output_path.exists() else None)
     directions, stage4_sha = ensure_stage4_directions(a.stage4_directions_path, a.stage4_manifest_path, a.stage0_path)
     selection = load_locked_selection(a.stage5_path, stage4_sha)
     raw_model, tokenizer, _ = load_stage_model(contract, a.device, a.dtype)
@@ -48,6 +52,11 @@ def main(argv=None) -> int:
         raw_model, tokenizer, contract, directions, selection, a.batch_size, CFG.stage7_checkpoint_path, a.force,
         run_mmlu=not a.skip_mmlu, wikitext_batch_size=a.wikitext_batch_size, source_stage4_sha256=stage4_sha,
         source_stage5_sha256=sha256_file(a.stage5_path))
+    if v4 is not None:
+        result["v4_stage7"] = v4
+        for key, value in v4.items():
+            if key in result and key.startswith(("mmlu_", "n_kl_positions", "n_wikitext_passages", "wikitext_")):
+                result.setdefault("v4_" + key, value)
     save_stage7_artifacts(result, a.output_path, a.table1_csv_path, a.table1_md_path, None)
     d = verify_stage7_outputs(a.output_path, a.stage5_path)
     if CFG.stage7_checkpoint_path.exists():

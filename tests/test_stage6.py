@@ -10,6 +10,25 @@ from src.test_evaluation import (BASE, analyze_stage6, apply_holm_bonferroni, ck
                                  compute_empirical_control_p_values, compute_template_clustered_bootstrap_ci,
                                  generation_conditions, load_and_validate_test_and_b_ctrl_datasets,
                                  run_stage6_test_evaluation, save_stage6_artifacts, verify_stage6_outputs)
+
+@pytest.fixture(scope="module", autouse=True)
+def _mock_stage6_judge():
+    import src.test_evaluation as evaluation
+    from src.abstention_classifier import regex_label
+    def classify(items, offline=False, **kwargs):
+        out=[]
+        for item in items:
+            label=regex_label(item["response"])
+            if label not in {"ABSTAIN","ANSWER"}: label="ANSWER"
+            out.append({**item,"regex_label":label,"judge_label":label,"final_label":label,
+                        "agree":True,"classifier_final":True,"classifier_backend":"mock",
+                        "judge_model_id":"mock","judge_prompt_version":"v1","judge_prompt_sha256":"a"*64})
+        return out
+    monkeypatch=pytest.MonkeyPatch()
+    monkeypatch.setattr(evaluation,"classify_texts",classify)
+    yield
+    monkeypatch.undo()
+
 from tests._tiny_model import StubTokenizer, tiny_contract, tiny_directions, tiny_model, tiny_selection
 
 

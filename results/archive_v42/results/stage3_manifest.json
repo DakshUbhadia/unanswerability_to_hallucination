@@ -1,0 +1,50 @@
+{
+  "stage": 3,
+  "model_name": "meta-llama/Llama-3.2-3B-Instruct",
+  "runtime_dtype": "float16",
+  "cache_dtype": "float32",
+  "n_train_pairs": 192,
+  "n_family_a_pairs": 96,
+  "n_family_b_pairs": 96,
+  "n_layers": 28,
+  "k_suffix": 5,
+  "d_model": 3072,
+  "suffix_indices": [
+    -5,
+    -4,
+    -3,
+    -2,
+    -1
+  ],
+  "suffix_token_ids": [
+    128009,
+    128006,
+    78191,
+    128007,
+    271
+  ],
+  "train_ans_shape": [
+    28,
+    5,
+    3072
+  ],
+  "train_pair_acts_shape": [
+    192,
+    28,
+    5,
+    3072
+  ],
+  "batch_vs_single_min_cosine": 0.9999994039535522,
+  "batch_vs_single_max_rel_l2_diff": 0.0,
+  "batch_vs_single_max_abs_diff": 0.0,
+  "batch_vs_single_allclose_passed": true,
+  "batch_vs_single_allclose_mismatch_count": 0,
+  "min_prompt_std_ans": 0.0007190055912360549,
+  "min_prompt_std_unans": 0.0006766140577383339,
+  "min_diff_in_means_norm": 0.013836885802447796,
+  "max_diff_in_means_norm": 38.89669418334961,
+  "elapsed_sec": 33.22908741399988,
+  "passed_acceptance_gate": true,
+  "cache_file_size_bytes": 664054199,
+  "cache_sha256": "1c8a312235e3aa93baf3002f811fb177fccf5ca01209579e754478f03a39ded2"
+}

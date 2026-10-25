@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -6,9 +7,26 @@ import pytest
 from src.capability_eval import load_stratified_mmlu_questions, load_wikitext2_passages, run_stage7_capability_evaluation
 from src.config import CFG
 from src.eval_common import atomic_write_json, slice_vectors_at_star
-from src.plotting_and_report import README_BEGIN, run_stage9, verify_stage9_outputs
+from src.plotting_and_report import README_BEGIN, assess_stage10, build_stage9_executive_summary, render_results_markdown, run_stage9, verify_stage9_outputs
 from src.popqa_uncertainty import analyze_stage8
 from src.test_evaluation import analyze_stage6, load_and_validate_test_and_b_ctrl_datasets
+@pytest.fixture(scope="module", autouse=True)
+def _mock_stage6_judge():
+    import src.test_evaluation as evaluation
+    from src.abstention_classifier import regex_label
+    def classify(items, offline=False, **kwargs):
+        out=[]
+        for item in items:
+            label=regex_label(item["response"])
+            out.append({**item,"regex_label":label,"judge_label":label,"final_label":label,
+                        "agree":True,"classifier_final":True,"classifier_backend":"mock",
+                        "judge_model_id":"mock","judge_prompt_version":"v1","judge_prompt_sha256":"a"*64})
+        return out
+    monkeypatch=pytest.MonkeyPatch()
+    monkeypatch.setattr(evaluation,"classify_texts",classify)
+    yield
+    monkeypatch.undo()
+
 from tests._tiny_model import StubTokenizer, tiny_contract, tiny_directions, tiny_model, tiny_selection
 from tests.test_stage10 import synthetic_stage10
 from tests.test_stage6 import _gens, _synthetic_cond
@@ -33,8 +51,8 @@ def artifacts(tmp_path_factory):
     feats = {"popqa_wrong": _feats(n, 3, 32, 1.0, rng), "popqa_correct": _feats(n, 3, 32, 0, rng),
              "popqa_abstain": _feats(10, 3, 32, 2, rng), "test_unans": _feats(96, 3, 32, 2, rng),
              "test_ans": _feats(96, 3, 32, 0, rng), "b_ctrl": _feats(48, 3, 32, 0, rng)}
-    groups = {"wrong": [{"popqa_id": f"w{i}", "matched_pair_id": f"m{i}", "s_pop": 1.0} for i in range(n)],
-              "correct": [{"popqa_id": f"c{i}", "matched_pair_id": f"m{i}", "s_pop": 1.0} for i in range(n)], "abstain": [{}] * 10}
+    groups = {"wrong": [{"popqa_id": f"w{i}", "matched_pair_id": f"m{i}", "s_pop": 1.0, "input_ids_sha256": "a"*64, "label_source": "canonical_v1_batch1_judged"} for i in range(n)],
+              "correct": [{"popqa_id": f"c{i}", "matched_pair_id": f"m{i}", "s_pop": 1.0, "input_ids_sha256": "a"*64, "label_source": "canonical_v1_batch1_judged"} for i in range(n)], "abstain": [{}] * 10}
     s8 = {"stage": 8, "l_star": 1, "i_star": -1, **analyze_stage8(groups, feats, slice_vectors_at_star(tiny_directions(), 1, 4),
                                                                   s6, 1, n_boot=100)}
     s5 = {"l_star": 1, "i_star": -1, "filter_relaxed": False, "r_norm_at_star": 1.0}
@@ -75,3 +93,21 @@ def test_stage9_real_artifacts_verified():
     if not CFG.stage9_out_path.exists():
         pytest.skip("Stage 9 runtime artifact is not present")
     verify_stage9_outputs()
+
+
+
+def test_assess_stage10_committed_result():
+    d=json.loads(CFG.stage10_out_path.read_text(encoding="utf-8")); a=assess_stage10(d)
+    assert a["dominated_at_all_comparable_points"] is True
+    assert [round(r["alpha"],2) for r in a["comparable_points"]]==[0.0,0.25]
+    assert a["largest_gap_points"]==pytest.approx(14.0,abs=.2) and a["largest_gap_alpha"]==.25
+    assert a["learned_max_gain"]==pytest.approx(.238095,abs=1e-6)
+    assert a["concept_max_gain"]==pytest.approx(.367347,abs=1e-6)
+
+def test_render_committed_results_has_integrity_disclosures():
+    read=lambda p:json.loads(Path(p).read_text(encoding="utf-8"))
+    s=build_stage9_executive_summary(read(CFG.stage5_out_path),read(CFG.stage6_out_path),read(CFG.stage7_out_path),read(CFG.stage8_out_path),read(CFG.stage10_out_path))
+    text=render_results_markdown(s,"","","")
+    assert "Mixed_Not_Supported_Discriminating_Tests_Disagree" in text and "4/20" in text and "negative result" in text
+    lines=[x for x in text.splitlines() if "Hypothesis_B_Internal_Uncertainty_Detector" in x]
+    assert len(lines)==1 and "Under the original v4 aggregation rule" in lines[0]

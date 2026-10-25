@@ -11,6 +11,9 @@ from src.config import CFG
 
 
 class DummyTokenizer:
+    bos_token_id = 1
+    pad_token_id = 0
+    chat_template = "dummy-chat-template-v1"
     def __init__(self, right=False, corrupt=False):
         self.padding_side = "right" if right else "left"
         self.corrupt = corrupt
@@ -18,8 +21,11 @@ class DummyTokenizer:
     def apply_chat_template(self, messages, tokenize=False, add_generation_prompt=True):
         return messages[-1]["content"]
 
-    def __call__(self, texts, **kwargs):
-        rows = [[1, 2, 7, 8] for _ in texts]
+    def encode(self, text, add_special_tokens=False):
+        return [1, 2, 7, 9 if self.corrupt else 8]
+
+    def pad(self, features, return_tensors="pt", padding=True):
+        rows = [list(row) for row in features["input_ids"]]
         if self.corrupt:
             rows[-1][-1] = 9
         return {"input_ids": torch.tensor(rows), "attention_mask": torch.ones(len(rows), 4, dtype=torch.long)}

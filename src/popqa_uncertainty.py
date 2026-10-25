@@ -9,6 +9,8 @@ import torch.nn.functional as F
 from scipy import stats
 
 from src.config import CFG
+from src.tokenization_contract import (CONTRACT_VERSION, canonical_input_ids, chat_template_sha256,
+                                      input_ids_sha256)
 from src.eval_common import (atomic_write_json, build_chat_batches, capture_residuals_and_logits, log_odds_and_p_abs,
                              read_json, read_jsonl, slice_vectors_at_star, write_csv_and_md)
 from src.stats_utils import auroc_rows, binary_auroc, holm_bonferroni, paired_bootstrap_auroc, summarize_null
@@ -16,10 +18,15 @@ from src.stats_utils import auroc_rows, binary_auroc, holm_bonferroni, paired_bo
 TABLE3_COLUMNS = ["score", "description", "auroc", "ci_95_low", "ci_95_high", "delta_vs_proj", "delta_ci_95_low",
                   "delta_ci_95_high", "p_value", "p_value_test"]
 VIOLIN_GROUPS = ["test_unans", "test_ans", "b_ctrl", "popqa_abstain", "popqa_matched_wrong", "popqa_matched_correct"]
+VERDICT_B="Hypothesis_B_Internal_Uncertainty_Detector"
+VERDICT_A="Hypothesis_A_Contextual_Insufficiency_Detector"
+VERDICT_MIXED="Mixed_Not_Supported_Discriminating_Tests_Disagree"
+VERDICT_INCONCLUSIVE="Inconclusive_Confound_or_Methodological_Failure"
+VERDICT_DOMAIN_FAIL="Inconclusive_Domain_Transfer_Failure"
 STAGE8_KEYS = {"stage", "model_name", "l_star", "i_star", "pos_idx", "n_matched_per_group", "n_abstain", "h4", "h5",
                "auroc_proj", "auroc_maxp", "auroc_ent", "holm_bonferroni_table", "interpretation", "violin_6groups",
                "layerwise_auroc_exploratory", "matched_items", "source_stage4_sha256", "source_stage6_sha256",
-               "elapsed_sec", "passed_acceptance_gate"}
+               "elapsed_sec", "passed_acceptance_gate", "label_source", "verified_input_hash_count"}
 
 
 def compute_binary_auroc(scores_pos, scores_neg) -> float:
@@ -37,7 +44,20 @@ def compute_paired_bootstrap_auroc_comparison(pos_scores_dict, neg_scores_dict, 
 def load_popqa_groups(popqa_path: Path = CFG.data_dir / "popqa_sample.jsonl",
                       stage2_record: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     rows = sorted(read_jsonl(popqa_path), key=lambda r: r["popqa_id"])
+    missing_hashes = [r.get("popqa_id", "<unknown>") for r in rows if not r.get("input_ids_sha256")]
+    if missing_hashes:
+        raise ValueError(f"PopQA rows lack input_ids_sha256: {missing_hashes}")
+    bad_contract = [r.get("popqa_id", "<unknown>") for r in rows
+                    if r.get("tokenization_contract_version") != CONTRACT_VERSION]
+    if bad_contract:
+        raise ValueError(f"PopQA rows have unexpected tokenization contract: {bad_contract}")
     if stage2_record:
+        if stage2_record.get("label_source") != "canonical_v1_batch1_judged":
+            raise ValueError("Stage 2 label_source is not canonical_v1_batch1_judged")
+        bad_source = [r.get("popqa_id", "<unknown>") for r in rows
+                      if r.get("label_source") != stage2_record["label_source"]]
+        if bad_source:
+            raise ValueError(f"PopQA rows have inconsistent label_source: {bad_source}")
         counts = {k: sum(r["baseline_partition"] == k for r in rows) for k in ("correct", "wrong", "abstain")}
         assert len(rows) == int(stage2_record["popqa_evaluated_count"]), "PopQA row count differs from Stage 2"
         for k in counts:
@@ -82,12 +102,19 @@ def extract_all_layer_projections_and_confidence(raw_model, tokenizer, prompts, 
 def classify_interpretation(holm_rows: List[Dict[str, Any]], stage6: Dict[str, Any], h4: Dict[str, Any],
                             h5: Dict[str, Any], layerwise: List[Dict[str, Any]], l_star: int,
                             auroc_abstain_vs_correct: float) -> Dict[str, Any]:
-    """Map outcomes onto the pre-registered Section 6.3 interpretation matrix."""
-    conf = {r["test_id"]: r["confirmed"] for r in holm_rows}
-    pt = stage6["primary_tests"]
-    concept_confound = bool(pt["H1"].get("concept_confound_flag") or pt["H2"].get("concept_confound_flag"))
+    """Apply the post-hoc v4.1 correction (DEV-013).
+
+    Dimensions 1-2 (H1-H3) are prerequisites; H4 and H5 discriminate between
+    hypotheses. The registered v4 verdict remains in overall_as_registered_v4.
+    """
+    conf = {row["test_id"]: row["confirmed"] for row in holm_rows}
+    primary = stage6["primary_tests"]
+    concept_confound = bool(
+        primary["H1"].get("concept_confound_flag") or primary["H2"].get("concept_confound_flag")
+    )
     causal = bool(conf.get("H1") and conf.get("H2") and not concept_confound)
     deconf = bool(conf.get("H3"))
+
     if conf.get("H4"):
         closed_book = "B"
     elif auroc_abstain_vs_correct >= CFG.h4_auroc_min:
@@ -96,26 +123,87 @@ def classify_interpretation(holm_rows: List[Dict[str, Any]], stage6: Dict[str, A
         closed_book = "domain_transfer_failure"
     else:
         closed_book = "A"
-    earlier = [r for r in layerwise if r["layer"] < l_star and r["auroc"] > h5["auroc_maxp"]]
+
+    earlier = [row for row in layerwise if row["layer"] < l_star and row["auroc"] > h5["auroc_maxp"]]
     if conf.get("H5") or earlier:
         value = "B"
     elif max(h4["auroc_proj"], h5["auroc_maxp"]) < 0.55:
         value = "neither_separates"
     else:
         value = "A"
-    if causal and deconf:
-        overall = ("Hypothesis_B_Internal_Uncertainty_Detector" if closed_book == "B"
-                   else "Hypothesis_A_Contextual_Insufficiency_Detector")
+
+    prerequisites_met = bool(causal and deconf)
+    if prerequisites_met:
+        overall_v4 = VERDICT_B if closed_book == "B" else VERDICT_A
     else:
-        overall = "Inconclusive_Confound_or_Methodological_Failure"
-    return {"overall": overall, "dimension_1_causal_mediation": "mediates" if causal else "confound_or_failure",
-            "concept_confound_flag": concept_confound,
-            "dimension_2_private_detail": "passes" if deconf else "private_detail_confound",
-            "dimension_3_closed_book": closed_book, "dimension_4_value_over_confidence": value,
-            "earlier_layers_beating_maxp": [r["layer"] for r in earlier],
-            "logit_gen_discrepancy": bool(stage6.get("logit_gen_discrepancy")),
-            "note": ("Branch Rule 4 flagged a logit/generation discrepancy: qualitative claims must defer to "
-                     "generation rates." if stage6.get("logit_gen_discrepancy") else "")}
+        overall_v4 = VERDICT_INCONCLUSIVE
+
+    if not prerequisites_met:
+        overall = VERDICT_INCONCLUSIVE
+        explanation = "Prerequisites H1-H3 do not all pass, so H4 and H5 cannot support either hypothesis."
+    elif closed_book == "domain_transfer_failure":
+        overall = VERDICT_DOMAIN_FAIL
+        explanation = (
+            "Prerequisites H1-H3 pass, but H4 indicates domain-transfer failure; "
+            f"H5 points to {value}, so neither hypothesis is supported."
+        )
+    elif closed_book == "B" and value == "B":
+        overall = VERDICT_B
+        explanation = (
+            "Prerequisites H1-H3 pass. H4 points to B (closed-book separation confirmed) and "
+            "H5 points to B (the projection adds value over output confidence, or an earlier "
+            "layer beats max-probability AUROC). Both discriminating tests support Hypothesis B."
+        )
+    elif closed_book == "A" and value in {"A", "neither_separates"}:
+        overall = VERDICT_A
+        h5_detail = (
+            "the projection does not add value over output confidence"
+            if value == "A" else "neither the projection nor output confidence separates the answers"
+        )
+        explanation = (
+            "Prerequisites H1-H3 pass. H4 points to A (closed-book separation is not confirmed) and "
+            f"H5 points to {value} ({h5_detail}). Both discriminating tests support Hypothesis A."
+        )
+    else:
+        overall = VERDICT_MIXED
+        h4_detail = (
+            "closed-book separation confirmed" if closed_book == "B"
+            else "closed-book separation not confirmed"
+        )
+        h5_detail = (
+            "the projection does not add value over output confidence, and no earlier layer beats "
+            "max-probability AUROC"
+            if value == "A" else
+            "the projection adds value over output confidence or an earlier layer beats max-probability AUROC"
+        )
+        explanation = (
+            f"Prerequisites H1\u2013H3 pass. H4 points to {closed_book} ({h4_detail}) but H5 points to "
+            f"{value} ({h5_detail}). The discriminating tests disagree, so neither hypothesis is supported."
+        )
+
+    return {
+        "overall": overall,
+        "overall_as_registered_v4": overall_v4,
+        "rule_version": "v4.1-posthoc",
+        "prerequisites_met": prerequisites_met,
+        "discriminating_tests": {
+            "H4_closed_book": closed_book,
+            "H5_value_over_confidence": value,
+        },
+        "verdict_explanation": explanation,
+        "dimension_1_causal_mediation": "mediates" if causal else "confound_or_failure",
+        "concept_confound_flag": concept_confound,
+        "dimension_2_private_detail": "passes" if deconf else "private_detail_confound",
+        "dimension_3_closed_book": closed_book,
+        "dimension_4_value_over_confidence": value,
+        "earlier_layers_beating_maxp": [row["layer"] for row in earlier],
+        "logit_gen_discrepancy": bool(stage6.get("logit_gen_discrepancy")),
+        "note": (
+            "Branch Rule 4 flagged a logit/generation discrepancy: qualitative claims must defer to "
+            "generation rates."
+            if stage6.get("logit_gen_discrepancy") else ""
+        ),
+    }
 
 
 def analyze_stage8(groups: Dict[str, Any], feats: Dict[str, Dict[str, np.ndarray]], vectors: Dict[str, Any],
@@ -188,7 +276,9 @@ def analyze_stage8(groups: Dict[str, Any], feats: Dict[str, Dict[str, np.ndarray
         for i, r in enumerate(rows):
             matched.append({"popqa_id": r["popqa_id"], "matched_pair_id": r["matched_pair_id"], "partition": part,
                             "s_pop": float(r["s_pop"]), "proj": float(f["proj"][i, l_star]), "maxp": float(f["maxp"][i]),
-                            "entropy": float(f["entropy"][i]), "log_odds": float(f["log_odds"][i])})
+                            "entropy": float(f["entropy"][i]), "log_odds": float(f["log_odds"][i]),
+            "input_ids_sha256": r["input_ids_sha256"], "label_source": r["label_source"],
+            "grade": r.get("grade", part), "grade_reason": r.get("grade_reason")})
     table3 = [{"score": "proj_learned", "description": "x_{i*}^{(l*)} . r_hat (H4)", "auroc": obs,
                "ci_95_low": h4["auroc_proj_ci"][0], "ci_95_high": h4["auroc_proj_ci"][1], "p_value": h4["mwu_p"],
                "p_value_test": "one-sided Mann-Whitney U"}]
@@ -218,6 +308,19 @@ def analyze_stage8(groups: Dict[str, Any], feats: Dict[str, Dict[str, np.ndarray
 
 
 # ----------------------------- runner ----------------------------------------
+def _verify_popqa_input_identity(tokenizer, rows, system_prompt, model_name, suffix_token_ids):
+    template_hash = chat_template_sha256(tokenizer)
+    bad = []
+    for row in rows:
+        ids = canonical_input_ids(tokenizer, row["question"], system_prompt, suffix_token_ids)
+        actual = input_ids_sha256(ids, model_name, template_hash)
+        if actual != row.get("input_ids_sha256"):
+            bad.append(row["popqa_id"])
+    if bad:
+        raise ValueError(f"Canonical feature input hash mismatch for PopQA IDs: {bad}")
+    return len(rows)
+
+
 def run_stage8_popqa_uncertainty(raw_model, tokenizer, contract, directions_dict, selection_dict, popqa_groups,
                                  test_pairs, b_ctrl_rows, stage6_dict, batch_size=CFG.batch_size_forward,
                                  source_stage4_sha256="", source_stage6_sha256="") -> Dict[str, Any]:
@@ -225,6 +328,10 @@ def run_stage8_popqa_uncertainty(raw_model, tokenizer, contract, directions_dict
     l_star, i_star, pos_idx = int(selection_dict["l_star"]), int(selection_dict["i_star"]), int(selection_dict["pos_idx"])
     vectors = slice_vectors_at_star(directions_dict, l_star, pos_idx)
     units = directions_dict["unit_directions"][:, pos_idx, :].float()
+    popqa_feature_rows = popqa_groups["wrong"] + popqa_groups["correct"] + popqa_groups["abstain"]
+    verified_input_hash_count = _verify_popqa_input_identity(
+        tokenizer, popqa_feature_rows, contract["system_prompt_used"], contract["model_name"],
+        list(contract["suffix_token_ids"]))
     sets = {"popqa_wrong": [r["question"] for r in popqa_groups["wrong"]],
             "popqa_correct": [r["question"] for r in popqa_groups["correct"]],
             "popqa_abstain": [r["question"] for r in popqa_groups["abstain"]],
@@ -246,7 +353,8 @@ def run_stage8_popqa_uncertainty(raw_model, tokenizer, contract, directions_dict
     return {"stage": 8, "model_name": contract["model_name"], "l_star": l_star, "i_star": i_star, "pos_idx": pos_idx,
             **analysis, "stage6_projection_max_abs_diff": diffs, "n_bootstrap": CFG.n_bootstrap,
             "source_stage4_sha256": source_stage4_sha256, "source_stage6_sha256": source_stage6_sha256,
-            "elapsed_sec": time.perf_counter() - started, "passed_acceptance_gate": True}
+            "label_source": "canonical_v1_batch1_judged", "verified_input_hash_count": verified_input_hash_count,
+           "elapsed_sec": time.perf_counter() - started, "passed_acceptance_gate": True}
 
 
 def save_stage8_artifacts(stage8_dict, output_path=CFG.stage8_out_path, table3_csv_path=CFG.table3_csv_path,
@@ -268,6 +376,8 @@ def verify_stage8_outputs(output_path=CFG.stage8_out_path, table3_csv_path=CFG.t
     missing = STAGE8_KEYS - d.keys()
     assert not missing, f"Stage 8 JSON missing keys: {sorted(missing)}"
     assert d["stage"] == 8 and d["passed_acceptance_gate"] is True
+    assert d["label_source"] == "canonical_v1_batch1_judged"
+    assert int(d["verified_input_hash_count"]) >= 2 * int(d["n_matched_per_group"])
     n = int(d["n_matched_per_group"])
     for k in ("auroc_proj", "auroc_maxp", "auroc_ent"):
         assert 0.0 <= d[k] <= 1.0
@@ -285,3 +395,7 @@ def verify_stage8_outputs(output_path=CFG.stage8_out_path, table3_csv_path=CFG.t
         sel = read_json(stage5_path)
         assert (d["l_star"], d["i_star"], d["pos_idx"]) == (sel["l_star"], sel["i_star"], sel["pos_idx"])
     return d
+
+
+# Tier 2 v5 rule; v4/v4.1 behavior above remains unchanged.
+from src.stage8_v5 import classify_interpretation_v5

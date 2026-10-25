@@ -1,8 +1,18 @@
 # Unanswerability to Hallucination
 
-Does the unanswerability direction in Qwen2.5-3B-Instruct predict closed-book hallucinations? A replication and extension of Lavi, Milo & Geva (EACL 2026).
+Does the unanswerability direction in a 3B instruction-tuned model predict closed-book hallucinations? A replication and extension of Lavi, Milo & Geva (EACL 2026).
+
+The active model is `meta-llama/Llama-3.2-3B-Instruct`; the pre-registered primary model, Qwen2.5-3B-Instruct, was dropped by the Stage 2 pilot gate (DEV-004).
 
 The frozen research protocol is in [documentation.md](documentation.md). Implementation deviations are tracked in [DEVIATIONS.md](DEVIATIONS.md).
+
+## Summary of findings
+
+- **Answer to the title question:** Weakly, and no better than output confidence. On popularity-matched PopQA (147 pairs), the projection separates wrong from correct closed-book answers with AUROC 0.693 [0.636, 0.746], while max first-token probability reaches 0.774 and first-token entropy 0.777 (ΔAUROC vs. max-probability = −0.081 [−0.143, −0.021]).
+- **Verdict:** Neither hypothesis is supported. H1–H3 (causal necessity, sufficiency, private-detail control) pass but are prerequisites that both hypotheses predict. Of the two discriminating tests, H4 points toward internal uncertainty and H5 points toward an input-property detector. Earlier versions of this README reported Hypothesis B; that verdict came from an aggregation rule that ignored H5 (DEV-013).
+- **Specificity:** The learned direction ranks 1/100 against random directions on H4 but only 4/20 against label-shuffled directions; the shuffled null is not valid for this design (DEV-014).
+- **Selective abstention:** Steering does not make abstention more selective. Learned steering is dominated by max-probability thresholding at every comparable coverage, and the orthogonal concept control achieves a higher selective-abstention gain than the learned direction.
+- **Open measurement issues (Tier 1, not yet fixed):** PopQA correctness labels were produced under a different tokenization than the Stage 8 features (DEV-007, DEV-012), which likely inflates H4; the abstention regex misses phrasings such as 'There is no information available…', which affects α ≥ 1.5 steering results.
 
 ## Status
 
@@ -10,6 +20,7 @@ The frozen research protocol is in [documentation.md](documentation.md). Impleme
 |---|---|
 | Stages 0-4 | Passed (Stage 2 fallback to `meta-llama/Llama-3.2-3B-Instruct`, see DEV-004) |
 | Stages 5-10 | Implemented; run on Kaggle with `notebooks/kaggle_stages_5_to_10.ipynb` |
+| Tier 0 claims and interpretation fixes | Done (DEV-013 to DEV-015) |
 
 ## Kaggle setup
 
@@ -60,9 +71,17 @@ Model: `meta-llama/Llama-3.2-3B-Instruct`; locked coordinate l* = 11, i* = -4.
 - **H2 sufficiency**: mean log-odds increase 20.309, Wilcoxon p = 5.96e-08, Monte Carlo p = 0.01 -> confirmed.
 - **H3 private-detail control**: projection gap 4.114, p = 2.44e-04, B-ctrl abstention rate 0.083 -> confirmed.
 - **H4 closed-book separation**: AUROC_proj = 0.693 [0.636, 0.746], MWU p = 5.24e-09 -> confirmed.
+- H4 specificity: rank 1/100 against covariance-free random directions (p = 0.01); rank 4/20 against within-pair label-shuffled directions (p = 0.2; 3 shuffled directions exceed the learned AUROC, max 0.702). The shuffled null is not valid for this paired design (see DEV-014) and is reported for transparency, not as evidence.
 - **H5 vs. output confidence**: dAUROC = -0.081, p_boot = 0.9960 -> not confirmed.
+- Output confidence separates wrong from correct better than the projection: AUROC_maxp = 0.774, AUROC_entropy = 0.777, versus AUROC_proj = 0.693.
 
-**Pre-registered interpretation (Section 6.3):** `Hypothesis_B_Internal_Uncertainty_Detector`.
+**Interpretation (rule v4.1, post hoc; see DEV-013):** `Mixed_Not_Supported_Discriminating_Tests_Disagree`.
+
+Prerequisites H1–H3 pass. H4 points to B (closed-book separation confirmed) but H5 points to A (the projection does not add value over output confidence, and no earlier layer beats max-probability AUROC). The discriminating tests disagree, so neither hypothesis is supported.
+
+Under the original v4 aggregation rule this would read `Hypothesis_B_Internal_Uncertainty_Detector`; that rule ignored H5 and is superseded.
+
+- Stage 10 (exploratory) is a negative result: at every comparable operating point, learned steering has lower selective accuracy than max-probability thresholding at the same coverage (largest gap 14.0 points at coverage 0.30). The orthogonal concept control reaches a higher selective-abstention gain (0.367 at alpha = 1.25) than the learned direction (0.238 at alpha = 0.25). Points at alpha >= 1.5 are affected by a known abstention-parser gap (Tier 1, open).
 
 ### Figures
 

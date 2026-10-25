@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import torch
 
 from src.config import CFG
-from src.eval_common import (ensure_stage4_directions, load_locked_selection, load_runtime_contract,
+from src.eval_common import (atomic_write_jsonl, ensure_stage4_directions, load_locked_selection, load_runtime_contract,
                              load_stage_model, read_json)
 from src.popqa_steering import run_stage10_popqa_steering_sweep, save_stage10_artifacts, verify_stage10_outputs
 from src.popqa_uncertainty import load_popqa_groups
@@ -20,11 +20,15 @@ def main(argv=None) -> int:
     p.add_argument("--force", action="store_true")
     p.add_argument("--device", default="cuda:0" if torch.cuda.is_available() else "cpu")
     p.add_argument("--dtype", default="auto")
+    p.add_argument("--offline", action="store_true", help="Require complete judge cache; never call the judge backend.")
+    mode=p.add_mutually_exclusive_group();mode.add_argument("--generation-only",action="store_true",help="Generate and save unjudged responses, then exit.")
+    mode.add_argument("--analyze-only",action="store_true",help="Consume saved generations and offline judge cache without loading the studied model.")
     p.add_argument("--batch-size", type=int, default=CFG.batch_size_gen)
     p.add_argument("--popqa-path", type=Path, default=CFG.data_dir / "popqa_sample.jsonl")
     p.add_argument("--output-path", type=Path, default=CFG.stage10_out_path)
     a = p.parse_args(argv)
-    if not a.force and a.output_path.exists():
+    if not (a.generation_only or a.analyze_only) and not a.offline: raise RuntimeError("Stage 10 must use --generation-only or --offline after scripts/judge_pass.py")
+    if not (a.force or a.generation_only or a.analyze_only) and a.output_path.exists():
         try:
             verify_stage10_outputs(a.output_path)
         except (AssertionError, KeyError, ValueError, RuntimeError, TypeError):
@@ -37,10 +41,24 @@ def main(argv=None) -> int:
     selection = load_locked_selection(CFG.stage5_out_path, stage4_sha)
     groups = load_popqa_groups(a.popqa_path, read_json(CFG.stage2_out_path))
     matched = read_json(CFG.stage8_out_path)["matched_items"] if CFG.stage8_out_path.exists() else None
-    raw_model, tokenizer, _ = load_stage_model(contract, a.device, a.dtype)
+    if a.analyze_only:
+        from transformers import AutoTokenizer
+        tokenizer=AutoTokenizer.from_pretrained(contract["model_name"]);tokenizer.padding_side="left"
+        if tokenizer.pad_token is None:tokenizer.pad_token=tokenizer.eos_token
+        raw_model=None
+        if not a.offline:raise RuntimeError("--analyze-only requires --offline after judge_pass.py")
+    else:
+        raw_model, tokenizer, _ = load_stage_model(contract, a.device, a.dtype)
     result = run_stage10_popqa_steering_sweep(raw_model, tokenizer, contract, directions, selection, groups,
                                               CFG.grid_alpha_stretch, a.batch_size, CFG.stage10_checkpoint_path,
-                                              a.force, matched, stage4_sha)
+                                              a.force, matched, stage4_sha, a.offline, a.generation_only)
+    if a.generation_only:
+        atomic_write_jsonl(CFG.stage10_generation_path,result["items"])
+        print(f"Saved {len(result['items'])} unjudged Stage 10 responses to {CFG.stage10_generation_path}")
+        return 0
+    v4_path = CFG.results_dir / "archive_v4" / "results" / "stage10_popqa_steering.json"
+    if v4_path.exists():
+        result["v4_stage10"] = read_json(v4_path)
     save_stage10_artifacts(result, a.output_path)
     d = verify_stage10_outputs(a.output_path)
     if CFG.stage10_checkpoint_path.exists():

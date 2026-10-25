@@ -35,6 +35,18 @@ if (( tensor_stage_requested )); then
 fi
 
 for stage in "${stages[@]}"; do
+  if [[ "$stage" == pin-judge ]]; then
+    python -u scripts/pin_judge_model.py
+    continue
+  fi
+  if [[ "$stage" == judge ]]; then
+    python -u scripts/judge_pass.py
+    continue
+  fi
+  if [[ "$stage" == rescore6 ]]; then
+    python -u scripts/stage6_rescore_generations.py --offline
+    continue
+  fi
   matches=(scripts/stage"${stage}"_*.py)
   ((${#matches[@]})) || { echo "No script for stage $stage" >&2; exit 2; }
   if [[ "$stage" =~ ^[0-9]+$ ]] && (( stage > 2 )); then
@@ -53,6 +65,11 @@ for stage in "${stages[@]}"; do
       args+=(--model-name "$STAGE2_MODEL_NAME")
     fi
     if [[ "$stage" == 7 && "${SKIP_MMLU:-0}" == 1 ]]; then args+=(--skip-mmlu); fi
+    if [[ "$stage" == 2 && "${STAGE2_POPQA_REGENERATE:-0}" == 1 ]]; then args+=(--regenerate-popqa-canonical); fi
+    if [[ "$stage" == 2 && "${STAGE2_POPQA_REMATCH:-0}" == 1 ]]; then args+=(--rematch-only --offline); fi
+    if [[ "$stage" == 6 && "${STAGE6_GENERATION_ONLY:-0}" == 1 ]]; then args+=(--generation-only); fi
+    if [[ "$stage" == 10 && "${STAGE10_GENERATION_ONLY:-0}" == 1 ]]; then args+=(--generation-only); fi
+    if [[ "$stage" == 10 && "${STAGE10_ANALYZE_ONLY:-0}" == 1 ]]; then args+=(--analyze-only --offline); fi
     python -u "$script" "${args[@]}"
   done
   if [[ "$stage" == 2 ]]; then
@@ -61,7 +78,10 @@ for stage in "${stages[@]}"; do
   if [[ "$stage" == 3 || "$stage" == 4 ]]; then
     python scripts/kaggle_sync.py --action push --stage "$stage" --hf-repo "$HF_TENSOR_REPO_ID"
   fi
-  if [[ "$stage" =~ ^[0-9]+$ ]] && (( stage >= 5 )); then
+  skip_artifact_tests=0
+  [[ "$stage" == 6 && "${STAGE6_GENERATION_ONLY:-0}" == 1 ]] && skip_artifact_tests=1
+  [[ "$stage" == 10 && "${STAGE10_GENERATION_ONLY:-0}" == 1 ]] && skip_artifact_tests=1
+  if [[ "$stage" =~ ^[0-9]+$ ]] && (( stage >= 5 )) && (( ! skip_artifact_tests )); then
     pytest -q -p no:warnings "tests/test_stage${stage}.py" -m "not integration" || echo "[kaggle_run] WARNING: Stage $stage unit tests failed" >&2
     pytest -q -p no:warnings "tests/test_stage${stage}.py" -m integration || echo "[kaggle_run] WARNING: Stage $stage artifact check failed" >&2
     python scripts/kaggle_sync.py --action push --stage "$stage"

@@ -94,7 +94,15 @@
     "H5": false
   },
   "interpretation": {
-    "overall": "Hypothesis_B_Internal_Uncertainty_Detector",
+    "overall": "Mixed_Not_Supported_Discriminating_Tests_Disagree",
+    "overall_as_registered_v4": "Hypothesis_B_Internal_Uncertainty_Detector",
+    "rule_version": "v4.1-posthoc",
+    "prerequisites_met": true,
+    "discriminating_tests": {
+      "H4_closed_book": "B",
+      "H5_value_over_confidence": "A"
+    },
+    "verdict_explanation": "Prerequisites H1–H3 pass. H4 points to B (closed-book separation confirmed) but H5 points to A (the projection does not add value over output confidence, and no earlier layer beats max-probability AUROC). The discriminating tests disagree, so neither hypothesis is supported.",
     "dimension_1_causal_mediation": "mediates",
     "concept_confound_flag": false,
     "dimension_2_private_detail": "passes",
@@ -112,6 +120,89 @@
     "mmlu_ablate_all_acc": 0.57
   },
   "stage10_ran": true,
+  "h4_controls": {
+    "random_rank": 1,
+    "random_p": 0.01,
+    "shuffled_rank": 4,
+    "shuffled_n": 19,
+    "shuffled_p": 0.2,
+    "shuffled_max_auroc": 0.7024850756629182,
+    "shuffled_min_auroc": 0.30723309732056087,
+    "n_shuffled_above_learned": 3
+  },
+  "confidence_baselines": {
+    "auroc_maxp": 0.7735665694849369,
+    "auroc_maxp_ci": [
+      0.719467582951548,
+      0.8254431024110325
+    ],
+    "auroc_ent": 0.7773612846499144,
+    "auroc_ent_ci": [
+      0.7246506085427368,
+      0.8290550233698922
+    ],
+    "delta_maxp_ci": [
+      -0.14260493312971437,
+      -0.020674256096996555
+    ]
+  },
+  "stage10_assessment": {
+    "confidence_coverage_range": [
+      0.10204081632653061,
+      1.0
+    ],
+    "comparable_points": [
+      {
+        "alpha": 0.0,
+        "coverage": 0.8027210884353742,
+        "learned_selective_acc": 0.5550847457627118,
+        "threshold_selective_acc": 0.593879921741257,
+        "gap_points": 3.8795175978545204
+      },
+      {
+        "alpha": 0.25,
+        "coverage": 0.29591836734693877,
+        "learned_selective_acc": 0.6666666666666666,
+        "threshold_selective_acc": 0.8070506349290686,
+        "gap_points": 14.038396826240195
+      }
+    ],
+    "not_comparable_points": [
+      {
+        "alpha": 0.5,
+        "coverage": 0.034013605442176874
+      },
+      {
+        "alpha": 0.75,
+        "coverage": 0.0
+      },
+      {
+        "alpha": 1.0,
+        "coverage": 0.0
+      },
+      {
+        "alpha": 1.25,
+        "coverage": 0.0
+      },
+      {
+        "alpha": 1.5,
+        "coverage": 0.027210884353741496
+      },
+      {
+        "alpha": 2.0,
+        "coverage": 1.0
+      }
+    ],
+    "dominated_at_all_comparable_points": true,
+    "largest_gap_points": 14.038396826240195,
+    "largest_gap_coverage": 0.29591836734693877,
+    "largest_gap_alpha": 0.25,
+    "learned_max_gain": 0.23809523809523814,
+    "learned_max_gain_alpha": 0.25,
+    "concept_max_gain": 0.36734693877551017,
+    "concept_max_gain_alpha": 1.25,
+    "concept_beats_learned_gain": true
+  },
   "stage10": {
     "max_selective_gain": 0.23809523809523814
   },

@@ -9,7 +9,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import torch
 
 from src.config import CFG
-from src.eval_common import (ensure_stage4_directions, load_locked_selection, load_runtime_contract,
+from src.abstention_classifier import require_judge_validation
+from src.eval_common import (atomic_write_jsonl, ensure_stage4_directions, load_locked_selection, load_runtime_contract,
                              load_stage_model, sha256_file)
 from src.test_evaluation import (load_and_validate_test_and_b_ctrl_datasets, run_stage6_test_evaluation,
                                  save_stage6_artifacts, verify_stage6_outputs)
@@ -18,6 +19,9 @@ from src.test_evaluation import (load_and_validate_test_and_b_ctrl_datasets, run
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--force", action="store_true")
+    mode=p.add_mutually_exclusive_group()
+    mode.add_argument("--generation-only",action="store_true",help="Generate raw responses for scripts/judge_pass.py.")
+    p.add_argument("--offline",action="store_true",help="Require complete judge cache for analysis.")
     p.add_argument("--device", default="cuda:0" if torch.cuda.is_available() else "cpu")
     p.add_argument("--dtype", default="auto")
     p.add_argument("--batch-size", type=int, default=CFG.batch_size_forward)
@@ -36,8 +40,10 @@ def main(argv=None) -> int:
     p.add_argument("--table4-csv-path", type=Path, default=CFG.table4_csv_path)
     p.add_argument("--table4-md-path", type=Path, default=CFG.table4_md_path)
     a = p.parse_args(argv)
+    if not a.generation_only and not a.offline: raise RuntimeError("Stage 6 analysis must use --offline after scripts/judge_pass.py")
+    if not a.generation_only: require_judge_validation()
     outputs = (a.output_path, a.gen_path, a.table1_csv_path, a.table1_md_path, a.table4_csv_path)
-    if not a.force and all(x.exists() for x in outputs):
+    if not (a.force or a.generation_only) and all(x.exists() for x in outputs):
         try:
             verify_stage6_outputs(*outputs, stage5_path=a.stage5_path)
         except (AssertionError, KeyError, ValueError, RuntimeError, TypeError):
@@ -55,7 +61,12 @@ def main(argv=None) -> int:
     raw_model, tokenizer, _ = load_stage_model(contract, a.device, a.dtype)
     result, gens = run_stage6_test_evaluation(raw_model, tokenizer, contract, directions, selection, test_pairs, b_ctrl,
                                               a.batch_size, CFG.stage6_checkpoint_path, a.force, stage4_sha,
-                                              sha256_file(a.stage5_path))
+                                              sha256_file(a.stage5_path), offline=a.offline, generation_only=a.generation_only)
+    if a.generation_only:
+        save_stage6_artifacts(result, gens, a.output_path, a.gen_path, a.table1_csv_path, a.table1_md_path, None,
+                              a.table4_csv_path, a.table4_md_path)
+        print(f"Saved {len(gens)} unjudged Stage 6 response rows and provisional analysis; run judge_pass.py then stage6_rescore_generations.py --offline")
+        return 0
     save_stage6_artifacts(result, gens, a.output_path, a.gen_path, a.table1_csv_path, a.table1_md_path, None,
                           a.table4_csv_path, a.table4_md_path)
     d = verify_stage6_outputs(*outputs, stage5_path=a.stage5_path)

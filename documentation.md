@@ -422,3 +422,125 @@ The final project write-up must use the exact 7-section structure below, with ev
    * **Rank-1 Linear Subspace Assumption:** Acknowledge that difference-in-means extraction isolates a single 1D linear direction at $(l^*, i^*)$, leaving multi-dimensional or non-linear uncertainty manifolds to downstream probing.
 7. **Section 7 — Transition & Reusable Assets for Option A:**
    * Document how the verified hook infrastructure, activation caching pipeline, popularity-matched PopQA splits, and extracted abstention subspace $\hat{r}_{i^*}^{(l^*)}$ transfer directly into Option A (probing internal truth vs. epistemic uncertainty representations).
+
+---
+
+## Addendum A — Post-hoc interpretation clarification (v4.1, added 2026-10-24)
+
+This addendum does not modify the frozen v4.0 specification above. It records a post-hoc correction to how Section 6.3 is aggregated (DEV-013).
+
+1. Rows 1 and 2 of Section 6.3 (H1/H2 causal mediation; H3 private-detail control) predict the same outcome under A and B. They are prerequisites, not evidence for either hypothesis.
+2. Only rows 3 (H4) and 4 (H5, plus the exploratory earlier-layer check in Figure S1) discriminate between the hypotheses.
+3. The v4.1 aggregation rule is:
+
+   | Order | Condition | Overall |
+   |---|---|---|
+   | 1 | Not (causal and deconf) | Inconclusive_Confound_or_Methodological_Failure |
+   | 2 | H4 is domain_transfer_failure | Inconclusive_Domain_Transfer_Failure |
+   | 3 | H4 is B and H5 is B | Hypothesis_B_Internal_Uncertainty_Detector |
+   | 4 | H4 is A and H5 is A or neither_separates | Hypothesis_A_Contextual_Insufficiency_Detector |
+   | 5 | Otherwise, discriminating tests disagree | Mixed_Not_Supported_Discriminating_Tests_Disagree |
+
+4. Outputs retain the v4 verdict in interpretation.overall_as_registered_v4 for auditability.
+
+
+---
+
+## Addendum B — Measurement corrections (v4.2; pre-registered before reruns)
+
+This addendum records the measurement protocol for Tier 1 corrections. The v4 results have already been viewed; corrected H4/H5 estimates are therefore corrected, post hoc results and are not confirmatory. Fresh confirmatory testing is reserved for Tier 3. No seeds, thresholds, sample sizes, prompts, or Stage 1 questions are changed by these measurement corrections.
+
+### B1. Canonical model inputs and label-defining generation
+
+Every chat input is formatted once with the tokenizer's chat template using `add_generation_prompt=True`, then tokenized with `add_special_tokens=False`. The resulting unpadded IDs must contain exactly one BOS token, at index 0. Batched feature inputs are formed only by left-padding those canonical rows; position IDs are derived from the attention mask. The label and feature pipelines must hash the same unpadded IDs and assert byte-identical equality for every PopQA item. The contract identifier is `chat-template/no-extra-bos/mask-position-ids/v1`.
+
+Label-defining PopQA generations, including the Stage 10 α = 0 comparison, use greedy decoding with batch size 1 and `max_new_tokens = 16`. This makes their input layout identical across stages. Other Stage 10 α values may be batched, with batch size recorded per item or run.
+
+### B2. Abstention classifier and frozen judge
+
+The classifier reports exactly three semantic labels: `ABSTAIN` (declines or says the answer is unknown/unavailable), `ANSWER` (commits to an answer, whether correct or not), and `DEGENERATE` (off-topic, meta, nonsensical, repeated-token, or empty output). The primary abstention rate is `ABSTAIN / N`; the degenerate rate is reported alongside it. For PopQA grading, `DEGENERATE` counts as answered and incorrect.
+
+The fast regex audit is case-insensitive and recognizes the existing v4 abstention patterns plus: `^there (is|are|was|were) no\b`; `\bno (information|data|record|records|details|mention)\b`; `^(the )?answer( is)?\s*[:\-]?\s*unknown\b`; `\b(is|are|remains?) (unknown|not known)\b`; `\bnot (stated|specified|given|available|included|provided|listed|recorded|known)\b`; `\bunable to (determine|answer|find|identify|provide)\b`; `^i (cannot|can't|am unable|could not|couldn't)\b`; `\bdoes(n't| not) (mention|specify|state|say|provide|include)\b`; and `\bno (publicly )?available\b`. Bare `None` and `N/A` are not regex abstentions because they can be valid answers. Regex labels are audit signals; the judge determines the final semantic label.
+
+The pinned judge backend is the Anthropic API model `claude-haiku-4-5-20251001`, at temperature 0 and at most 20 output tokens. This exact model ID is listed as active in Anthropic's model deprecations documentation as of 2026-10-24. The judge prompt is frozen as version `v1`; its SHA-256 is recorded with every classification:
+
+```text
+You are classifying a language model's reply to a question. Do not judge whether the answer is correct.
+
+Question:
+<<<QUESTION>>>
+
+Reply:
+<<<RESPONSE>>>
+
+Classify the reply into exactly one category:
+ABSTAIN - the reply declines to answer or says the answer is unknown, unavailable, not provided, or cannot be determined, in any wording (including "Unknown", "There is no information available about...", "There is no director associated with...").
+ANSWER - the reply commits to a specific answer to the question, even if it is wrong, short, or hedged.
+DEGENERATE - the reply is neither: off-topic, self-referential, a meta-statement, nonsensical, or empty.
+
+Respond with only one word: ABSTAIN, ANSWER, or DEGENERATE.
+```
+
+The judge sees only the question (the full user prompt for contextual conditions) and response. It does not see condition, α, gold answer, or regex label. Final label equals judge label. Every item records regex label, judge label, final label, agreement, backend/model, prompt version/hash, and any parse retries. Invalid output is retried once; a second invalid output is `UNPARSEABLE`, excluded from rate denominators, and counted. A condition with more than 1% unparseable outputs fails verification. `regex_only` is a development-only mode and marks all outputs non-final. The persistent cache key is SHA-256 of backend, model ID, prompt version, question, and response; offline rescoring must fail on any cache miss and make no judge calls on a complete cache. API calls are rate-limited and retried with backoff.
+
+### B3. Human validation gates
+
+For the abstention judge, freeze a stratified 200-item held-out test split first (minimum four items per condition stratum where available) using seed `20260408`; then sample a 100-item development split from the remainder, oversampling regex/judge disagreements and α = ±2. Export blinded, shuffled sheets containing UID, question, response, human label, and notes only. Prompt revisions use the development split only, at most three revisions. The held-out acceptance gate is three-class Cohen's κ ≥ 0.90 and `ABSTAIN` recall ≥ 0.95. If it still fails after the allowed revisions, retain the best version, report the failure, and mark generation-rate claims provisional.
+
+For the PopQA grader, after canonical response regeneration, sample 200 items using seed `20260409`: include all ambiguous items up to 40, then stratify the remainder across correct/wrong/abstain and grade-reason codes. Split 60 development and 140 held out, with labels and grader output blinded from each other. The held-out gate is precision for `correct` ≥ 0.95 and recall ≥ 0.90. Revise matching rules using only development labels, then evaluate once on the held-out set. Ambiguous items remain excluded from the primary matched set; report a sensitivity analysis resolving them with available human labels.
+
+### B4. Stage comparisons and capability measures
+
+Stage 10 confidence-threshold and steering curves use the same Stage 2/8 α = 0 correctness labels, Stage 8 `maxp` values, item IDs, and denominators. For these comparisons, ambiguous and degenerate responses count as answered but not correct. The α = 0 regenerated grade must equal the stored Stage 2/8 label for every matched item; any mismatch stops the analysis and records both responses and input hashes.
+
+The primary WikiText KL passage rule selects the first 200 non-header paragraphs in dataset order with at least 64 words and at least 256 tokens, truncates each to exactly 256 tokens, and asserts 51,000 next-token positions. If fewer than 200 qualify, the deterministic fallback concatenates consecutive non-header paragraphs within each article (top-level `= Title =` boundaries), cuts 256-token chunks, and takes the first 200. Record the rule used and actual position count; preserve v4 values under `v4_*` keys.
+
+The primary MMLU capability evaluation uses the fixed neutral system prompt `You are a helpful assistant.` The existing abstention system prompt remains a secondary condition. Evaluate both prompts at all registered capability conditions and report accuracy, false-abstention rate (P(Unknown) above the best option), and accuracy among non-abstained items; option scoring is unchanged.
+
+### B5. Post-hoc status
+
+The corrected PopQA labels, H4/H5 estimates, and resulting conclusions are post hoc because v4 results were viewed before this protocol was written. This protocol is frozen before corrected reruns, but those reruns are not confirmatory evidence. Tier 3 will provide fresh confirmatory testing.
+## Addendum C — Controls and statistics (v5)
+
+Draft preregistration text only; Addendum C and the domain-category mapping have not been committed, so this protocol is not yet preregistered. The confirmatory fresh PopQA sample must not be inspected or used for covariance estimation, judge/grader tuning, or exploratory plots before both are committed. The human GPU owner runs registered jobs. Scripts record input hashes and support checkpoint recovery.
+
+### Locked setup and covariance pool
+
+The locked coordinate remains (l*, i*) = (11, -4); the learned direction remains the Stage 4 direction. Do not rerun Stages 0, 1, 3, 4, or 5. Do not change existing config values. The layer-11, position-minus-4 covariance pool contains all 384 training prompts, 192 validation prompts, and archived v4/v4.2 PopQA items (any label). It excludes test prompts, B-ctrl prompts, and fresh PopQA items. Use canonical_input_ids; record input-ID hashes and source labels. Collect test residual norms at every position, split into BOS, non-BOS, and i*.
+
+Fit a centered sklearn.covariance.LedoitWolf covariance. The covariance null uses Cholesky sampling, with eigendecomposition square root if Cholesky fails, 499 draws, seed 20260410. Unit-normalize for ablation and norm-match steering to ||r||. Report each uᵀΣu and the percentile of r_hatᵀΣr_hat. Generate 50 top PCA directions (descriptive only; no p-value), oriented to nonnegative cosine with r_hat; report learned-effect rank. Report the learned effect against covariance-null draws within ±25% of its projected variance. The label-free null uses 199 draws, seed 20260411: within each training template, randomly assign two of four instances to each group separately for answerable and unanswerable prompts; compute both label-specific mean differences and average them. The expected answerability-axis component is zero. The template-partition null uses 199 draws, seed 20260412: partition 48 training templates into groups of 24, stratified to 12 Family A and 12 Family B per group; take label-balanced mean differences, orthogonalize to r_hat, unit-normalize for ablation, and norm-match ||r|| for steering. Keep v4 isotropic and within-pair shuffled controls archived and label them superseded; do not use them in v5 tests.
+
+### Named concepts and steering scale
+
+Before deriving concept directions, register data/domain_categories.json mapping each training template to physical science, life science, engineering/infrastructure, humanities/archival, or other. Derive one row per training prompt from data/pairs.jsonl and data/templates.jsonl. Attributes: family A/B; question wh-word Who/Which/What/Where/When/How/other (one-vs-rest); Family B answer type year/place/person/vessel-or-artifact/other (one-vs-rest); prompt-token-length top vs bottom tercile using the locked tokenizer; context sentence count 2 vs 3+; instance index 0–3 (one-vs-rest); coarse domain (one-vs-rest); digits in context present/absent; answer-token-length 1 vs 2+. Drop contrasts with fewer than 32 prompts on either side; target 20–30 directions. Compute each contrast as the average of answerable-only and unanswerable-only difference-in-means, orthogonalize to r_hat, norm-match ||r||, and record group sizes and pre-orthogonalization cosine. Store rows in data/concept_attributes.jsonl and contrasts in results/stage4b_nulls.json.
+
+Steering scale is alpha*||r|| divided by median non-BOS prompt residual norm and separately by median residual norm at i*. For each registered alpha, report learned effect and covariance-null mean and 2.5–97.5 percentile envelope. Net effect is learned effect minus mean covariance-null effect at each alpha.
+
+### Stage 6b outcomes and v5 hypothesis family
+
+Primary H1′/H2′ statistic: template-cluster mean change in first-token abstention probability P_abs, bounded in [-1, 1], not clamped log-odds. Evaluate all 499 covariance, 199 label-free, 199 template-partition, named-concept, and 50 PCA directions at registered operating points. For the first 19 covariance directions (seed order), judge generated outcomes at necessity ablation and sufficiency steering; descriptive only, outside IUT. For answerable ablate_all, report the fraction judged ANSWER with normalized exact-match ground truth and template-cluster bootstrap CI. Reuse existing generations only if condition and canonical input hashes match byte-for-byte.
+
+The confirmatory family is H1′ necessity; H2′ sufficiency; H3 private-detail control (unchanged Tier 1 judged B-ctrl criterion); H4′ closed-book separation; H5′ incremental value. H1′ components: one-sided cluster Wilcoxon, covariance null (499), label-free null (199), and template-partition null (199). H2′ has the same components on P_abs change. H3 remains Tier 1 Wilcoxon and requires judged B-ctrl abstention <= 0.15. H4′ components: relation-stratified permutation, covariance null (499), and template-partition null (199); point AUROC must be >= 0.60. H5′ is paired matched-pair bootstrap for incremental CV AUROC. Each composite intersection–union p-value is the maximum component p-value; report binding component. Apply Holm–Bonferroni across five composite p-values at familywise alpha 0.05. Raise concept-confound flag for H1′ or H2′ if the 95th percentile template-partition effect or largest named-concept effect exceeds 25% of learned effect.
+
+### Fresh PopQA, H4′, and H5′
+
+Exclude every hf_row_idx in archived data/popqa_sample.jsonl. Sample batches of 1,000 with seeds 20260413 + batch_index and original decile weights (deciles 1–5: 0.06 each; 6–10: 0.14 each). Generate and grade with Tier 1 canonical batch-size-1 inputs, judged abstention, validated grader, and input_ids_sha256. Exclude relations with fewer than 30 fresh items at stopping time. Match exactly on relation, then greedy 1:1 nearest-neighbor on log10(s_pop+1) within 0.25 times the global SD; ties use seed 20260413. Stop after a batch reaches 750 matched pairs or at 9,000 questions; never widen the caliper. If fewer than 300 pairs at cap, stop and report to owner; otherwise proceed and report achieved power. Before Stage 8, hand-label 100 random fresh graded items, blinded; stop if correct precision < 0.95 or recall < 0.90. Store data/popqa_fresh.jsonl with relation, matched_pair_id_v5, is_matched_v5, input hash, judged record, and grade.
+
+H4′ statistic is relation-stratified AUROC for wrong=1 vs correct=0, weighted by n_pos*n_neg, with one-sided within-relation permutation, 9,999 permutations, seed 20260413. Compare AUROC-0.5 with absolute null deviations from 499 covariance and 199 template-partition directions. Report pair-cluster bootstrap 95% CI, pooled AUROC, relation-only leave-one-out AUROC, per-relation counts/AUROCs, and label-free null. Require IUT Holm pass and point AUROC >= 0.60; CI lower bound > 0.60 is secondary.
+
+H5′ BASE is [maxp, entropy, log_odds], FULL adds proj. Use repeated stratified group 5-fold CV, groups=matched pair IDs, 20 repeats, train-fold standardization, L2 logistic regression C=1.0, and average out-of-fold probabilities. Statistic is FULL AUROC minus BASE AUROC. Bootstrap matched pairs 1,000 times, recomputing both CV AUROCs with one 5-fold split per resample and fixed resample-derived seed. One-sided p=(1+count(delta_b<=0))/(B+1). Report 95% CI and whether upper bound is below SESOI 0.02. Secondary: BASE/FULL with relation fixed effects and full-data likelihood-ratio test for adding proj.
+
+### Interpretation rule v5
+
+| Order | Condition | Verdict |
+|---|---|---|
+| 1 | H1′, H2′, or H3 fails, or concept-confound flag is raised | Inconclusive: prerequisites not met |
+| 2 | Stratified AUROC within ±0.05 of 0.5 and abstained items do not project above correct items | Inconclusive: domain-transfer failure |
+| 3 | H4′ passes and H5′ passes | Hypothesis B (internal uncertainty) |
+| 4 | H5′ fails and delta AUROC CI upper bound < 0.02 | Hypothesis A; output-confidence readout if H4′ passes, input-property detector if H4′ fails |
+| 5 | H5′ fails and CI upper bound >= 0.02 | Inconclusive: underpowered for incremental value |
+| 6 | H4′ fails and H5′ passes | Mixed |
+
+Fresh PopQA H4′/H5′ are confirmatory. H1′/H2′ are re-analyses under stronger nulls on seen test templates, not fresh confirmation. H3 is unchanged from Tier 1. No null size, seed, statistic, or decision rule changes after the first Tier 2 GPU run.
+
+The remaining fixed seeds and sample settings are: fresh PopQA sampling 20260413; incremental CV/bootstrap seed 20260414; power simulation seed 20260415; generation subset 19 covariance directions; dose subset 20 covariance directions; fresh batches 1,000; fresh cap 9,000; matched-pair target 750; minimum relation pool 30; stratified permutation count 9,999; incremental CV 5 folds x 20 repeats; pair-cluster bootstrap B=1,000; SESOI delta-AUROC=0.02.
