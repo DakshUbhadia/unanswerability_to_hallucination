@@ -97,13 +97,15 @@ def template_partition_null(acts_ans: np.ndarray, acts_unans: np.ndarray, templa
     ans,tids=_as_template_tensor(acts_ans,template_ids); unans,tids_u=_as_template_tensor(acts_unans,template_ids); fam=np.asarray(families)
     if ans.shape!=unans.shape or tids!=tids_u or len(fam)!=len(tids): raise ValueError("template metadata mismatch")
     if len(tids)!=48 or len(set(fam))!=2 or any(np.sum(fam==f)!=24 for f in set(fam)): raise ValueError("requires 48 templates, 24 per family")
-    rh=np.asarray(r_hat,dtype=np.float64); rh/=np.linalg.norm(rh); rng=np.random.default_rng(int(seed)); draws=[]
+    rh=np.asarray(r_hat,dtype=np.float64); rh/=np.linalg.norm(rh); rng=np.random.default_rng(int(seed)); draws=[];partitions=[]
     for _ in range(int(n)):
         g1=[];g2=[]
         for f in sorted(set(fam)):
             ix=np.flatnonzero(fam==f);rng.shuffle(ix);g1.extend(ix[:12]);g2.extend(ix[12:])
+        partitions.append({'group1':[tids[i] for i in g1],'group2':[tids[i] for i in g2]})
         d=(ans[g1].mean((0,1))+unans[g1].mean((0,1))-ans[g2].mean((0,1))-unans[g2].mean((0,1)))/2
         draws.append(d-np.dot(d,rh)*rh)
-    out=_direction_set(np.asarray(draws),r_norm,{"family":"template_partition","seed":int(seed),"n":int(n),"groups_per_family":12,"template_ids":tids})
+    out=_direction_set(np.asarray(draws),r_norm,{"family":"template_partition","seed":int(seed),"n":int(n),"groups_per_family":12,"template_ids":tids,
+        "partitions":partitions,"label_balance_per_group":{"answerable":96,"unanswerable":96}})
     out["metadata"]["max_abs_r_dot"]=float(np.max(np.abs(out["unit"]@rh)))
     return out

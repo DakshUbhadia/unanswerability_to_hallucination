@@ -2,7 +2,7 @@
 from __future__ import annotations
 import numpy as np
 from src.stratified_auroc import stratified_auroc, stratified_permutation_test, cluster_bootstrap_stratified_auroc
-from src.incremental_value import incremental_value_test
+from src.incremental_value import incremental_value_test,secondary_incremental_models
 from src.intersection_union import iut_p
 from src.config import CFG
 
@@ -55,4 +55,6 @@ def analyze_h4_v5(scores, labels, strata, pair_ids, covariance_scores=None, temp
 
 
 def analyze_h5_v5(frame, n_boot=1000, seed=CFG.seed_incremental_cv):
-    return incremental_value_test(frame,n_boot,seed,CFG.sesoi_delta_auroc)
+    result=incremental_value_test(frame,n_boot,seed,CFG.sesoi_delta_auroc)
+    result['secondary']=secondary_incremental_models(frame,seed)
+    return result

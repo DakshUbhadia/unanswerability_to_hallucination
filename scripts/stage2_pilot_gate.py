@@ -184,7 +184,10 @@ def main() -> int:
                      args.rematch_only, args.diagnostic_val_pilot]
     if sum(bool(x) for x in special_modes) > 1:
         parser.error("Choose only one Stage 2 special mode")
-    if not args.force and not args.recompute_matching_only and not args.regrade_saved_popqa_only and out.exists() and poppath.exists():
+    # Explicit modes must never be skipped merely because legacy artifacts pass
+    # the ordinary Stage 2 verifier. Canonical regeneration/rematching are repair
+    # actions and are specifically used to upgrade old rows in place.
+    if not any(special_modes) and not args.force and out.exists() and poppath.exists():
         try:
             verify_stage2_outputs(out,poppath)
             print(f"[SKIP] Stage 2 already verified in {out}")

@@ -10,7 +10,9 @@ def main():
         sha,subject=row.split('\t',1)
         paths=subprocess.check_output(['git','diff-tree','--no-commit-id','--name-only','-r',sha],text=True).splitlines()
         if subject.startswith('protocol: Addendum C'): protocol=sha
-        if any(p.startswith(('results/stage4b','results/stage6b','results/stage8v5','results/power_analysis_h4')) for p in paths): results.append(sha)
+        # The plan explicitly requires the planning power simulation to be committed
+        # before Addendum C. Only empirical Tier 2 outputs must follow the protocol.
+        if any(p.startswith(('results/stage4b','results/stage6b','results/stage8v5')) for p in paths): results.append(sha)
     if results and (protocol is None or any(log.index(next(x for x in log if x.startswith(h))) <= log.index(next(x for x in log if x.startswith(protocol))) for h in results)):
         raise SystemExit('Tier 2 results commit precedes Addendum C protocol commit')
     print('commit order verified')

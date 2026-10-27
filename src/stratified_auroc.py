@@ -2,6 +2,7 @@
 from __future__ import annotations
 import numpy as np
 from sklearn.metrics import roc_auc_score
+from scipy.stats import rankdata
 
 
 def stratified_auroc(scores, labels, strata) -> dict:
@@ -21,13 +22,20 @@ def stratified_auroc(scores, labels, strata) -> dict:
 def stratified_permutation_test(scores, labels, strata, n_perm=9999, seed=0, alternative="greater") -> dict:
     s=np.asarray(scores,float); y=np.asarray(labels,int); g=np.asarray(strata); obs=stratified_auroc(s,y,g)["auroc"]
     if alternative not in {"greater","less","two-sided"}: raise ValueError("invalid alternative")
-    rng=np.random.default_rng(seed); ge=0
-    for _ in range(int(n_perm)):
-        yp=y.copy()
-        for name in dict.fromkeys(g.tolist()):
-            ix=np.flatnonzero(g==name); yp[ix]=rng.permutation(yp[ix])
-        stat=stratified_auroc(s,yp,g)["auroc"]
-        ge += stat>=obs if alternative=="greater" else (stat<=obs if alternative=="less" else abs(stat-.5)>=abs(obs-.5))
+    rng=np.random.default_rng(seed); count=int(n_perm);num=np.zeros(count,float);den=0
+    # Within each stratum, the label count is fixed. Mann–Whitney U is a rank
+    # sum, so batch permutations and avoid thousands of repeated roc_auc_score calls.
+    for name in dict.fromkeys(g.tolist()):
+        ix=np.flatnonzero(g==name); yy=y[ix];pos=int(yy.sum());neg=len(yy)-pos
+        if not pos or not neg:continue
+        ranks=rankdata(s[ix]);weight=pos*neg;den+=weight
+        order=np.argsort(rng.random((count,len(ix))),axis=1)
+        perm_labels=yy[order]
+        num+=(ranks[None,:]*perm_labels).sum(1)-pos*(pos+1)/2
+    stats=num/den
+    if alternative=="greater":ge=int(np.sum(stats>=obs))
+    elif alternative=="less":ge=int(np.sum(stats<=obs))
+    else:ge=int(np.sum(np.abs(stats-.5)>=abs(obs-.5)))
     return {"statistic":obs,"p_value":(1+ge)/(int(n_perm)+1),"n_perm":int(n_perm),"seed":int(seed),"alternative":alternative}
 
 

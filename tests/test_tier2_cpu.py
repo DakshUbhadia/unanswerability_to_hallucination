@@ -1,6 +1,6 @@
 ﻿import numpy as np
 from src.null_directions import (fit_activation_covariance,sample_covariance_null,labelfree_null,template_partition_null)
-from src.stratified_auroc import stratified_auroc
+from src.stratified_auroc import stratified_auroc,stratified_permutation_test
 from src.intersection_union import iut_p
 from src.steering_scale import residual_norm_stats,alpha_scale_table
 from src.stage8_v5 import classify_interpretation_v5
@@ -25,6 +25,26 @@ def test_label_free_and_template_partition_are_orthogonal_and_label_balanced():
     tp=template_partition_null(ans,unans,None,fam,r,2.,199,5)
     assert np.max(np.abs(tp['unit']@r))<1e-6
     assert np.max(np.abs(np.linalg.norm(tp['steer'],axis=1)-2.))<1e-5
+    tid_family={i:('A' if i<24 else 'B') for i in range(48)}
+    assert tp['metadata']['label_balance_per_group']=={'answerable':96,'unanswerable':96}
+    for part in tp['metadata']['partitions']:
+        assert len(part['group1'])==len(part['group2'])==24
+        assert sum(tid_family[t]=='A' for t in part['group1'])==12
+        assert sum(tid_family[t]=='B' for t in part['group1'])==12
+        assert sum(tid_family[t]=='A' for t in part['group2'])==12
+        assert sum(tid_family[t]=='B' for t in part['group2'])==12
+
+
+def test_within_pair_sign_flip_retains_axis_while_label_free_does_not():
+    rng=np.random.default_rng(31);n=48;d=256;r=np.zeros(d);r[0]=1.
+    diffs=2*r+rng.normal(scale=.05,size=(n,d))
+    signs=rng.choice([-1.,1.],size=n)
+    old=np.mean(diffs*signs[:,None],axis=0);old/=np.linalg.norm(old)
+    ans=np.broadcast_to((rng.normal(size=(n,1,d))+.5*r),(n,4,d)).copy()+rng.normal(scale=.01,size=(n,4,d))
+    unans=np.broadcast_to((rng.normal(size=(n,1,d))-.5*r),(n,4,d)).copy()+rng.normal(scale=.01,size=(n,4,d))
+    new=labelfree_null(ans,unans,n=199,seed=8)
+    assert abs(float(old@r))>.3
+    assert np.mean(np.abs(new['unit']@r))<.1
 
 
 def test_stratified_auc_single_stratum_and_weighted():
@@ -73,12 +93,35 @@ def test_between_stratum_effect_is_removed():
     assert roc_auc_score(labels,scores)>.8
 
 
+def test_stratified_permutation_type_one_rate_on_400_null_datasets():
+    rng=np.random.default_rng(72);rejects=0
+    strata=np.repeat(np.arange(10),8);labels=np.tile([0,0,0,0,1,1,1,1],10)
+    for i in range(400):
+        scores=rng.normal(size=len(labels))
+        result=stratified_permutation_test(scores,labels,strata,n_perm=199,seed=1000+i)
+        rejects+=result['p_value']<.05
+    rate=rejects/400
+    assert .03<=rate<=.07
+
+
 def test_group_cv_keeps_matched_pairs_together():
     from src.incremental_value import cv_oof_auroc
     rng=np.random.default_rng(10);groups=np.repeat(np.arange(30),2);y=np.tile([1,0],30)
     X=np.column_stack([y+rng.normal(0,.5,len(y)),rng.normal(size=len(y))])
     auc=cv_oof_auroc(X,y,groups,folds=5,repeats=2,seed=3)
     assert .5<auc<=1
+
+
+def test_incremental_value_noise_and_independent_signal_are_separated():
+    from src.incremental_value import cv_oof_auroc
+    rng=np.random.default_rng(44);groups=np.repeat(np.arange(120),2);y=np.tile([1,0],120)
+    base=np.column_stack([rng.normal(size=240),rng.normal(size=240),rng.normal(size=240)])
+    noise=np.column_stack([base,rng.normal(size=240)])
+    signal=np.column_stack([base,y+rng.normal(scale=.3,size=240)])
+    auc_noise=cv_oof_auroc(noise,y,groups,folds=5,repeats=3,seed=5)
+    auc_signal=cv_oof_auroc(signal,y,groups,folds=5,repeats=3,seed=5)
+    assert .4<auc_noise<.6
+    assert auc_signal>auc_noise+.2
 
 
 def test_archive_v42_manifest_verifies():

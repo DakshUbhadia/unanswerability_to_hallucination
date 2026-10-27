@@ -21,11 +21,19 @@ def _answer_type(text):
     if len(t.split())>=2 and all(w[:1].isupper() for w in text.split()[:2]): return "person"
     return "other"
 def derive_attribute_rows(pairs_path="data/pairs.jsonl", templates_path="data/templates.jsonl", domain_path="data/domain_categories.json", tokenizer=None):
+    # Load the locked template table as an integrity check. Pair rows carry rendered
+    # prompts, but template metadata is the authoritative source for family/domain.
+    templates=[json.loads(s) for s in Path(templates_path).read_text(encoding="utf-8").splitlines() if s]
+    template_by_id={r["template_id"]:r for r in templates}
     domains=json.loads(Path(domain_path).read_text(encoding="utf-8")); domains=domains.get("mapping",domains); pairs=[json.loads(s) for s in Path(pairs_path).read_text(encoding="utf-8").splitlines() if s]
     # The registered table contains one row per distinct answerable/unanswerable prompt.
     rows=[]
     for p in pairs:
         if p["split"]!="train": continue
+        if p["template_id"] not in template_by_id:
+            raise ValueError(f"training pair references unknown template {p['template_id']}")
+        if template_by_id[p["template_id"]].get("family") != p["family"]:
+            raise ValueError(f"family mismatch for template {p['template_id']}")
         for label,key in (("answerable","ans_prompt"),("unanswerable","unans_prompt")):
             prompt=p[key];ctx=_context(prompt);q=prompt.split("Question:",1)[-1]
             token_len=len(tokenizer.encode(prompt,add_special_tokens=False)) if tokenizer is not None else int(p.get("ans_token_len" if label=="answerable" else "unans_token_len",len(prompt.split())))
@@ -35,6 +43,15 @@ def derive_attribute_rows(pairs_path="data/pairs.jsonl", templates_path="data/te
                 "prompt_token_length":token_len,"context_sentence_count":len(re.findall(r"[.!?](?:\s|$)",ctx)),
                 "coarse_domain":domains[p["template_id"]],"digits_in_context":bool(re.search(r"\d",ctx)),"answer_token_length":"1" if answer_tokens==1 else "2+"})
     return contrast_labels(rows)
+
+def save_attribute_rows(rows, path="data/concept_attributes.jsonl"):
+    """Persist the deterministic attribute table as registered JSONL."""
+    target=Path(path);target.parent.mkdir(parents=True,exist_ok=True)
+    tmp=target.with_suffix(target.suffix+".tmp")
+    with tmp.open("w",encoding="utf-8",newline="\n") as f:
+        for row in rows:f.write(json.dumps(row,ensure_ascii=False,allow_nan=False)+"\n")
+    tmp.replace(target)
+    return target
 
 def contrast_labels(rows):
     out={}
