@@ -180,6 +180,7 @@ def main() -> int:
     parser.add_argument("--stage0-path",default=str(CFG.stage0_out_path))
     parser.add_argument("--output-path",default=str(CFG.stage2_out_path))
     args=parser.parse_args(); out=Path(args.output_path); poppath=Path(args.popqa_path)
+    stage0_path=Path(args.stage0_path);pairs_path=Path(args.pairs_path)
     special_modes = [args.recompute_matching_only, args.regrade_saved_popqa_only, args.regenerate_popqa_canonical,
                      args.rematch_only, args.diagnostic_val_pilot]
     if sum(bool(x) for x in special_modes) > 1:
