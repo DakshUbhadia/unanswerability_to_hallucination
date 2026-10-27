@@ -502,7 +502,7 @@ The primary MMLU capability evaluation uses the fixed neutral system prompt `You
 The corrected PopQA labels, H4/H5 estimates, and resulting conclusions are post hoc because v4 results were viewed before this protocol was written. This protocol is frozen before corrected reruns, but those reruns are not confirmatory evidence. Tier 3 will provide fresh confirmatory testing.
 ## Addendum C — Controls and statistics (v5)
 
-Draft preregistration text only; Addendum C and the domain-category mapping have not been committed, so this protocol is not yet preregistered. The confirmatory fresh PopQA sample must not be inspected or used for covariance estimation, judge/grader tuning, or exploratory plots before both are committed. The human GPU owner runs registered jobs. Scripts record input hashes and support checkpoint recovery.
+Protocol: v5. The confirmatory fresh PopQA sample must not be inspected or used for covariance estimation, judge/grader tuning, or exploratory plots before this addendum is committed. The human GPU owner runs registered jobs. Scripts record input hashes and support checkpoint recovery.
 
 ### Locked setup and covariance pool
 
