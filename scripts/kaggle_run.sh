@@ -66,6 +66,7 @@ for stage in "${stages[@]}"; do
     fi
     if [[ "$stage" == 7 && "${SKIP_MMLU:-0}" == 1 ]]; then args+=(--skip-mmlu); fi
     if [[ "$stage" == 2 && "${STAGE2_POPQA_REGENERATE:-0}" == 1 ]]; then args+=(--regenerate-popqa-canonical); fi
+    if [[ "$stage" == 2 && "${STAGE2_POPQA_REGRADE:-0}" == 1 ]]; then args+=(--regrade-saved-popqa-only --offline); fi
     if [[ "$stage" == 2 && "${STAGE2_POPQA_REMATCH:-0}" == 1 ]]; then args+=(--rematch-only --offline); fi
     if [[ "$stage" == 6 && "${STAGE6_GENERATION_ONLY:-0}" == 1 ]]; then args+=(--generation-only); fi
     if [[ "$stage" == 10 && "${STAGE10_GENERATION_ONLY:-0}" == 1 ]]; then args+=(--generation-only); fi
