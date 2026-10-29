@@ -94,17 +94,24 @@ bash scripts/kaggle_run.sh judge
 # Phase F1: cache all-layer, five-position activations; then upload tensors to the private HF dataset
 python scripts/exploratory/cache_popqa_features.py
 python scripts/kaggle_sync.py --action push --exploratory-features --hf-repo "$HF_TENSOR_REPO_ID"
+python scripts/kaggle_sync.py --action push --exploratory-manifest
 
 # Phase F4: generate and judge the neutral-prompt sample (batch size 1)
 python scripts/exploratory/e3_neutral_prompt.py
 python scripts/exploratory/e3_neutral_prompt.py --model-name Qwen/Qwen2.5-3B-Instruct
 python scripts/exploratory/cache_popqa_features.py --neutral
 python scripts/kaggle_sync.py --action push --exploratory-features --hf-repo "$HF_TENSOR_REPO_ID"
+python scripts/kaggle_sync.py --action push --exploratory-manifest --manifest-name features_manifest_neutral.json
 ```
 
 The human-owned steps are the main judge validation, grader validation, supplementary Stage 10 validation, and the descriptive 50-row neutral-prompt review. Use the exact label definitions and gate commands in the implementation plan. Do not open any `*_key.json` file while labeling. CPU analysis commands after the caches and labels are available:
 
 ```bash
+# Export and score the optional neutral-prompt descriptive review around the human labeling step
+python scripts/exploratory/export_neutral_validation.py --prefix judge_validation_neutral --n 50
+# Human fills results/judge_validation_neutral_test.csv; do not open its key
+python scripts/exploratory/score_neutral_validation.py --prefix judge_validation_neutral
+
 python scripts/exploratory/e1_supervised_probe.py
 python scripts/exploratory/e2_decompose.py
 python scripts/exploratory/e1_supervised_probe.py --feature-name neutral_popqa --output results/exploratory/e1_neutral_prompt_frozen_direction.json --figure-output figures/exploratory/e1_neutral_prompt_frozen_direction.png

@@ -150,6 +150,24 @@ def push_exploratory_features(hf_repo_id: str, features_dir: Path = CONFIG.root_
     return len(files)
 
 
+def push_exploratory_manifest(manifest_name: str = "features_manifest.json") -> None:
+    """Commit and push only the exploratory feature manifest; tensors stay on HF."""
+    if manifest_name not in {"features_manifest.json", "features_manifest_neutral.json"}:
+        raise ValueError("Unsupported exploratory manifest name")
+    relative = f"results/exploratory/{manifest_name}"
+    manifest = CONFIG.root_dir / relative
+    if not manifest.is_file():
+        raise FileNotFoundError(f"Exploratory feature manifest not found: {manifest}")
+    run_cmd(["git", "add", "-f", "--", relative])
+    changed = subprocess.run(["git", "diff", "--cached", "--quiet", "--", relative],
+                             cwd=CONFIG.root_dir).returncode != 0
+    if not changed:
+        print("[Sync] Exploratory feature manifest is unchanged.")
+        return
+    run_cmd(["git", "commit", "-m", "Add exploratory feature manifest", "--only", "--", relative])
+    run_cmd(["git", "push", "origin", "main"])
+
+
 def ensure_stage3_cache_present(repo_dir: Path, hf_repo_id: str) -> Path:
     """Download the Stage 3 cache from the configured private HF dataset when absent."""
     target = Path(repo_dir) / "results" / "stage3_caches.pt"
@@ -196,6 +214,10 @@ if __name__ == "__main__":
     parser.add_argument("--ensure-tensor", type=str, default="")
     parser.add_argument("--exploratory-features", action="store_true",
                         help="Upload features/*_resid.npy and *_meta.parquet to the HF tensor dataset")
+    parser.add_argument("--exploratory-manifest", action="store_true",
+                        help="Commit and push only results/exploratory/features_manifest.json")
+    parser.add_argument("--manifest-name", choices=("features_manifest.json", "features_manifest_neutral.json"),
+                        default="features_manifest.json")
     args = parser.parse_args()
 
     if args.exploratory_features:
@@ -203,6 +225,10 @@ if __name__ == "__main__":
             parser.error("--exploratory-features requires --hf-repo or HF_TENSOR_REPO_ID")
         count = push_exploratory_features(args.hf_repo)
         print(f"[Sync] Uploaded {count} exploratory feature files")
+    elif args.exploratory_manifest:
+        if args.action != "push":
+            parser.error("--exploratory-manifest requires --action push")
+        push_exploratory_manifest(args.manifest_name)
     elif args.ensure_tensor:
         ensure_tensor_cached_from_hf(args.ensure_tensor, args.hf_repo)
     elif args.pull_cache == "3":

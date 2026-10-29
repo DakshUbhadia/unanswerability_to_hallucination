@@ -4,6 +4,7 @@ import argparse
 import csv
 import json
 import sys
+import warnings
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -35,17 +36,22 @@ def main(argv=None):
     rng = np.random.default_rng(20261029)
     agreement_samples, kappa_samples = [], []
     human_array, judge_array = np.asarray(human), np.asarray(judge)
-    for _ in range(2000):
-        ix = rng.integers(0, len(rows), len(rows))
-        agreement_samples.append(float(np.mean(human_array[ix] == judge_array[ix])))
-        kappa = float(cohen_kappa_score(human_array[ix], judge_array[ix], labels=LABELS))
-        if np.isfinite(kappa):
-            kappa_samples.append(kappa)
+    with warnings.catch_warnings():
+        # Single-class bootstrap samples can make Cohen's κ undefined; keep those
+        # replicates out of the interval without flooding the descriptive run log.
+        warnings.simplefilter("ignore", RuntimeWarning)
+        for _ in range(2000):
+            ix = rng.integers(0, len(rows), len(rows))
+            agreement_samples.append(float(np.mean(human_array[ix] == judge_array[ix])))
+            kappa = float(cohen_kappa_score(human_array[ix], judge_array[ix], labels=LABELS))
+            if np.isfinite(kappa):
+                kappa_samples.append(kappa)
+        observed_kappa = float(cohen_kappa_score(human, judge, labels=LABELS))
     result = {"experiment": "E3_neutral_prompt_human_judge_agreement", "n": len(rows),
               "purpose": "descriptive_only_not_a_gate",
               "agreement": float(np.mean(human_array == judge_array)),
               "agreement_ci95": [float(x) for x in np.percentile(agreement_samples, [2.5, 97.5])],
-              "cohen_kappa": float(cohen_kappa_score(human, judge, labels=LABELS)),
+              "cohen_kappa": observed_kappa if np.isfinite(observed_kappa) else None,
               "cohen_kappa_ci95": ([float(x) for x in np.percentile(kappa_samples, [2.5, 97.5])]
                                    if kappa_samples else [None, None]),
               "confusion_matrix_rows_human_cols_judge": confusion_matrix(human, judge, labels=LABELS).tolist(),

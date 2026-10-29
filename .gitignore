@@ -51,6 +51,7 @@ stage_0_ide_setup_and_environment_verification_plan.md
 stage_1_dataset_construction_and_quality_gates_implementation_plan.md
 stage_*_plan.md
 *implementation_plan*.md
+*IMPLEMENTATION_PLAN*.md
 
 # Backups, temp files, notebook and stage checkpoints
 *.bak

@@ -99,10 +99,15 @@ def _write_report(e1, e2, e3, e3_human, e1_neutral_frozen, e1_neutral_direction,
                            ("Neutral accuracy among answered items", "neutral_accuracy_among_answered")):
             lines.append(f"| {label} | {_ci(e3[key])} |")
     if e3_human:
+        kappa = e3_human.get("cohen_kappa")
+        kappa_ci = e3_human.get("cohen_kappa_ci95") or [None, None]
+        if kappa is None or any(value is None for value in kappa_ci):
+            kappa_text = "κ undefined because the labels lack variation"
+        else:
+            kappa_text = f"κ {kappa:.3f}, [{kappa_ci[0]:.3f}, {kappa_ci[1]:.3f}]"
         lines.extend(["", f"Neutral-prompt human/judge agreement is descriptive: {e3_human['agreement']:.3f} "
                       f"[{e3_human['agreement_ci95'][0]:.3f}, {e3_human['agreement_ci95'][1]:.3f}] "
-                      f"(κ {e3_human['cohen_kappa']:.3f}, [{e3_human['cohen_kappa_ci95'][0]:.3f}, "
-                      f"{e3_human['cohen_kappa_ci95'][1]:.3f}]); it is not a gate."])
+                      f"({kappa_text}); it is not a gate."])
     else:
         lines.append("Neutral-prompt human/judge agreement is pending the descriptive human review sheet.")
     lines.extend(["", "Neutral-prompt E1/E2 direction comparisons are recorded in their respective JSON outputs when both direction modes have been run.", ""])
