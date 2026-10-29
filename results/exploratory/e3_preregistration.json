@@ -1,0 +1,20 @@
+{
+  "status": "exploratory_post_registration",
+  "neutral_system_prompt": "You are a helpful assistant. Answer the question concisely.",
+  "conditions": {
+    "L_instr": "Llama-3.2-3B-Instruct, registered prompt (existing E1/E2 artifacts; reference only)",
+    "L_neut": "Llama-3.2-3B-Instruct, neutral prompt",
+    "Q_neut": "Qwen2.5-3B-Instruct, neutral prompt (only if the Qwen arm passes its gates)"
+  },
+  "generation": {"batch_size": 1, "greedy": true, "max_new_tokens": 32, "inputs": "canonical_input_ids with the neutral prompt"},
+  "abstention_measure": "judged generation (pinned Tier 1 judge, same revision, same quantization); never the 'Unknown' token log-odds alone",
+  "abstention_token_set_logodds": {"tokens": ["Unknown", " Unknown", "I", " I", "Sorry", " Sorry", "There", " There", "Unfortunately", " Unfortunately"], "use": "base confidence feature 'log_odds' for neutral conditions; first token IDs recorded per model"},
+  "pilot": {"data": "96 validation pairs", "rule": "determine_pilot_gate_status on judged rates", "qwen_inclusion": "Q_neut analyses run only if Qwen passes pilot under neutral prompt AND precision preflight passes"},
+  "directions": {"method": "difference of means unans - ans over 192 train pairs, every layer x 5 suffix positions (same as Stage 4)", "Llama_coordinate": "registered (11, -4)", "Qwen_coordinate": "role-matched position (token that opens the assistant header, analogue of Llama <|start_header_id|>) and depth-matched layer round(11/28 * n_layers_qwen)"},
+  "popqa_labels": "judged + grade_popqa; matched pairs via match_popqa_by_popularity_caliper(0.25, seed 20260406); separate matched set per condition",
+  "power_rule": "if a condition has < 100 matched pairs, its PopQA analyses are descriptive only",
+  "spot_checks": {"judge": "100 items (50 per neutral condition; 100 Llama if Qwen arm excluded)", "grader": "60 items (30 per neutral condition; 60 Llama if Qwen excluded)", "reliability_flags": "judge kappa >= 0.85 and ABSTAIN recall >= 0.90; grader precision(correct) >= 0.90; otherwise results labelled provisional"},
+  "analyses": ["A: AUROCs", "B: incremental value of fixed projections", "C: residualization (E2 Part R method)", "D: E1 supervised probe on neutral features", "E: instruction contrasts", "F: geometry r_hat vs r_hat_neutral", "G (optional): causal sufficiency under neutral prompt"],
+  "seeds": {"cv": 20260414, "bootstrap": 20260407},
+  "interpretation_rules": "Section 4.H"
+}
