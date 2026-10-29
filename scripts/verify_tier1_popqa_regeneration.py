@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """CPU verification and v4-to-v4.2 transition table for Stage 2 PopQA regeneration."""
-import argparse,json
+import argparse,json,sys
 from collections import defaultdict
 from pathlib import Path
-from src.abstention_classifier import is_final_classifier_record
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from src.abstention_classifier import is_answer_then_unknown,is_final_classifier_record
 from src.config import CFG
 from src.tokenization_contract import CONTRACT_VERSION
 from src.eval_common import read_jsonl
@@ -25,6 +26,8 @@ def main():
     for (old,new),n in sorted(counts.items()):print(f"{old:>9} -> {new:<9}: {n}")
     moved=sum(r["_v4_is_popularity_matched"] and r["_v4_baseline_partition"]=="wrong" and r["baseline_partition"]=="abstain" for r in rows)
     print(f"Previously matched wrong items now abstaining: {moved}")
+    diagnostic=sum(is_answer_then_unknown(r.get("baseline_response","")) for r in rows)
+    print(f"Answer-then-Unknown responses: {diagnostic}")
     if moved < 20: raise RuntimeError("Fewer than 20 prior matched wrong items moved to abstain; stop and investigate the registered discrepancy.")
     print(f"Verified {len(rows)} rows; all hashes, v4 backups, batch sizes, and final judge records present.")
 if __name__=="__main__":main()

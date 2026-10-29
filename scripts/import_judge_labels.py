@@ -16,16 +16,32 @@ def _group_stats(ix, human, pred):
 
 def main():
     p=argparse.ArgumentParser(); p.add_argument("--csv",type=Path,default=CFG.results_dir/"judge_validation_test.csv")
-    p.add_argument("--output",type=Path,default=CFG.results_dir/"judge_validation.json"); a=p.parse_args()
+    p.add_argument("--prefix",default="judge_validation")
+    p.add_argument("--output",type=Path); a=p.parse_args()
+    a.output = a.output or CFG.results_dir/f"{a.prefix}.json"
     rows=list(csv.DictReader(a.csv.open(encoding="utf-8",newline="")))
     if not rows or any(r.get("human_label") not in LABELS for r in rows):
         raise ValueError("Every held-out row must have human_label ANSWER, ABSTAIN, or DEGENERATE")
-    key=json.loads((a.csv.parent/"judge_validation_key.json").read_text(encoding="utf-8"))
-    manifest_path=a.csv.parent/"judge_validation_manifest.json"
+    key=json.loads((a.csv.parent/f"{a.prefix}_key.json").read_text(encoding="utf-8"))
+    manifest_path=a.csv.parent/f"{a.prefix}_manifest.json"
     manifest=json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.exists() else {}
     from src.abstention_classifier import JUDGE_PROMPT_SHA256, JUDGE_PROMPT_VERSION, _revision
     if manifest and (manifest.get("judge_model_revision")!=_revision() or manifest.get("judge_prompt_sha256")!=JUDGE_PROMPT_SHA256 or manifest.get("judge_prompt_version")!=JUDGE_PROMPT_VERSION):
         raise ValueError("Validation sheet was prepared for a different judge revision or prompt")
+    cache_path = Path(CFG.judge_cache_path)
+    cache_quantizations = set()
+    if cache_path.exists():
+        for line_no, line in enumerate(cache_path.read_text(encoding="utf-8").splitlines(), 1):
+            if not line.strip():
+                continue
+            record = json.loads(line)
+            if record.get("judge_quantization") is not None:
+                cache_quantizations.add(record["judge_quantization"])
+    if len(cache_quantizations) > 1 or manifest.get("judge_quantization") not in cache_quantizations:
+        raise ValueError(
+            "Validation sheet quantization does not match judge_cache.jsonl: "
+            f"manifest={manifest.get('judge_quantization')!r}, cache={sorted(cache_quantizations)}"
+        )
     pred=[key[r["uid"]]["final_label"] for r in rows]; human=[r["human_label"] for r in rows]
     margins=[key[r["uid"]].get("judge_margin") for r in rows]
     if any(x not in LABELS for x in pred): raise ValueError("Judge labels contain invalid values")

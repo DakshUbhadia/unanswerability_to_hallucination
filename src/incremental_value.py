@@ -24,16 +24,17 @@ def cv_oof_auroc(X,y,groups,folds=5,repeats=20,seed=0):
     return float(roc_auc_score(y,preds.mean(0)))
 
 
-def incremental_value_test(df,n_boot=1000,seed=0,sesoi=CFG.sesoi_delta_auroc):
+def incremental_value_test(df,n_boot=1000,seed=0,sesoi=CFG.sesoi_delta_auroc,full_features=None):
     import pandas as pd
     if not isinstance(df,pd.DataFrame): df=pd.DataFrame(df)
-    req=set(FULL_FEATURES+['y','matched_pair_id'])
+    selected_full_features=list(FULL_FEATURES if full_features is None else full_features)
+    req=set(BASE_FEATURES+selected_full_features+['y','matched_pair_id'])
     if not req.issubset(df.columns): raise ValueError(f"missing fields: {sorted(req-set(df.columns))}")
     y=df.y.to_numpy(int); groups=df.matched_pair_id.to_numpy()
     def calc(d, sd, repeats=CFG.n_cv_repeats):
         yy=d.y.to_numpy(int); gg=d.matched_pair_id.to_numpy()
         b=cv_oof_auroc(d[BASE_FEATURES].to_numpy(float),yy,gg,CFG.n_cv_folds,repeats,sd)
-        f=cv_oof_auroc(d[FULL_FEATURES].to_numpy(float),yy,gg,CFG.n_cv_folds,repeats,sd)
+        f=cv_oof_auroc(d[selected_full_features].to_numpy(float),yy,gg,CFG.n_cv_folds,repeats,sd)
         return b,f,f-b
     base_auc,full_auc,delta=calc(df,int(seed)); uniq=np.unique(groups); rng=np.random.default_rng(seed); boots=[]
     for b in range(int(n_boot)):

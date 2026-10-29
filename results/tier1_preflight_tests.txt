@@ -1,0 +1,58 @@
+........................................................................ [ 57%]
+......................................................                   [100%]
+=============================== warnings summary ===============================
+.venv/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:64
+  /home/daksh/unanswerability-to-hallucination/.venv/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:64: PyparsingDeprecationWarning: 'oneOf' deprecated - use 'one_of'
+    prop = Group((name + Suppress("=") + comma_separated(value)) | oneOf(_CONSTANTS))
+
+.venv/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:85
+.venv/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:85
+.venv/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:85
+.venv/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:85
+.venv/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:85
+.venv/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:85
+  /home/daksh/unanswerability-to-hallucination/.venv/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:85: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
+    parse = parser.parseString(pattern)
+
+.venv/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:89
+.venv/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:89
+.venv/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:89
+.venv/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:89
+.venv/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:89
+.venv/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:89
+  /home/daksh/unanswerability-to-hallucination/.venv/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:89: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
+    parser.resetCache()
+
+.venv/lib/python3.11/site-packages/matplotlib/_mathtext.py:45
+  /home/daksh/unanswerability-to-hallucination/.venv/lib/python3.11/site-packages/matplotlib/_mathtext.py:45: PyparsingDeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
+    ParserElement.enablePackrat()
+
+tests/test_stage2.py::test_classify_abstention_strict_vs_regex
+tests/test_stage2.py::test_classify_abstention_strict_vs_regex
+tests/test_stage2.py::test_classify_abstention_strict_vs_regex
+tests/test_stage2.py::test_classify_abstention_strict_vs_regex
+  /home/daksh/unanswerability-to-hallucination/tests/test_stage2.py:17: DeprecationWarning: classify_abstention_response is deprecated; use classify_texts
+    assert classify_abstention_response(text) == (True, True)
+
+tests/test_stage2.py::test_classify_abstention_strict_vs_regex
+tests/test_stage2.py::test_classify_abstention_strict_vs_regex
+tests/test_stage2.py::test_classify_abstention_strict_vs_regex
+tests/test_stage2.py::test_classify_abstention_strict_vs_regex
+tests/test_stage2.py::test_classify_abstention_strict_vs_regex
+  /home/daksh/unanswerability-to-hallucination/tests/test_stage2.py:19: DeprecationWarning: classify_abstention_response is deprecated; use classify_texts
+    assert classify_abstention_response(text) == (False, True)
+
+tests/test_stage2.py::test_classify_abstention_strict_vs_regex
+tests/test_stage2.py::test_classify_abstention_strict_vs_regex
+tests/test_stage2.py::test_classify_abstention_strict_vs_regex
+tests/test_stage2.py::test_classify_abstention_strict_vs_regex
+  /home/daksh/unanswerability-to-hallucination/tests/test_stage2.py:21: DeprecationWarning: classify_abstention_response is deprecated; use classify_texts
+    assert classify_abstention_response(text) == (False, False)
+
+tests/test_stage2.py::test_classify_abstention_strict_vs_regex
+  /home/daksh/unanswerability-to-hallucination/tests/test_stage2.py:22: DeprecationWarning: classify_abstention_response is deprecated; use classify_texts
+    assert classify_abstention_response("") == (False, False)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+126 passed, 10 deselected, 28 warnings in 93.32s (0:01:33)
+verified 55 archived files

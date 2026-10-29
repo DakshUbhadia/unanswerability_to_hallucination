@@ -226,6 +226,7 @@ class MasterConfig:
     n_perm_stratified: int = 9999
     n_cv_folds: int = 5
     n_cv_repeats: int = 20
+    exploratory_neutral_system_prompt: str = "You are a helpful assistant. Answer the question concisely."
 
 
 CONFIG = MasterConfig()

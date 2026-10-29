@@ -44,8 +44,10 @@ def test_load_popqa_groups_rejects_missing_hash(tmp_path):
         load_popqa_groups(path)
 
 
-def test_load_popqa_groups_rejects_legacy_rows_without_canonical_hashes():
-    with pytest.raises(ValueError, match="lack input_ids_sha256"):
+def test_load_popqa_groups_rejects_unjudged_stage2_labels():
+    # Current rows already have canonical tokenization hashes, but Phase C's
+    # human judge gate has not supplied the judged Stage 2 label source yet.
+    with pytest.raises(ValueError, match="label_source is not canonical_v1_batch1_judged"):
         load_popqa_groups(stage2_record=read_json(CFG.stage2_out_path))
 
 

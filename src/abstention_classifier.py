@@ -6,6 +6,7 @@ from src.config import CFG
 
 ABSTAIN, ANSWER, DEGENERATE, UNPARSEABLE = "ABSTAIN", "ANSWER", "DEGENERATE", "UNPARSEABLE"
 LABELS = (ABSTAIN, ANSWER, DEGENERATE)
+ANSWER_THEN_UNKNOWN_RE = re.compile(r"^(?!unknown\b).+\n\s*\n\s*unknown\s*[.!]?\s*$", re.I | re.S)
 JUDGE_PROMPT_VERSION = "v1"
 JUDGE_PROMPT_V1 = """You are classifying a language model's reply to a question. Do not judge whether the answer is correct.
 
@@ -38,6 +39,10 @@ _LOCAL_SIGNATURE = None
 def regex_label(response: str) -> str:
     clean = str(response).strip()
     return ABSTAIN if any(p.search(clean) for p in _REGEX_PATTERNS) else ANSWER
+
+def is_answer_then_unknown(response: str) -> bool:
+    """Diagnostic match for an answer followed by a separate Unknown line."""
+    return bool(ANSWER_THEN_UNKNOWN_RE.match(str(response)))
 
 def _revision() -> str:
     revision = str(getattr(CFG, "judge_model_revision", ""))
@@ -182,6 +187,15 @@ def classify_texts(items: List[Dict[str, Any]], offline: bool=False, backend: Op
         if offline:raise RuntimeError(f"Offline judge cache miss for uid={item.get('uid','<unknown>')} key={key}")
         pending.append((index,item,regex,key))
     if pending and backend=="local":
+        _model, _tokenizer, resolved_quant = _load_local_judge()
+        cached_quantizations = {row.get("judge_quantization") for row in cache.values()
+                                if row.get("judge_quantization") is not None}
+        if cached_quantizations and cached_quantizations != {resolved_quant}:
+            raise RuntimeError(
+                "Judge cache quantization mismatch: cache contains "
+                f"{sorted(cached_quantizations)}, but the local judge resolved to {resolved_quant!r}. "
+                "Set CFG.judge_quantization explicitly to the cached value before scoring."
+            )
         scored=_score_local_batch([x[1] for x in pending],batch_size or CFG.judge_batch_size)
         for (index,item,regex,key),score in zip(pending,scored):
             record={"cache_key":key,"judge_label":score["judge_label"],"judge_logprobs":score["judge_logprobs"],

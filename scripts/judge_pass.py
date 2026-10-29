@@ -1,9 +1,9 @@
 """Score unique generated responses into the offline judge cache."""
-import argparse,hashlib,importlib.metadata,json,sys,time
+import argparse,hashlib,importlib.metadata,json,os,sys,time
 from collections import defaultdict
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parent.parent))
-from src.abstention_classifier import classify_texts
+from src.abstention_classifier import classify_texts, is_answer_then_unknown
 from src.config import CFG
 from src.eval_common import read_jsonl
 
@@ -82,13 +82,30 @@ def main():
         import torch
         cuda={'available':torch.cuda.is_available(),'device_count':torch.cuda.device_count()}
     except Exception:cuda={'available':False,'device_count':0}
+    response_labels={}
+    for record in records:
+        response=str(record.get('response',''))
+        if is_answer_then_unknown(response):
+            response_labels.setdefault(response,record.get('final_label'))
+    answer_then_unknown_distribution=defaultdict(int)
+    for label in response_labels.values():answer_then_unknown_distribution[str(label)]+=1
+    cache_quantizations=set()
+    if cache_path.exists():
+        for line in cache_path.read_text(encoding='utf-8').splitlines():
+            if line.strip():
+                quant=json.loads(line).get('judge_quantization')
+                if quant:cache_quantizations.add(quant)
+    quantizations_in_cache=sorted(cache_quantizations)
     summary={'backend':CFG.judge_backend,'model_id':CFG.judge_model_id,'revision':records[0].get('judge_model_revision') if records else None,
       'quantization':records[0].get('judge_quantization') if records else None,'prompt_version':records[0].get('judge_prompt_version') if records else None,
       'prompt_sha256':records[0].get('judge_prompt_sha256') if records else None,'raw_counts_by_file':raw_by_path,
       'n_raw':sum(raw_by_path.values()),'n_unique_available':n_unique_available,'n_unique_scored':len(items),'n_unique_question_response':len(items),'deduplicated':sum(raw_by_path.values())-n_unique_available,
       'margin_summary_by_condition':margins,'judge_cache_path':str(cache_path),'judge_cache_sha256':sha,
       'batch_size_items':a.batch_size,'elapsed_seconds':time.perf_counter()-t,'items_per_second':len(records)/max(time.perf_counter()-t,1e-9),'torch':_version('torch'),
-      'transformers':_version('transformers'),'bitsandbytes':_version('bitsandbytes'),'cuda':cuda}
+      'transformers':_version('transformers'),'bitsandbytes':_version('bitsandbytes'),'cuda':cuda,
+      'quantizations_in_cache':quantizations_in_cache,'cuda_visible_devices':os.environ.get('CUDA_VISIBLE_DEVICES'),
+      'n_answer_then_unknown':len(response_labels),
+      'answer_then_unknown_judge_label_distribution':dict(sorted(answer_then_unknown_distribution.items()))}
     a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(summary,indent=2)+'\n',encoding='utf-8')
     print(json.dumps(summary,indent=2))
 if __name__=='__main__':main()

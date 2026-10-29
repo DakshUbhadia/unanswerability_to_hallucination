@@ -94,6 +94,9 @@ def run_stage10_popqa_steering_sweep(raw_model, tokenizer, contract, directions_
     vectors = slice_vectors_at_star(directions_dict, l_star, pos_idx)
     rows = list(popqa_groups["wrong"]) + list(popqa_groups["correct"])
     n = len(popqa_groups["wrong"])
+    if not generation_only:
+        require_judge_validation()
+        require_judge_validation(CFG.results_dir / "judge_validation_stage10.json")
     prompt_rows = [r["question"] for r in rows]
     suffix_ids = list(contract["suffix_token_ids"])
     template_hash = chat_template_sha256(tokenizer)

@@ -79,17 +79,21 @@ def test_stage10_runner_on_tiny_model(tmp_path, monkeypatch):
     groups = {"wrong": [q(i, "wrong") for i in range(3)], "correct": [q(10 + i, "correct") for i in range(3)]}
     def generate(_model, _tokenizer, batches, _contract, _mode, _vec, _layer, alpha, _max_new_tokens):
         return ["Paris" if alpha == 0 else "Unknown" for _ in range(sum(b["input_ids"].shape[0] for b in batches))]
-    def classify(items, offline=False):
+    def classify(items, offline=False, **_kwargs):
         records=[]
         for item in items:
             final = "ANSWER" if item["response"] == "Paris" else "ABSTAIN"
             records.append({**item, "regex_label": final, "judge_label": final, "final_label": final,
                             "agree": True, "classifier_final": True, "classifier_backend": "mock",
                             "judge_model_id": "mock", "judge_prompt_version": "v1",
+                            "judge_model_revision": "mock-revision",
                             "judge_prompt_sha256": "a" * 64, "cache_key": "mock", "parse_attempts": 1})
         return records
     monkeypatch.setattr(steering, "generate_with_hooks", generate)
     monkeypatch.setattr(steering, "classify_texts", classify)
+    # The production analysis path is gated on both human validation artifacts.
+    # This unit fixture isolates the Stage 10 calculation itself.
+    monkeypatch.setattr(steering, "require_judge_validation", lambda _path=None: {})
     ck = tmp_path / "ck.pt"
     out = steering.run_stage10_popqa_steering_sweep(model, tok, contract, tiny_directions(), tiny_selection(), groups,
                                                     (0.0, 0.5), 4, ck)
@@ -114,8 +118,9 @@ def test_stage10_alpha0_label_mismatch_writes_diagnostic(tmp_path, monkeypatch):
                 "tokenization_contract_version":CONTRACT_VERSION}
     groups={"wrong":[q(1,"wrong")],"correct":[q(2,"correct")]}
     monkeypatch.setattr(steering,"CFG",replace(CFG,results_dir=tmp_path))
+    monkeypatch.setattr(steering,"require_judge_validation",lambda _path=None:{})
     monkeypatch.setattr(steering,"generate_with_hooks",lambda *a,**k:["Paris","Paris"])
-    def classify(items,offline=False):
+    def classify(items,offline=False,**_kwargs):
         return [{**x,"regex_label":"ANSWER","judge_label":"ABSTAIN" if x["uid"]=="x1" else "ANSWER",
                  "final_label":"ABSTAIN" if x["uid"]=="x1" else "ANSWER","agree":False,"classifier_final":True,
                  "classifier_backend":"mock","judge_model_id":"mock","judge_prompt_version":"v1",

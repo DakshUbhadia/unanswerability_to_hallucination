@@ -27,7 +27,7 @@ echo "[kaggle_run] stages: ${stages[*]}"
 
 tensor_stage_requested=0
 for stage in "${stages[@]}"; do
-  case "$stage" in 3|4|5|6|7|8|10) tensor_stage_requested=1 ;; esac
+  case "$stage" in 3|4|5|6|7|8|10|stage10gen) tensor_stage_requested=1 ;; esac
 done
 if (( tensor_stage_requested )); then
   : "${HF_TENSOR_REPO_ID:?Set HF_TENSOR_REPO_ID to the private HF dataset repository (owner/name).}"
@@ -45,6 +45,14 @@ for stage in "${stages[@]}"; do
   fi
   if [[ "$stage" == rescore6 ]]; then
     python -u scripts/stage6_rescore_generations.py --offline
+    continue
+  fi
+  if [[ "$stage" == stage10gen ]]; then
+    [[ -f results/stage2_pilot.json ]] || { echo "Missing results/stage2_pilot.json; run Stage 2 first." >&2; exit 2; }
+    locked_model="$(python -c 'from src.stage_contract import resolve_downstream_model_name; print(resolve_downstream_model_name())')"
+    [[ -n "$locked_model" ]] || { echo "Stage 2 has no locked model_name." >&2; exit 2; }
+    export STAGE2_MODEL_NAME="$locked_model"
+    STAGE10_GENERATION_ONLY=1 python -u scripts/stage10_popqa_steering.py --generation-only
     continue
   fi
   matches=(scripts/stage"${stage}"_*.py)

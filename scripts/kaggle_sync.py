@@ -131,6 +131,25 @@ def sync_pt_tensors_hf(action: str, hf_repo_id: str) -> None:
                 )
 
 
+def push_exploratory_features(hf_repo_id: str, features_dir: Path = CONFIG.root_dir / "features") -> int:
+    """Upload memory-mapped exploratory features to the private tensor dataset, never Git."""
+    token = os.environ.get("HF_TOKEN")
+    if not token:
+        raise RuntimeError("HF_TOKEN is required to upload exploratory feature caches")
+    features_dir = Path(features_dir)
+    files = sorted(path for pattern in ("*_resid.npy", "*_meta.parquet") for path in features_dir.glob(pattern))
+    if not files:
+        raise FileNotFoundError(f"No exploratory feature arrays or metadata found under {features_dir}")
+    api = HfApi(token=token)
+    api.create_repo(repo_id=hf_repo_id, repo_type="dataset", private=True, exist_ok=True)
+    for path in files:
+        relative = path.relative_to(features_dir).as_posix()
+        target = f"exploratory/features/{relative}"
+        print(f"[Sync] Uploading {path} to HF Dataset {hf_repo_id}:{target}")
+        api.upload_file(path_or_fileobj=str(path), path_in_repo=target, repo_id=hf_repo_id, repo_type="dataset")
+    return len(files)
+
+
 def ensure_stage3_cache_present(repo_dir: Path, hf_repo_id: str) -> Path:
     """Download the Stage 3 cache from the configured private HF dataset when absent."""
     target = Path(repo_dir) / "results" / "stage3_caches.pt"
@@ -175,9 +194,16 @@ if __name__ == "__main__":
     parser.add_argument("--hf-repo", type=str, default=os.environ.get("HF_TENSOR_REPO_ID", ""))
     parser.add_argument("--pull-cache", type=str, choices=["3"], default="")
     parser.add_argument("--ensure-tensor", type=str, default="")
+    parser.add_argument("--exploratory-features", action="store_true",
+                        help="Upload features/*_resid.npy and *_meta.parquet to the HF tensor dataset")
     args = parser.parse_args()
 
-    if args.ensure_tensor:
+    if args.exploratory_features:
+        if not args.hf_repo:
+            parser.error("--exploratory-features requires --hf-repo or HF_TENSOR_REPO_ID")
+        count = push_exploratory_features(args.hf_repo)
+        print(f"[Sync] Uploaded {count} exploratory feature files")
+    elif args.ensure_tensor:
         ensure_tensor_cached_from_hf(args.ensure_tensor, args.hf_repo)
     elif args.pull_cache == "3":
         ensure_stage3_cache_present(CONFIG.root_dir, args.hf_repo)

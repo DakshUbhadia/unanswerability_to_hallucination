@@ -69,3 +69,49 @@ bash scripts/kaggle_run.sh all   # Stages 5-10
 | 8 | `scripts/stage8_popqa_uncertainty.py` | `results/stage8_popqa_core.json`, Table 3, Holm-Bonferroni H1-H5 in Table 1 |
 | 9 | `scripts/stage9_generate_figures_and_tables.py` | Figures 1, 2A, S1; `results/stage9_summary.json`; README results block |
 | 10 | `scripts/stage10_popqa_steering.py` | `results/stage10_popqa_steering.json`, Figure 2B (optional stretch) |
+
+After the Tier 1 judged-label rematch, rerun Stage 8 with `FORCE=1` so the existing v4 output cannot cause a skip:
+
+```bash
+FORCE=1 bash scripts/kaggle_run.sh 8
+```
+
+To create fresh unjudged Stage 10 generations before the supplementary judge pass, use `bash scripts/kaggle_run.sh stage10gen`.
+
+## Tier 1 refresh and exploratory pivot
+
+Run these only after the preceding gates in `IMPLEMENTATION_PLAN_TIER1_AND_PIVOT.md` pass. The GPU-owned steps are:
+
+```bash
+# Phase B: single T4, one visible GPU, judge cache and summary
+bash scripts/kaggle_run.sh judge
+
+# Phase E: use the judged-label rematch; Stage 8 must be forced
+FORCE=1 bash scripts/kaggle_run.sh 8
+bash scripts/kaggle_run.sh stage10gen
+bash scripts/kaggle_run.sh judge
+
+# Phase F1: cache all-layer, five-position activations; then upload tensors to the private HF dataset
+python scripts/exploratory/cache_popqa_features.py
+python scripts/kaggle_sync.py --action push --exploratory-features --hf-repo "$HF_TENSOR_REPO_ID"
+
+# Phase F4: generate and judge the neutral-prompt sample (batch size 1)
+python scripts/exploratory/e3_neutral_prompt.py
+python scripts/exploratory/e3_neutral_prompt.py --model-name Qwen/Qwen2.5-3B-Instruct
+python scripts/exploratory/cache_popqa_features.py --neutral
+python scripts/kaggle_sync.py --action push --exploratory-features --hf-repo "$HF_TENSOR_REPO_ID"
+```
+
+The human-owned steps are the main judge validation, grader validation, supplementary Stage 10 validation, and the descriptive 50-row neutral-prompt review. Use the exact label definitions and gate commands in the implementation plan. Do not open any `*_key.json` file while labeling. CPU analysis commands after the caches and labels are available:
+
+```bash
+python scripts/exploratory/e1_supervised_probe.py
+python scripts/exploratory/e2_decompose.py
+python scripts/exploratory/e1_supervised_probe.py --feature-name neutral_popqa --output results/exploratory/e1_neutral_prompt_frozen_direction.json --figure-output figures/exploratory/e1_neutral_prompt_frozen_direction.png
+python scripts/exploratory/e1_supervised_probe.py --feature-name neutral_popqa --neutral-direction --output results/exploratory/e1_neutral_prompt_neutral_direction.json --figure-output figures/exploratory/e1_neutral_prompt_neutral_direction.png
+python scripts/exploratory/e2_decompose.py --feature-name neutral_popqa --output results/exploratory/e2_neutral_prompt_frozen_direction.json
+python scripts/exploratory/e2_decompose.py --feature-name neutral_popqa --neutral --output results/exploratory/e2_neutral_prompt_neutral_direction.json
+python scripts/exploratory/build_report.py
+```
+
+The SQuAD v2 transfer interface is present, but dataset use remains a `TODO(owner)` pending the license check and a GPU feature cache. The fresh PopQA sample is excluded from the Tier 1 and exploratory loaders.

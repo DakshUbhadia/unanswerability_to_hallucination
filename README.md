@@ -158,3 +158,7 @@ Under the original v4 aggregation rule this would read `Hypothesis_B_Internal_Un
 | b_ctrl_baseline | bctrl | 48 | -9.1725 | -12.0071 | -5.5493 | 0.0933 | 0.0833 | 0.0833 | 0.0000 | 0.2500 | False |
 
 <!-- END_STAGE9_RESULTS -->
+
+## Exploratory analyses (post-registration)
+
+Exploratory E1–E4 analyses are separate from the confirmatory Stage 9 results. Their scripts write only to `results/exploratory/` and `figures/exploratory/`; outputs are pending the judged v4.2 data and required GPU feature cache. See the [exploratory report](results/exploratory/REPORT.md) when generated.
