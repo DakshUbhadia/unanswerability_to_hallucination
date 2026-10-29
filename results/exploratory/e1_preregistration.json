@@ -1,0 +1,26 @@
+{
+  "status": "exploratory_post_registration",
+  "question": "Do supervised PopQA probes separate wrong vs correct beyond output confidence?",
+  "label_source_required": "canonical_v1_batch1_judged",
+  "populations": {
+    "P1_matched": "rematched popularity pairs; groups = matched_pair_id (PRIMARY)",
+    "P2_all": "all graded correct+wrong rows; stratified 5-fold, group = popqa_id; base includes log_s_pop + relation one-hot",
+    "P3_relation_out": "all graded correct+wrong rows; leave-relation-group-out; descriptive transfer only"
+  },
+  "label": "y=1 wrong, y=0 correct; abstain and ambiguous excluded; DEGENERATE counted as wrong (Addendum B)",
+  "positions": ["suf-5", "suf-4", "suf-3", "suf-2", "suf-1", "ans_first", "ans_last"],
+  "primary_contrasts": {
+    "C1_pregen": {"position": "suf-1", "base": ["maxp", "entropy", "log_odds"]},
+    "C2_postans": {"position": "ans_first", "base": ["maxp", "entropy", "log_odds", "seq_logprob_mean", "seq_logprob_min"]}
+  },
+  "multiplicity": "Holm across C1 and C2 at alpha 0.05 on one-sided bootstrap p-values",
+  "estimators": {"primary": "L2 logistic on standardized residual", "secondary": ["difference_of_means", "pca64_logistic"]},
+  "C_grid": [0.001, 0.01, 0.1, 1.0],
+  "outer_cv": {"folds": 5, "repeats": 5, "seed": 20260414},
+  "inner_cv": {"folds": 5},
+  "layer_selection": "inside outer-train folds, joint with C, by inner-CV AUROC",
+  "bootstrap": {"n": 1000, "unit": "matched pair (P1) / item (P2)", "seed": 20260407, "type": "conditional on OOF predictions"},
+  "sesoi_delta_auroc": 0.02,
+  "interpretation_rule": "see Section 3.7",
+  "sensitivity": ["exclude_answer_then_unknown", "degenerate_excluded", "exclude_greedy_mismatch_rows"]
+}
