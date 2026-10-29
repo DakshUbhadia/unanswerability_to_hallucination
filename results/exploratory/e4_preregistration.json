@@ -1,0 +1,41 @@
+{
+  "status": "exploratory_post_registration",
+  "prompt_condition_primary": "registered system prompt (CFG.system_prompt)",
+  "prompt_condition_secondary": "E3 neutral prompt, only if E3 preflight passed",
+  "sources": {
+    "syn": {"family": "contextual", "label": "y=1 unanswerable prompt", "train_part": "registered train split (192 pairs)", "test_part": "registered test split (96 pairs)", "groups": "pair_id"},
+    "squad": {"family": "contextual", "data": "SQuAD 2.0 validation", "n": "300 answerable + 300 unanswerable", "label": "y=1 is_impossible", "groups": "article title"},
+    "selfaware": {"family": "other", "data": "SelfAware.json (Yin et al. 2023, CC-BY-SA-4.0)", "n": "300 answerable + 300 unanswerable", "label": "y=1 answerable==false", "groups": "question_id"},
+    "popqa": {"family": "parametric", "data": "v4.2 judged sample (E0)", "label": "y=1 wrong, y=0 correct; abstain and ambiguous excluded", "groups": "matched_pair_id if matched else popqa_id", "test_views": ["P1_matched (primary)", "P2_all"]},
+    "triviaqa": {"family": "parametric", "optional": true, "data": "TriviaQA rc.nocontext validation, 1000 questions", "label": "y=1 wrong, y=0 correct (judged + alias-graded)", "groups": "question_id"}
+  },
+  "user_prompt_templates": {
+    "squad": "Passage: {context}\n\nQuestion: {question}",
+    "selfaware": "{question}",
+    "triviaqa": "{question}",
+    "syn": "registered ans_prompt / unans_prompt verbatim",
+    "popqa": "registered PopQA question verbatim"
+  },
+  "positions": {"primary": "suf-4 (registered i*)", "secondary": "suf-1 (Lavi et al.; logit read-out site)"},
+  "layers": {"primary": "fixed l*=11", "secondary": "train-source-selected layer by inner grouped CV on the training source only"},
+  "estimators": {"primary": "dom (difference of means, unit-normalised; same family as r_hat)", "secondary": "L2 logistic (C chosen on training source)"},
+  "extra_row": "r_hat (registered Stage 4 direction) evaluated on every test source",
+  "cell_rules": {
+    "off_diagonal": "train on the full training source (syn: train split); evaluate on the full test source (syn: test split)",
+    "diagonal": "grouped 5-fold CV within the source (syn: train split -> test split)"
+  },
+  "metrics": {
+    "auroc_probe": "AUROC of the probe score on the test source",
+    "auroc_logit": "AUROC of the logit baseline on the test source: primary = log_odds over Unknown token IDs; secondary = -maxp",
+    "delta": "auroc_probe - auroc_logit (headline)",
+    "incremental": "cross-fitted stacking on the test source: [log_odds, maxp, entropy] vs [+ probe score]; probe score fixed (trained on another source) so no leakage; diagonal uses nested stacking (E1 engine)",
+    "auroc_text": "TF-IDF (word 1-2 grams, min_df=2) L2 logistic trained on the training source's user prompt text, evaluated on the test source; diagonal by grouped CV"
+  },
+  "uncertainty": {"bootstrap": 1000, "unit": "group of the test source", "seed": 20260407},
+  "sesoi_delta": 0.02,
+  "cell_labels": "Section 4.6 of IMPLEMENTATION_PLAN_E4_TRANSFER_MATRIX.md",
+  "planned_contrasts": ["syn->squad, squad->syn (synthetic validity)", "ctx->popqa (contextual to parametric)", "popqa->ctx (parametric to contextual)", "ctx->selfaware (Lavi replication on 3B)", "selfaware->popqa"],
+  "pre_declared_ceiling_note": "Under the registered prompt, auroc_logit on contextual test sources is expected to be near 1; delta in those columns is ceiling-limited and is interpreted only via the incremental test and the secondary (neutral) prompt condition.",
+  "sampling_seed": 20260415,
+  "sampling_counts_are_targets_until_data_preparation": true
+}
