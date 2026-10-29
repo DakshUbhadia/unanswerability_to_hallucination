@@ -162,3 +162,15 @@ Under the original v4 aggregation rule this would read `Hypothesis_B_Internal_Un
 ## Exploratory analyses (post-registration)
 
 Exploratory E1–E4 analyses are separate from the confirmatory Stage 9 results. Their scripts write only to `results/exploratory/` and `figures/exploratory/`; outputs are pending the judged v4.2 data and required GPU feature cache. See the [exploratory report](results/exploratory/REPORT.md) when generated.
+
+## Exploratory E1: supervised probe upper bound
+
+E1 trains grouped cross-validated probes on PopQA residual activations and selects layer and regularization strength inside each outer training fold. It estimates whether those probe scores add AUROC beyond first-token confidence before generation (C1) and confidence plus sequence log-probability after generation (C2), then compares the supervised probe with the frozen Stage 4 projection at layer 11, suffix position -4.
+
+| Contrast | ΔAUROC | 95% CI | Label |
+|---|---:|---:|---|
+| C1 pre-generation | Pending Tier 1 judged features | — | Pending |
+| C2 after first answer token | Pending Tier 1 judged features | — | Pending |
+| Transfer gap, frozen projection vs nested probe | Pending Tier 1 judged features | — | Pending |
+
+See the [E1 summary](results/exploratory/e1_summary.md), [layer and position grid](figures/exploratory/e1_grid_auroc_P1.png), [nested position comparison](figures/exploratory/e1_nested_by_position.png), and [incremental AUROC plot](figures/exploratory/e1_delta_auroc.png) when generated. E1 remains exploratory and does not alter registered results.

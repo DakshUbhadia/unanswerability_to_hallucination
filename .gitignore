@@ -60,6 +60,9 @@ stage_*_plan.md
 results/*_checkpoint.pt
 results/*_key.json
 features/
+results/exploratory/**/*.npy
+results/exploratory/**/*.npz
+results/exploratory/**/*checkpoint*.pt
 # One-off local agent instructions and task notes
 tier0_agent_instructions.md
 tier1_free_judge_backend.md
