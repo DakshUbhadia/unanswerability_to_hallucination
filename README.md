@@ -174,3 +174,17 @@ E1 trains grouped cross-validated probes on PopQA residual activations and selec
 | Transfer gap, frozen projection vs nested probe | Pending Tier 1 judged features | — | Pending |
 
 See the [E1 summary](results/exploratory/e1_summary.md), [layer and position grid](figures/exploratory/e1_grid_auroc_P1.png), [nested position comparison](figures/exploratory/e1_nested_by_position.png), and [incremental AUROC plot](figures/exploratory/e1_delta_auroc.png) when generated. E1 remains exploratory and does not alter registered results.
+
+## Exploratory E2: what the unanswerability direction encodes
+
+E2 decomposes the locked Stage 4 direction at layer 11, suffix position -4 using residualized projection scores (R), activation geometry (G), a static Unknown-token lens (L), causal vocabulary steering (C), and amnesic removal (A). It is exploratory, uses the Tier 1 judged PopQA labels, and leaves confirmatory artifacts unchanged. The analysis is preregistered in [`e2_preregistration.json`](results/exploratory/e2_preregistration.json).
+
+| Part | Statistic | CI or null comparison | Label |
+|---|---|---|---|
+| R | Cross-fitted spline residual AUROC | Pair-bootstrap 95% CI; linear secondary and confidence-stratified checks | Pending E1 feature cache |
+| G | Whitened cosine with PopQA wrong-minus-correct direction | Covariance-matched and full-label-permutation nulls | Pending E1 feature cache |
+| L | Rank of Unknown token IDs under the static lens | 99 random-direction controls | Pending pinned-model tensor access |
+| C | Mean change in Unknown log probability under steering | 99 norm-matched random controls | Pending owner GPU run |
+| A | Probe AUROC drop after direction removal | Pair-bootstrap CI and random-removal null | Pending E1 feature cache |
+
+Combined verdict: pending the registered CPU analyses and Part C GPU output. The static lens omits RMSNorm's positive scalar denominator and is weak by construction at (11, -4), which is three suffix positions and sixteen layers from the logits readout; Part C is the decisive vocabulary test. See the [E2 summary](results/exploratory/e2_summary.md) and the [E2 figures](figures/exploratory/) after analysis outputs are generated.

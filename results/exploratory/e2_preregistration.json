@@ -1,0 +1,32 @@
+{
+  "status": "exploratory_post_registration",
+  "coordinate_under_test": {"layer": 11, "position": -4, "pos_idx": 1, "direction": "stage4 unit_directions"},
+  "label": "y=1 wrong, y=0 correct; abstain/ambiguous excluded; DEGENERATE=wrong",
+  "populations": {"P1_matched": "primary", "P2_all": "secondary (base adds log_s_pop + relation one-hot)"},
+  "R_residualization": {
+    "confounds_primary": ["log_odds", "maxp", "entropy"],
+    "regressor_primary": "SplineTransformer(n_knots=5, degree=3) per confound + RidgeCV(alphas=[0.1,1,10]); cross-fitted",
+    "regressor_secondary": "OLS linear on the same confounds; cross-fitted",
+    "confounds_P2_extra": ["log_s_pop", "relation_onehot"],
+    "cv": {"folds": 5, "repeats": 5, "seed": 20260414, "groups": "matched_pair_id (P1) / popqa_id (P2)"},
+    "stratified_check": "AUROC within quintiles of log_odds (quintiles from all P1 rows, label-blind)",
+    "bootstrap": {"n": 1000, "seed": 20260407, "unit": "matched pair / item"},
+    "equivalence_margin": 0.05,
+    "rule": "CI inside [0.45,0.55] means residual_null_equivalent; CI lower > 0.55 means residual_signal_present; CI excluding 0.5 but within the margin means tiny_residual_below_margin; otherwise inconclusive."
+  },
+  "G_geometry": {
+    "comparators": ["dom_wrong_minus_correct", "logistic_haufe_pattern", "logistic_raw_weight"],
+    "spaces": ["raw", "outlier_removed_top8_dims", "whitened_ledoitwolf"],
+    "nulls": ["covariance_matched_499", "label_permutation_P2_199"],
+    "locked_test": "cos(r_hat[11,1], dom_P2[11,suf-4]) in whitened space",
+    "descriptive": "all 28 layers x 5 suffix positions"
+  },
+  "L_static_lens": {"vectors": ["r_hat at every (layer,pos)"], "norm": "final RMSNorm weight g (elementwise)", "unknown_set_primary": [14109, 22435]},
+  "C_causal_vocab": {
+    "prompts": "P1 matched PopQA prompts (wrong+correct) and abstain rows, canonical inputs",
+    "interventions": ["learned_diff at l* with alpha in {0.25,0.5,1.0}", "99 random_scaled controls at alpha=1.0", "concept control at alpha=1.0", "E1 dom direction at (11,suf-4), norm-matched to ||r||, alpha=1.0"],
+    "measure": "mean delta log-softmax over vocab at last position; rank of Unknown set",
+    "rule": "see Section 4.C"
+  },
+  "A_amnesic": {"remove": ["r_hat[11,1]", "unknown_unembedding_direction", "random_unit (99, for null)"], "probe": "E1 nested logistic at suf-4 with layer fixed = 11 (no selection)", "metric": "OOF AUROC before vs after removal, P1"}
+}

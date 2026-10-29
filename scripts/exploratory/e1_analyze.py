@@ -84,12 +84,28 @@ def _position_tensor(suf, ans, pos):
     return np.asarray(ans[:, p, :, :], dtype=np.float32)
 
 
+def _save_oof(path, popqa_id, oof_by_repeat, y, fold_assignments):
+    """Persist repeated nested OOF scores and guard their AUROC against the reported score."""
+    scores=np.asarray(oof_by_repeat,dtype=float); yy=np.asarray(y,dtype=int)
+    if scores.ndim!=2 or scores.shape[1]!=len(yy) or not np.isfinite(scores).all():
+        raise ValueError("OOF score matrix must be finite [repeats, rows]")
+    mean=scores.mean(axis=0)
+    expected=_auroc(yy,mean)
+    if abs(expected-_auroc(yy,mean))>1e-12:
+        raise AssertionError("Saved OOF scores do not reproduce nested AUROC")
+    np.savez_compressed(path,popqa_id=np.asarray(popqa_id).astype(str),oof_score=mean,
+                        oof_by_repeat=scores,y=yy,fold_assignments=np.asarray(fold_assignments))
+    return expected
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--features-dir", type=Path, default=ROOT / "results/exploratory/e1_features")
     parser.add_argument("--population", choices=["P1", "P2", "P3", "all"], default="all")
     parser.add_argument("--n-jobs", type=int, default=1)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--save-oof", action=argparse.BooleanOptionalAction, default=True,
+                        help="Save nested OOF scores and fold assignments for downstream exploratory analyses")
     args = parser.parse_args(argv)
     feature_dir = assert_not_fresh(args.features_dir)
     manifest = json.loads((feature_dir / "features_manifest.json").read_text(encoding="utf-8"))
@@ -162,6 +178,16 @@ def main(argv=None):
             mean_pred = pred.mean(axis=0)
             estimators = {"logistic": {"auroc": _auroc(yy, mean_pred), "selected": selected,
                                          "selected_layer_counts": pd.Series([x["layer"] for x in selected]).value_counts().to_dict()}}
+            if args.save_oof and pos == "suf-4":
+                oof_dir = ROOT / ("results/exploratory/dryrun/e1_oof" if dry else "results/exploratory/e1_oof")
+                oof_dir.mkdir(parents=True, exist_ok=True)
+                folds_by_repeat = np.full((pred.shape[0], len(yy)), -1, dtype=np.int16)
+                for rr, kk, _tr, te in outer_splits(yy, gg, folds, pred.shape[0], 20260414):
+                    folds_by_repeat[rr, te] = kk
+                saved_auc=_save_oof(oof_dir / f"{pop}_suf-4_logistic.npz",
+                                    subrows["popqa_id"].astype(str).to_numpy(),pred,yy,folds_by_repeat)
+                if abs(saved_auc-estimators["logistic"]["auroc"])>1e-12:
+                    raise AssertionError("Saved E1 OOF AUROC differs from nested result")
             for est in ("dom", "pca64_logistic"):
                 epred, eselected = nested_probe_oof(X, yy, gg, folds, 5, 20260414,
                                                      estimator=est, class_weight=class_weight)
