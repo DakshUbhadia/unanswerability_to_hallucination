@@ -18,7 +18,7 @@ import seaborn as sns
 import torch
 
 from src.config import CFG
-from src.eval_common import sha256_file
+from src.eval_common import read_jsonl, sha256_file
 from src.exploratory import assert_not_fresh, exploratory_header, require_tier1_complete
 from src.exploratory.e4_transfer import FEATURE_ROOT, Source, cell, load_source, transfer_matrix
 from src.exploratory.e4_transfer import fit_direction, score, select_layer_on_source
@@ -399,6 +399,14 @@ def analyze(condition="registered", panels=("M1", "M2", "M3", "M4"), n_jobs=1,
         raise ValueError("condition must be registered, neutral, or both")
     conditions = ("registered", "neutral") if condition == "both" else (condition,)
     prereg_hash = sha256_file(PREREG)
+    realized_class_counts = {}
+    for source_name in ("syn", "squad", "selfaware"):
+        data_file = ROOT / "data/exploratory/e4" / f"{source_name}.jsonl"
+        if data_file.exists():
+            rows = read_jsonl(data_file)
+            counts = {str(label): sum(int(row["y"]) == int(label) for row in rows) for label in (0, 1)}
+            realized_class_counts[source_name] = {"rows": len(rows), "class_counts": counts}
+            print(f"[E4] realized {source_name} class counts: {counts} (n={len(rows)})", flush=True)
     payload = {"header": exploratory_header({"protocol": "E4 transfer matrix"}, ROOT),
                "preregistration_sha256": prereg_hash, "conditions": {}}
     summaries = []
@@ -419,7 +427,8 @@ def analyze(condition="registered", panels=("M1", "M2", "M3", "M4"), n_jobs=1,
                 manifest.update(_verify_inputs(cond, [name]))
             except FileNotFoundError:
                 pending[name] = f"Feature manifest missing for {name}"
-        record = {"pending": pending, "data_manifest": manifest, "panels": {}}
+        record = {"pending": pending, "data_manifest": manifest, "panels": {},
+                  "realized_class_counts": realized_class_counts}
         base_sources = dict(sources)
         if not base_sources:
             record["status"] = "pending_features"
@@ -490,7 +499,13 @@ def analyze(condition="registered", panels=("M1", "M2", "M3", "M4"), n_jobs=1,
     payload["E2_combined_verdict"] = e2_verdict
     out_path = assert_not_fresh(OUT / "e4_results.json")
     out_path.write_text(json.dumps(payload, indent=2, allow_nan=False) + "\n", encoding="utf-8")
-    lines = ["# E4 transfer matrix summary", "", f"Preregistration SHA-256: `{prereg_hash}`", ""]
+    lines = ["# E4 transfer matrix summary", "", f"Preregistration SHA-256: `{prereg_hash}`", "",
+             "Prepared SQuAD 2.0 sample: 210 answerable and 210 unanswerable rows (420 total), below the preregistered 300 + 300. The title cap and 350-token length filter limited the sample; proceed with the available rows and do not relax the filters silently.", ""]
+    if realized_class_counts:
+        lines += ["Realized prepared-data class counts:"]
+        for name, counts in realized_class_counts.items():
+            lines.append(f"- {name}: {counts['class_counts']} (n={counts['rows']})")
+        lines.append("")
     for cond, summary in summaries:
         lines += [f"## {cond}", "", summary["headline"], "", summary.get("selfaware", ""), "",
                   f"Synthetic validity: {summary['synthetic_validity']}", ""]

@@ -139,27 +139,57 @@ def _ids(tokenizer, text):
 
 def score_labels(model, tokenizer, prompt_text: str) -> dict:
     """Teacher-force each label and return log probabilities, argmax, and margin."""
-    import torch
     chat = tokenizer.apply_chat_template([{"role": "user", "content": prompt_text}], tokenize=False, add_generation_prompt=True)
     prompt_ids = _ids(tokenizer, chat)
     label_ids = [_ids(tokenizer, label) for label in LABELS]
     if not prompt_ids or any(not ids for ids in label_ids): raise ValueError("Empty prompt or label tokenization")
-    seqs = [prompt_ids + ids for ids in label_ids]; width = max(map(len, seqs))
+    return _score_prepared_labels(model, tokenizer, [prompt_ids], [label_ids])[0]
+
+
+def _score_prepared_labels(model, tokenizer, prompts, labels_by_prompt):
+    """Score label tokens using only their hidden states, avoiding full-sequence logits."""
+    import torch
+    seqs = [prompt + label for prompt, group in zip(prompts, labels_by_prompt) for label in group]
+    width = max(map(len, seqs))
     pad = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id
-    input_ids = torch.full((3, width), pad, dtype=torch.long); mask = torch.zeros_like(input_ids)
-    for i, seq in enumerate(seqs): input_ids[i, :len(seq)] = torch.tensor(seq); mask[i, :len(seq)] = 1
-    dev = model.get_input_embeddings().weight.device
-    with torch.no_grad(): logits = model(input_ids=input_ids.to(dev), attention_mask=mask.to(dev), use_cache=False).logits.float()
-    logp = torch.log_softmax(logits, -1); scores = {}
-    for i, (label, ids) in enumerate(zip(LABELS, label_ids)):
-        pos = torch.arange(len(prompt_ids)-1, len(prompt_ids)-1+len(ids), device=logits.device)
-        scores[label] = float(logp[i, pos, torch.tensor(ids, device=logits.device)].sum().item())
-    top = sorted(scores.values(), reverse=True)
-    return {"judge_label": max(LABELS, key=lambda x: scores[x]), "judge_logprobs": scores,
-            "judge_margin": float(top[0]-top[1])}
+    input_ids = torch.full((len(seqs), width), pad, dtype=torch.long)
+    attention_mask = torch.zeros_like(input_ids)
+    for i, seq in enumerate(seqs):
+        input_ids[i, :len(seq)] = torch.tensor(seq, dtype=torch.long)
+        attention_mask[i, :len(seq)] = 1
+    device = model.get_input_embeddings().weight.device
+    with torch.no_grad():
+        hidden = model.model(input_ids=input_ids.to(device), attention_mask=attention_mask.to(device),
+                             use_cache=False).last_hidden_state
+        selected_hidden, targets, item_ids = [], [], []
+        flat = 0
+        for item_idx, (prompt, group) in enumerate(zip(prompts, labels_by_prompt)):
+            for label_ids in group:
+                positions = torch.arange(len(prompt) - 1, len(prompt) - 1 + len(label_ids), device=device)
+                selected_hidden.append(hidden[flat, positions])
+                targets.extend(label_ids)
+                item_ids.append((item_idx, flat, len(label_ids)))
+                flat += 1
+        gathered = torch.cat(selected_hidden, dim=0)
+        logits = model.lm_head(gathered).float()
+        token_logp = torch.log_softmax(logits, dim=-1)
+        target_tensor = torch.tensor(targets, device=device, dtype=torch.long)
+        token_scores = token_logp.gather(1, target_tensor[:, None]).squeeze(1)
+    result = []
+    offset = 0
+    for _item_idx, _row, n_tokens in item_ids:
+        result.append(token_scores[offset:offset + n_tokens].sum())
+        offset += n_tokens
+    outputs = []
+    for item_idx in range(len(prompts)):
+        scores = {label: float(result[item_idx * len(LABELS) + j].item())
+                  for j, label in enumerate(LABELS)}
+        vals = sorted(scores.values(), reverse=True)
+        outputs.append({"judge_label": max(LABELS, key=lambda x: scores[x]),
+                        "judge_logprobs": scores, "judge_margin": float(vals[0] - vals[1])})
+    return outputs
 
 def _score_local_batch(items: List[Dict[str, Any]], batch_size: int) -> List[dict]:
-    import torch
     model, tokenizer, quant = _load_local_judge(); results = []
     for start in range(0, len(items), int(batch_size)):
         chunk = items[start:start+int(batch_size)]; prompts = []; label_ids = []
@@ -167,21 +197,9 @@ def _score_local_batch(items: List[Dict[str, Any]], batch_size: int) -> List[dic
             chat = tokenizer.apply_chat_template([{"role":"user","content":_render_prompt(item["question"],item["response"])}],
                                                   tokenize=False,add_generation_prompt=True)
             prompts.append(_ids(tokenizer,chat)); label_ids.append([_ids(tokenizer,l) for l in LABELS])
-        seqs = [p+l for p, group in zip(prompts,label_ids) for l in group]
         if any(not x for group in label_ids for x in group): raise ValueError("Empty label tokenization")
-        width=max(map(len,seqs)); pad=tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id
-        ids=torch.full((len(seqs),width),pad,dtype=torch.long);mask=torch.zeros_like(ids)
-        for i,seq in enumerate(seqs):ids[i,:len(seq)]=torch.tensor(seq);mask[i,:len(seq)]=1
-        dev=model.get_input_embeddings().weight.device
-        with torch.no_grad():logp=torch.log_softmax(model(input_ids=ids.to(dev),attention_mask=mask.to(dev),use_cache=False).logits.float(),-1)
-        for j in range(len(chunk)):
-            scores={}
-            for k,label in enumerate(LABELS):
-                p=prompts[j];tokens=label_ids[j][k];pos=torch.arange(len(p)-1,len(p)-1+len(tokens),device=logp.device)
-                scores[label]=float(logp[j*3+k,pos,torch.tensor(tokens,device=logp.device)].sum().item())
-            vals=sorted(scores.values(),reverse=True)
-            results.append({"judge_label":max(LABELS,key=lambda x:scores[x]),"judge_logprobs":scores,
-                            "judge_margin":float(vals[0]-vals[1]),"judge_quantization":quant})
+        scored = _score_prepared_labels(model, tokenizer, prompts, label_ids)
+        results.extend({**row, "judge_quantization": quant} for row in scored)
     return results
 
 def _parse_label(text: str) -> Optional[str]:
@@ -212,13 +230,17 @@ def classify_texts(items: List[Dict[str, Any]], offline: bool=False, backend: Op
                 f"{sorted(cached_quantizations)}, but the local judge resolved to {resolved_quant!r}. "
                 "Set CFG.judge_quantization explicitly to the cached value before scoring."
             )
-        scored=_score_local_batch([x[1] for x in pending],batch_size or CFG.judge_batch_size)
-        for (index,item,regex,key),score in zip(pending,scored):
-            record={"cache_key":key,"judge_label":score["judge_label"],"judge_logprobs":score["judge_logprobs"],
-                "judge_margin":score["judge_margin"],"parse_attempts":0,"classifier_backend":"local","judge_model_id":model_id,
-                "judge_model_revision":revision,"judge_quantization":score["judge_quantization"],"judge_prompt_version":JUDGE_PROMPT_VERSION,
-                "judge_prompt_sha256":JUDGE_PROMPT_SHA256,"final_label_source":"judge"}
-            _append_cache(path,record);cache[key]=record;prepared.append((index,item,regex,key,record))
+        chunk_size = int(batch_size or CFG.judge_batch_size)
+        if chunk_size < 1: raise ValueError("batch_size must be positive")
+        for start in range(0, len(pending), chunk_size):
+            chunk = pending[start:start + chunk_size]
+            scored = _score_local_batch([x[1] for x in chunk], chunk_size)
+            for (index,item,regex,key),score in zip(chunk,scored):
+                record={"cache_key":key,"judge_label":score["judge_label"],"judge_logprobs":score["judge_logprobs"],
+                    "judge_margin":score["judge_margin"],"parse_attempts":0,"classifier_backend":"local","judge_model_id":model_id,
+                    "judge_model_revision":revision,"judge_quantization":score["judge_quantization"],"judge_prompt_version":JUDGE_PROMPT_VERSION,
+                    "judge_prompt_sha256":JUDGE_PROMPT_SHA256,"final_label_source":"judge"}
+                _append_cache(path,record);cache[key]=record;prepared.append((index,item,regex,key,record))
     elif pending:
         for index,item,regex,key in pending:
             raw="";label=None;attempts=0

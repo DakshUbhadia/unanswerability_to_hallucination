@@ -18,7 +18,7 @@ class DummyTokenizer:
         self.padding_side = "right" if right else "left"
         self.corrupt = corrupt
 
-    def apply_chat_template(self, messages, tokenize=False, add_generation_prompt=True):
+    def apply_chat_template(self, messages, tokenize=False, add_generation_prompt=True, date_string=None):
         return messages[-1]["content"]
 
     def encode(self, text, add_special_tokens=False):

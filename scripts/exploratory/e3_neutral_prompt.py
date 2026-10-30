@@ -23,7 +23,7 @@ from src.config import CFG
 from src.eval_common import atomic_write_jsonl, load_runtime_contract, load_stage_model, read_jsonl
 from src.exploratory import assert_not_fresh, git_commit, write_exploratory_json
 from src.pilot_check import grade_popqa
-from src.tokenization_contract import CONTRACT_VERSION, canonical_input_ids, chat_template_sha256, input_ids_sha256
+from src.tokenization_contract import CONTRACT_VERSION, canonical_input_ids, chat_template_sha256, input_ids_sha256, render_chat
 
 
 def _load_neutral_model(contract, model_name, device, dtype):
@@ -106,7 +106,7 @@ def main(argv=None):
             generated.append(cached)
             continue
         if is_second_model:
-            rendered = tokenizer.apply_chat_template(
+            rendered = render_chat(tokenizer,
                 [{"role": "system", "content": prompt}, {"role": "user", "content": row["question"]}],
                 tokenize=False, add_generation_prompt=True)
             ids = [int(token_id) for token_id in tokenizer.encode(rendered, add_special_tokens=False)]

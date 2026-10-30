@@ -16,6 +16,7 @@ from nnsight import LanguageModel
 
 from src.config import CONFIG
 from src.stage_contract import resolve_downstream_model_name
+from src.tokenization_contract import render_chat
 
 
 # ----------------------------- precision ------------------------------------
@@ -78,7 +79,7 @@ def verify_unknown_tokens(tokenizer: Any) -> Tuple[int, int]:
 
 
 def _chat_ids(tokenizer: Any, user: str) -> List[int]:
-    ids = tokenizer.apply_chat_template(
+    ids = render_chat(tokenizer,
         [{"role": "system", "content": CONFIG.system_prompt}, {"role": "user", "content": user}],
         tokenize=True, add_generation_prompt=True,
     )
@@ -375,7 +376,7 @@ def load_fidelity_prompts(tokenizer: Any) -> Tuple[List[str], List[str]]:
                         break
     if len(prompts) < 12:
         raise RuntimeError("Stage 0 fidelity probe requires 8 train pairs in data/pairs.jsonl")
-    chat = [tokenizer.apply_chat_template(
+    chat = [render_chat(tokenizer,
         [{"role": "system", "content": CONFIG.system_prompt}, {"role": "user", "content": q}],
         tokenize=False, add_generation_prompt=True) for q in prompts]
     from datasets import load_dataset

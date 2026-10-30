@@ -20,7 +20,7 @@ class StubTokenizer:
         ids = [b + N_SPECIAL for b in str(text).encode("utf-8")]
         return [self.bos_token_id, *ids] if str(text).startswith("S:") else ids
 
-    def apply_chat_template(self, conv, tokenize=False, add_generation_prompt=True):
+    def apply_chat_template(self, conv, tokenize=False, add_generation_prompt=True, date_string=None):
         system = conv[0]["content"][:12]
         user = conv[-1]["content"][:48]
         return f"S:{system}|U:{user}{SUFFIX if add_generation_prompt else ''}"

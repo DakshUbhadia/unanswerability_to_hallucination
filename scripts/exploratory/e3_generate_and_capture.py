@@ -38,7 +38,7 @@ def _condition(model_key):
     if not (OUT / "e3_preflight.json").exists():
         raise RuntimeError("Run scripts/exploratory/e3_preflight.py before E3 generation")
     preflight = json.loads((OUT / "e3_preflight.json").read_text(encoding="utf-8"))
-    if preflight.get("template_date") != "static":
+    if preflight.get("template_date") not in {"static", "pinned"}:
         raise RuntimeError("E3 generation is stopped until a static or approved pinned date is recorded")
     model_name, slug = MODELS[model_key]
     if model_key == "qwen":

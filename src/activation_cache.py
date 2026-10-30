@@ -50,9 +50,10 @@ def load_and_validate_train_pairs(pairs_path: Path = CFG.data_dir / "pairs.jsonl
 
 
 def format_and_verify_batch_inputs(tokenizer: Any, user_prompts: List[str], system_prompt: str,
-                                   expected_suffix_token_ids: List[int], device: str) -> Dict[str, torch.Tensor]:
+                                   expected_suffix_token_ids: List[int], device: str,
+                                   date_string: str | None = CFG.chat_template_date) -> Dict[str, torch.Tensor]:
     assert tokenizer.padding_side == "left", "Stage 3 requires left padding"
-    rows = [canonical_input_ids(tokenizer, prompt, system_prompt, expected_suffix_token_ids)
+    rows = [canonical_input_ids(tokenizer, prompt, system_prompt, expected_suffix_token_ids, date_string)
             for prompt in user_prompts]
     inputs = tokenizer.pad({"input_ids": rows}, return_tensors="pt", padding=True)
     if hasattr(inputs, "to"):

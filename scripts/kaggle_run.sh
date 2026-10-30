@@ -45,6 +45,7 @@ for stage in "${stages[@]}"; do
       read -r -a judge_inputs <<< "$JUDGE_INPUTS"
       for input in "${judge_inputs[@]}"; do judge_args+=(--input "$input"); done
     fi
+    if [[ -n "${JUDGE_BATCH_SIZE:-}" ]]; then judge_args+=(--batch-size "$JUDGE_BATCH_SIZE"); fi
     python -u scripts/judge_pass.py "${judge_args[@]}"
     # WSL labeling steps consume the completed judge cache, so persist it here.
     python scripts/kaggle_sync.py --action push --stage judge --hf-repo ""

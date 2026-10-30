@@ -140,7 +140,8 @@ def compute_log10_s_pop(raw_s_pop: float) -> float:
 
 
 def _format_prompts(tokenizer: Any, prompts: List[str], system_prompt: str) -> List[str]:
-    return [tokenizer.apply_chat_template([{"role":"system","content":system_prompt},{"role":"user","content":p}], tokenize=False, add_generation_prompt=True) for p in prompts]
+    from src.tokenization_contract import render_chat
+    return [render_chat(tokenizer, [{"role":"system","content":system_prompt},{"role":"user","content":p}], tokenize=False, add_generation_prompt=True) for p in prompts]
 
 
 def evaluate_prompts_log_odds_and_generations(raw_model: Any, tokenizer: Any, user_prompts: List[str], system_prompt: str,

@@ -76,7 +76,7 @@ def _condition_contract(condition, base):
     date = preflight.get("template_date")
     if date not in {"static", "pinned"}:
         raise RuntimeError("E3 preflight did not establish a static or pinned date; neutral capture stopped")
-    date_string = preflight.get("date_string") if date == "pinned" else None
+    date_string = preflight.get("template_date_value") if date == "pinned" else None
     cond = make_condition_contract(base, model_name=base["model_name"],
         system_prompt=CFG.exploratory_neutral_system_prompt, suffix_ids=base["suffix_token_ids"],
         n_layers=base["n_layers"], d_model=base["d_model"],
@@ -115,12 +115,21 @@ def _load_popqa(condition):
     return meta, np.load(acts_path, mmap_mode="r"), acts_path
 
 
-def _check_syn_parity(meta, acts):
-    from src.direction_extraction import ensure_stage4_directions
+def _check_syn_parity(meta, model, tokenizer, contract, prompts, batch_size):
+    from src.eval_common import ensure_stage4_directions
+    from src.exploratory.capture import capture_suffix_all_layers
+    from src.exploratory.capture import make_condition_contract
     dirs, _ = ensure_stage4_directions(CFG.stage4_out_path, CFG.stage4_manifest_path, CFG.stage0_out_path)
     train = meta["split"].astype(str).to_numpy() == "train"
     y = meta.loc[train, "y"].to_numpy(dtype=int)
-    x = np.asarray(acts[train, 1, 11], dtype=np.float64)
+    train_contract = make_condition_contract(contract, model_name=contract["model_name"],
+        system_prompt=contract["system_prompt_used"], suffix_ids=contract["suffix_token_ids"],
+        n_layers=contract["n_layers"], d_model=contract["d_model"],
+        is_layer_output_tuple=contract["is_layer_output_tuple"],
+        unknown_token_ids=contract["unknown_token_ids"], date_string=CFG.chat_template_date_stage3_4)
+    train_capture = capture_suffix_all_layers(model, tokenizer, train_contract,
+        [p for p, keep in zip(prompts, train) if keep], (-5, -4, -3, -2, -1), batch_size)
+    x = np.asarray(train_capture["resid"][:, 1, 11], dtype=np.float64)
     observed = x[y == 1].mean(0) - x[y == 0].mean(0)
     expected = dirs["diff_in_means"][11, 1].detach().cpu().numpy().astype(np.float64)
     cosine = float(observed @ expected / (np.linalg.norm(observed) * np.linalg.norm(expected)))
@@ -129,7 +138,14 @@ def _check_syn_parity(meta, acts):
         raise RuntimeError(f"E4 syn Stage 4 parity failed: cosine={cosine:.8f}, relative norm error={rel:.6g}")
     val = meta["split"].astype(str).to_numpy() == "val"
     yv = meta.loc[val, "y"].to_numpy(dtype=int)
-    logodds = meta.loc[val, "log_odds"].to_numpy(dtype=float)
+    val_contract = make_condition_contract(contract, model_name=contract["model_name"],
+        system_prompt=contract["system_prompt_used"], suffix_ids=contract["suffix_token_ids"],
+        n_layers=contract["n_layers"], d_model=contract["d_model"],
+        is_layer_output_tuple=contract["is_layer_output_tuple"],
+        unknown_token_ids=contract["unknown_token_ids"], date_string=CFG.chat_template_date_stage5_10)
+    val_capture = capture_suffix_all_layers(model, tokenizer, val_contract,
+        [p for p, keep in zip(prompts, val) if keep], (-5, -4, -3, -2, -1), batch_size)
+    logodds = np.asarray(val_capture["log_odds"], dtype=float)
     means = {"unans": float(logodds[yv == 1].mean()), "ans": float(logodds[yv == 0].mean())}
     selection = json.loads(CFG.stage5_out_path.read_text(encoding="utf-8"))
     expected_means = {"unans": float(selection["val_unans_baseline_log_odds"]),
@@ -205,7 +221,7 @@ def extract(sources, condition="registered", batch_size=16, data_dir=DATA, out_r
         meta_path = target / "meta.parquet"
         meta.to_parquet(meta_path, index=False)
         acts.flush()
-        parity = _check_syn_parity(meta, acts) if source == "syn" else None
+        parity = _check_syn_parity(meta, model, tokenizer, contract, prompts, batch_size) if source == "syn" else None
         input_hash = hashlib.sha256("".join(meta["input_ids_sha256"].astype(str)).encode()).hexdigest()
         manifest = exploratory_header({"source": source, "condition": condition, "model_name": contract["model_name"],
             "system_prompt": contract["system_prompt_used"], "condition_info": condition_info,

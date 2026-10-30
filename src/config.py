@@ -228,6 +228,11 @@ class MasterConfig:
     n_cv_repeats: int = 20
     exploratory_neutral_system_prompt: str = "You are a helpful assistant. Answer the question concisely."
 
+    # --- Llama chat-template render dates (post-registration reproducibility) ---
+    chat_template_date: str = "27 Oct 2026"
+    chat_template_date_stage3_4: str = "19 Oct 2026"
+    chat_template_date_stage5_10: str = "24 Oct 2026"
+
 
 CONFIG = MasterConfig()
 CFG = CONFIG

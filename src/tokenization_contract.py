@@ -3,7 +3,14 @@ import hashlib
 import json
 from typing import Any, Optional, Sequence
 
+from src.config import CFG
+
 CONTRACT_VERSION = "chat-template/no-extra-bos/mask-position-ids/v1"
+
+def render_chat(tokenizer: Any, messages: Sequence[dict], *, date_string: str | None = CFG.chat_template_date,
+                **kw: Any) -> Any:
+    """Render a chat with the repository's pinned default template date."""
+    return tokenizer.apply_chat_template(messages, date_string=date_string, **kw)
 
 def chat_template_sha256(tokenizer: Any) -> str:
     """Hash the exact active chat-template source used by the tokenizer."""
@@ -16,15 +23,16 @@ def chat_template_sha256(tokenizer: Any) -> str:
     return hashlib.sha256(template.encode("utf-8")).hexdigest()
 
 def canonical_input_ids(tokenizer: Any, user_prompt: str, system_prompt: str,
-                        expected_suffix_token_ids: Optional[Sequence[int]] = None) -> list[int]:
+                        expected_suffix_token_ids: Optional[Sequence[int]] = None,
+                        date_string: str | None = CFG.chat_template_date) -> list[int]:
     """Format one chat and tokenize it without adding tokenizer special tokens.
 
     The row is unpadded. When supplied, the suffix is checked against the locked
     Stage 0 contract. Exactly one BOS must occur, at index zero.
     """
-    rendered = tokenizer.apply_chat_template(
+    rendered = render_chat(tokenizer,
         [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
-        tokenize=False, add_generation_prompt=True,
+        date_string=date_string, tokenize=False, add_generation_prompt=True,
     )
     ids = tokenizer.encode(rendered, add_special_tokens=False)
     ids = [int(token_id) for token_id in ids]

@@ -4,7 +4,8 @@ from __future__ import annotations
 from datetime import date, timedelta
 from typing import Any, Sequence
 
-from src.tokenization_contract import canonical_input_ids, input_ids_sha256
+from src.config import CFG
+from src.tokenization_contract import input_ids_sha256, render_chat
 
 
 def _ids(value: Any) -> list[int]:
@@ -13,12 +14,12 @@ def _ids(value: Any) -> list[int]:
     return [int(x) for x in value]
 
 
-def discover_suffix(tokenizer, system_prompt: str) -> tuple[int, list[int]]:
+def discover_suffix(tokenizer, system_prompt: str, date_string: str | None = CFG.chat_template_date) -> tuple[int, list[int]]:
     """Find the common generation suffix while varying only the user message."""
     def render(user):
-        return _ids(tokenizer.apply_chat_template(
+        return _ids(render_chat(tokenizer,
             [{"role": "system", "content": system_prompt}, {"role": "user", "content": user}],
-            tokenize=True, add_generation_prompt=True))
+            date_string=date_string, tokenize=True, add_generation_prompt=True))
     a, b = render(" AlphaUniqueMarker"), render(" BetaUniqueMarkerWithDifferentLength")
     k = 0
     while k < min(len(a), len(b)) and a[-k - 1] == b[-k - 1]:
@@ -29,11 +30,9 @@ def discover_suffix(tokenizer, system_prompt: str) -> tuple[int, list[int]]:
 
 
 def render_ids(tokenizer, user_prompt: str, system_prompt: str,
-               expected_suffix_ids: Sequence[int] | None, date_string: str | None = None) -> list[int]:
+               expected_suffix_ids: Sequence[int] | None, date_string: str | None = CFG.chat_template_date) -> list[int]:
     """Render canonical IDs, optionally supplying a chat-template date."""
-    if date_string is None:
-        return canonical_input_ids(tokenizer, user_prompt, system_prompt, expected_suffix_ids)
-    rendered = tokenizer.apply_chat_template(
+    rendered = render_chat(tokenizer,
         [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
         tokenize=False, add_generation_prompt=True, date_string=date_string)
     ids = [int(x) for x in tokenizer.encode(rendered, add_special_tokens=False)]
@@ -52,8 +51,8 @@ def template_date_probe(tokenizer, system_prompt: str) -> dict:
     """Compare ordinary template rendering with an explicitly supplied date."""
     messages = [{"role": "system", "content": system_prompt},
                 {"role": "user", "content": "E3DateProbeUniqueQuestion"}]
-    normal = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-    dated = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True,
+    normal = render_chat(tokenizer, messages, tokenize=False, add_generation_prompt=True, date_string=None)
+    dated = render_chat(tokenizer, messages, tokenize=False, add_generation_prompt=True,
                                           date_string="01 Jan 2000")
     return {"dynamic": normal != dated, "normal_render": normal, "fixed_date_render": dated,
             "fixed_date": "01 Jan 2000"}

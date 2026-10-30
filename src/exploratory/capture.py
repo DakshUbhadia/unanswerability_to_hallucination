@@ -9,11 +9,12 @@ import torch
 import torch.nn.functional as F
 
 from src.eval_common import build_chat_batches, log_odds_and_p_abs, model_device, to_device
+from src.config import CFG
 from src.exploratory.chat import render_ids
 
 
 def make_condition_contract(base_contract, *, model_name, system_prompt, suffix_ids, n_layers,
-                            d_model, is_layer_output_tuple, unknown_token_ids, date_string=None):
+                            d_model, is_layer_output_tuple, unknown_token_ids, date_string=CFG.chat_template_date):
     """Return an independent runtime contract for one exploratory prompt/model condition."""
     contract = dict(base_contract)
     contract.update({"model_name": str(model_name), "system_prompt_used": str(system_prompt),

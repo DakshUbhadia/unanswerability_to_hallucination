@@ -17,7 +17,7 @@ from src.config import CFG
 from src.exploratory.chat import discover_suffix, render_ids, template_date_probe
 from src.model_utils import (assert_all_layer_activations_finite, inspect_native_layer_output,
                              verify_low_precision_against_fp32)
-from src.tokenization_contract import chat_template_sha256
+from src.tokenization_contract import canonical_input_ids, chat_template_sha256, input_ids_sha256
 
 
 LLAMA = "meta-llama/Llama-3.2-3B-Instruct"
@@ -36,6 +36,25 @@ def _tokenizer(model_name):
     if tok.pad_token is None:
         tok.pad_token = tok.eos_token
     return tok
+
+
+def _pinned_popqa_hashes_match(tokenizer, rows, suffix_ids) -> bool:
+    if not rows:
+        return False
+    template_digest = chat_template_sha256(tokenizer)
+    return all(row.get("input_ids_sha256") == input_ids_sha256(
+        canonical_input_ids(tokenizer, row["question"], CFG.system_prompt,
+                            suffix_ids, CFG.chat_template_date), LLAMA, template_digest)
+        for row in rows)
+
+
+def _apply_pinned_date_preflight(preflight, tokenizer, rows, suffix_ids, output_path) -> int:
+    if not _pinned_popqa_hashes_match(tokenizer, rows, suffix_ids):
+        preflight["stop_reason"] = "Pinned-date rendering failed the first-20 PopQA input hash check."
+        _write(output_path, preflight)
+        return 3
+    preflight.update({"template_date": "pinned", "template_date_value": CFG.chat_template_date})
+    return 0
 
 
 def _qwen_contract(model_name, tokenizer, suffix_ids, n_layers, d_model, is_tuple, dtype, fidelity, maxima):
@@ -111,7 +130,7 @@ def main() -> int:
     date_probe = template_date_probe(llama_tok, CFG.system_prompt)
     normal = date_probe["normal_render"]
     today = __import__("datetime").datetime.now().strftime("%d %b %Y")
-    template_date = "dynamic" if date_probe["dynamic"] else "static"
+    template_date = "pinned" if CFG.chat_template_date else ("dynamic" if date_probe["dynamic"] else "static")
     llama_k, llama_suffix = discover_suffix(llama_tok, CFG.exploratory_neutral_system_prompt)
     if llama_suffix != stage0["suffix_token_ids"]:
         raise RuntimeError("Neutral Llama suffix differs from the Stage 0 locked suffix; stop E3")
@@ -120,7 +139,14 @@ def main() -> int:
                     "normal_includes_today": today in normal, "today": today},
                  "llama_neutral_suffix_token_ids": llama_suffix, "llama_k_suffix": llama_k,
                  "llama_chat_template_sha256": chat_template_sha256(llama_tok)}
-    if date_probe["dynamic"]:
+    if template_date == "pinned":
+        rows = [json.loads(line) for line in (CFG.data_dir / "popqa_sample.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()][:20]
+        gate_code = _apply_pinned_date_preflight(preflight, llama_tok, rows,
+                                                 stage0["suffix_token_ids"], OUT / "e3_preflight.json")
+        if gate_code:
+            print("Pinned chat-template date did not match all first 20 PopQA hashes. E3 stopped.")
+            return gate_code
+    elif date_probe["dynamic"]:
         preflight["stop_reason"] = "Dynamic Llama template date requires owner-approved recovery before E3 jobs."
         _write(OUT / "e3_preflight.json", preflight)
         print("Dynamic chat-template date detected. Recover the Stage 2 regeneration date against five archived input hashes, then obtain owner approval before pinning it. E3 stopped.")

@@ -232,11 +232,12 @@ def control_specs(vectors: Dict[str, Any]) -> List[Tuple[str, int, Any, Any]]:
 
 
 def build_chat_batches(tokenizer: Any, prompts: List[str], system_prompt: str, suffix_token_ids: List[int],
-                       batch_size: int = CFG.batch_size_forward) -> List[Dict[str, Any]]:
+                       batch_size: int = CFG.batch_size_forward,
+                       date_string: str | None = CFG.chat_template_date) -> List[Dict[str, Any]]:
     """Left-padded CPU batches with mask-derived position IDs and a verified chat suffix."""
     from src.activation_cache import format_and_verify_batch_inputs
     return [format_and_verify_batch_inputs(tokenizer, prompts[s:s + batch_size], system_prompt,
-                                           list(suffix_token_ids), "cpu")
+                                           list(suffix_token_ids), "cpu", date_string)
             for s in range(0, len(prompts), batch_size)]
 
 

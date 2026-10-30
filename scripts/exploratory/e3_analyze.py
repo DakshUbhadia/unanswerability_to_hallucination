@@ -365,7 +365,7 @@ def main(argv=None):
     require_tier1_complete(ROOT)
     prereg_path = assert_not_fresh(OUT / "e3_preregistration.json")
     preflight = _json(OUT / "e3_preflight.json")
-    if preflight.get("template_date") != "static":
+    if preflight.get("template_date") not in {"static", "pinned"}:
         raise RuntimeError("E3 analysis is blocked until preflight establishes static or approved-pinned chat-template dates")
     reliability = _spot_check_flags()
     pilots = {}
