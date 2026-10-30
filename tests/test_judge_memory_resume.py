@@ -69,4 +69,3 @@ def test_local_classification_appends_each_completed_chunk_and_resumes(monkeypat
     assert len(result) == 5
     assert len(cache.read_text().splitlines()) == 5
     assert all(json.loads(line)["judge_quantization"] == "nf4" for line in cache.read_text().splitlines())
-

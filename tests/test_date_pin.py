@@ -105,4 +105,3 @@ def test_e4_parity_forwards_historical_dates(monkeypatch, tmp_path):
     monkeypatch.setattr("src.exploratory.capture.capture_suffix_all_layers", fake_capture)
     e4._check_syn_parity(rows, None, None, contract, [str(i) for i in range(8)], 2)
     assert dates == [CFG.chat_template_date_stage3_4] * 4 + [CFG.chat_template_date_stage5_10] * 4
-
