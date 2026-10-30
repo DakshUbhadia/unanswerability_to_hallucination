@@ -11,28 +11,28 @@
   },
   "n_raw": 2488,
   "n_unique_available": 1585,
-  "n_unique_scored": 500,
-  "n_unique_question_response": 500,
+  "n_unique_scored": 1000,
+  "n_unique_question_response": 1000,
   "deduplicated": 903,
   "margin_summary_by_condition": {
     "baseline": {
-      "unique_items": 500,
-      "scored_items": 500,
-      "low_margin_lt_1_nat": 14
+      "unique_items": 989,
+      "scored_items": 989,
+      "low_margin_lt_1_nat": 32
     },
     "test_unans_baseline": {
-      "unique_items": 0,
-      "scored_items": 0,
+      "unique_items": 11,
+      "scored_items": 11,
       "low_margin_lt_1_nat": 0
     },
     "test_unans_ablate_learned": {
-      "unique_items": 0,
-      "scored_items": 0,
+      "unique_items": 2,
+      "scored_items": 2,
       "low_margin_lt_1_nat": 0
     },
     "test_unans_steer_neg0p5_learned": {
-      "unique_items": 0,
-      "scored_items": 0,
+      "unique_items": 2,
+      "scored_items": 2,
       "low_margin_lt_1_nat": 0
     },
     "test_unans_steer_neg1_learned": {
@@ -51,13 +51,13 @@
       "low_margin_lt_1_nat": 0
     },
     "test_unans_ablate_concept": {
-      "unique_items": 0,
-      "scored_items": 0,
+      "unique_items": 11,
+      "scored_items": 11,
       "low_margin_lt_1_nat": 0
     },
     "test_unans_steer_neg1_concept": {
-      "unique_items": 0,
-      "scored_items": 0,
+      "unique_items": 11,
+      "scored_items": 11,
       "low_margin_lt_1_nat": 0
     },
     "test_ans_baseline": {
@@ -102,10 +102,10 @@
     }
   },
   "judge_cache_path": "/kaggle/working/repo/data/judge_cache.jsonl",
-  "judge_cache_sha256": "e7e696acea560787fcda50fa21d12ac263e256996281c40c6a44cc47354a765a",
+  "judge_cache_sha256": "b1417f94baaa2ab5586a40006774126c8cdf73f6f144f5c53e32ddbb5b896297",
   "batch_size_items": 1,
-  "elapsed_seconds": 380.59097612299956,
-  "items_per_second": 1.3137463285901623,
+  "elapsed_seconds": 379.9736240079983,
+  "items_per_second": 2.6317616019428716,
   "torch": "2.11.0+cu128",
   "transformers": "4.46.3",
   "bitsandbytes": "0.46.1",
@@ -117,8 +117,8 @@
     "nf4"
   ],
   "cuda_visible_devices": "0",
-  "n_answer_then_unknown": 2,
+  "n_answer_then_unknown": 6,
   "answer_then_unknown_judge_label_distribution": {
-    "ABSTAIN": 2
+    "ABSTAIN": 6
   }
 }
