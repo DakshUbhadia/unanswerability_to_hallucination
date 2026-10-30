@@ -40,7 +40,12 @@ for stage in "${stages[@]}"; do
     continue
   fi
   if [[ "$stage" == judge ]]; then
-    python -u scripts/judge_pass.py
+    judge_args=()
+    if [[ -n "${JUDGE_INPUTS:-}" ]]; then
+      read -r -a judge_inputs <<< "$JUDGE_INPUTS"
+      for input in "${judge_inputs[@]}"; do judge_args+=(--input "$input"); done
+    fi
+    python -u scripts/judge_pass.py "${judge_args[@]}"
     continue
   fi
   if [[ "$stage" == rescore6 ]]; then

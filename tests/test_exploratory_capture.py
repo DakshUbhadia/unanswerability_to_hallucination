@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 from src.eval_common import build_chat_batches, capture_residuals_and_logits
-from src.exploratory.capture import capture_answer_positions, capture_suffix_all_layers
+from src.exploratory.capture import capture_answer_positions, capture_suffix_all_layers, make_condition_contract
 from src.tokenization_contract import canonical_input_ids
 from tests._tiny_model import StubTokenizer, tiny_contract, tiny_model
 
@@ -33,11 +33,9 @@ def test_answer_pass_prompt_logits_match_suffix_and_empty_answer_is_nan():
         logits = model(input_ids=torch.tensor([pids]), attention_mask=torch.ones((1, len(pids)), dtype=torch.long),
                        position_ids=torch.arange(len(pids)).unsqueeze(0)).logits[0, -1].numpy()
     row = {"question": prompt, "baseline_response": "abc"}
-    answer = capture_answer_positions(model, tok, contract, [row], contract["system_prompt_used"],
-                                      contract["suffix_token_ids"], return_prompt_logits=True)
+    answer = capture_answer_positions(model, tok, contract, [row], return_prompt_logits=True)
     np.testing.assert_allclose(answer["prompt_last_logits"][0], logits, atol=1e-5, rtol=1e-5)
-    empty = capture_answer_positions(model, tok, contract, [{**row, "baseline_response": ""}],
-                                     contract["system_prompt_used"], contract["suffix_token_ids"])
+    empty = capture_answer_positions(model, tok, contract, [{**row, "baseline_response": ""}])
     assert np.isnan(empty["resid_ans"]).all()
     assert np.isnan(empty["seq_logprob_mean"]).all()
 
@@ -60,11 +58,23 @@ def test_greedy_consistency_tracks_teacher_forced_tokens():
     assert generated is not None
     text = tok.decode(generated)
     row = {"question": prompt, "baseline_response": text}
-    result = capture_answer_positions(model, tok, contract, [row], contract["system_prompt_used"],
-                                      contract["suffix_token_ids"])
+    result = capture_answer_positions(model, tok, contract, [row])
     if result["n_answer_tokens"][0]:
         assert result["greedy_consistent"][0]
         corrupt = {**row, "baseline_response": text + "z"}
-        changed = capture_answer_positions(model, tok, contract, [corrupt], contract["system_prompt_used"],
-                                           contract["suffix_token_ids"])
+        changed = capture_answer_positions(model, tok, contract, [corrupt])
         assert not changed["greedy_consistent"][0]
+
+
+def test_neutral_condition_contract_changes_early_positions_and_preserves_suffix():
+    model, tok, registered = _setup()
+    neutral = make_condition_contract(registered, model_name="tiny-llama",
+                                      system_prompt="neutral system prompt", suffix_ids=registered["suffix_token_ids"],
+                                      n_layers=3, d_model=32, is_layer_output_tuple=True,
+                                      unknown_token_ids=registered["unknown_token_ids"])
+    original = dict(registered)
+    registered_capture = capture_suffix_all_layers(model, tok, registered, ["same question"])
+    neutral_capture = capture_suffix_all_layers(model, tok, neutral, ["same question"])
+    assert registered["system_prompt_used"] == original["system_prompt_used"]
+    assert neutral["suffix_token_ids"] == registered["suffix_token_ids"]
+    assert not np.allclose(registered_capture["resid"][:, 0], neutral_capture["resid"][:, 0])

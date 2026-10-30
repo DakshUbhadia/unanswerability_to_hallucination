@@ -9,10 +9,10 @@ from src.config import CFG
 LABELS=["CORRECT","INCORRECT","ABSTAIN","UNGRADEABLE"]
 TO_GRADE={"CORRECT":"correct","INCORRECT":"wrong","ABSTAIN":"abstain","UNGRADEABLE":"ambiguous"}
 def main():
-    p=argparse.ArgumentParser();p.add_argument("--csv",type=Path,default=CFG.results_dir/"grader_validation_test.csv");p.add_argument("--output",type=Path,default=CFG.results_dir/"grader_validation.json");a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument("--csv",type=Path,default=CFG.results_dir/"grader_validation_test.csv");p.add_argument("--output",type=Path,default=CFG.results_dir/"grader_validation.json");p.add_argument("--key",type=Path,default=CFG.results_dir/"grader_validation_key.json");a=p.parse_args()
     rows=list(csv.DictReader(a.csv.open(encoding="utf-8",newline="")))
     if not rows or any(r.get("human_label") not in LABELS for r in rows):raise ValueError("Every held-out row needs CORRECT, INCORRECT, ABSTAIN, or UNGRADEABLE")
-    key=json.loads((CFG.results_dir/"grader_validation_key.json").read_text(encoding="utf-8"))
+    key=json.loads(a.key.read_text(encoding="utf-8"))
     human=[r["human_label"] for r in rows]; pred=[{"correct":"CORRECT","wrong":"INCORRECT","abstain":"ABSTAIN","ambiguous":"UNGRADEABLE"}[key[r["uid"]]["grade"]] for r in rows]
     pr,rc,_,_=precision_recall_fscore_support(human,pred,labels=LABELS,zero_division=0)
     correct=[i for i,x in enumerate(pred) if x=="CORRECT"];tp=sum(human[i]=="CORRECT" for i in correct)

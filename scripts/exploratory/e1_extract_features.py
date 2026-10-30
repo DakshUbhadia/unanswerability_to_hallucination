@@ -116,8 +116,7 @@ def main(argv=None):
         for k in confidence:
             confidence[k][start:stop] = sf[k]
             frame.loc[start:stop-1, k] = sf[k]
-        af = capture_answer_positions(raw_model, tokenizer, contract, rows[start:stop],
-                                      contract["system_prompt_used"], contract["suffix_token_ids"])
+        af = capture_answer_positions(raw_model, tokenizer, contract, rows[start:stop])
         answer[start:stop] = af["resid_ans"]
         for j, name in enumerate(("seq_logprob_mean", "seq_logprob_min", "greedy_consistent", "first_token_match", "n_answer_tokens")):
             frame.loc[start:stop-1, name] = af[name]

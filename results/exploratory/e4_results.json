@@ -1,0 +1,25 @@
+{
+  "header": {
+    "status": "exploratory_post_registration",
+    "git_commit": "5891b87a44d5fedf14c69963302a7e3ffaf2aab8",
+    "created_utc": "2026-10-29T20:30:37.091438+00:00",
+    "protocol": "E4 transfer matrix"
+  },
+  "preregistration_sha256": "f3012d4361f74ecaf6c373bc7578378b7a649e3e7a05445a20c402322a6906d6",
+  "conditions": {
+    "registered": {
+      "pending": {
+        "syn": "/home/daksh/unanswerability-to-hallucination/results/exploratory/e4_features/registered/syn/manifest.json",
+        "squad": "/home/daksh/unanswerability-to-hallucination/results/exploratory/e4_features/registered/squad/manifest.json",
+        "selfaware": "/home/daksh/unanswerability-to-hallucination/results/exploratory/e4_features/registered/selfaware/manifest.json",
+        "popqa": "Tier 1 E0 is incomplete: /home/daksh/unanswerability-to-hallucination/results/stage2_pilot.json has label_source=None; expected 'canonical_v1_batch1_judged'",
+        "triviaqa": "/home/daksh/unanswerability-to-hallucination/results/exploratory/e4_features/registered/triviaqa/manifest.json"
+      },
+      "data_manifest": {},
+      "panels": {},
+      "status": "pending_features"
+    }
+  },
+  "E1_C1_label": "pending",
+  "E2_combined_verdict": "pending"
+}
