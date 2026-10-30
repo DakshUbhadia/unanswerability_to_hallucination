@@ -1,0 +1,63 @@
+{
+  "status": "diagnostic_only",
+  "runtime_dtype": "torch.float16",
+  "today_utc": "30 Oct 2026",
+  "regeneration_date_recovered": "27 Oct 2026",
+  "rows_matching_at_regen_date": 1000,
+  "n_rows": 1000,
+  "val_by_date": {
+    "stage3_oct19": {
+      "date": "19 Oct 2026",
+      "lo_unans_mean": 6.695905304824312,
+      "lo_ans_mean": -11.123336162418127,
+      "auroc_proj_val": 1.0,
+      "max_abs_proj_diff_vs_oct24": 0.03876924514770508,
+      "max_abs_logodds_diff_vs_oct24": 0.39061546325683594
+    },
+    "stage5to10_oct24": {
+      "date": "24 Oct 2026",
+      "lo_unans_mean": 6.779436817392707,
+      "lo_ans_mean": -11.316718697547913,
+      "auroc_proj_val": 1.0,
+      "max_abs_proj_diff_vs_oct24": 0.0,
+      "max_abs_logodds_diff_vs_oct24": 0.0
+    },
+    "regen": {
+      "date": "27 Oct 2026",
+      "lo_unans_mean": 6.799965789541602,
+      "lo_ans_mean": -11.367476973682642,
+      "auroc_proj_val": 1.0,
+      "max_abs_proj_diff_vs_oct24": 0.03613471984863281,
+      "max_abs_logodds_diff_vs_oct24": 0.21093273162841797
+    },
+    "today": {
+      "date": "30 Oct 2026",
+      "lo_unans_mean": 6.772247011462848,
+      "lo_ans_mean": -11.320238207777342,
+      "auroc_proj_val": 1.0,
+      "max_abs_proj_diff_vs_oct24": 0.034712791442871094,
+      "max_abs_logodds_diff_vs_oct24": 0.14189815521240234
+    }
+  },
+  "stage5_recorded_val_logodds": {
+    "unans": 6.780534267425537,
+    "ans": -11.323524475097656
+  },
+  "train_direction_vs_stage4": {
+    "stage3_oct19": {
+      "date": "19 Oct 2026",
+      "cosine": 0.9999999403953552,
+      "rel_norm_error": 0.0
+    },
+    "regen": {
+      "date": "27 Oct 2026",
+      "cosine": 0.9999125599861145,
+      "rel_norm_error": 0.0014080483233556151
+    },
+    "today": {
+      "date": "30 Oct 2026",
+      "cosine": 0.9998859763145447,
+      "rel_norm_error": 0.0008026044233702123
+    }
+  }
+}
