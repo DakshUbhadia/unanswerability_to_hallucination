@@ -1,0 +1,19 @@
+{
+  "status": "exploratory_post_registration",
+  "template_date": "dynamic",
+  "template_date_probe": {
+    "dynamic": true,
+    "normal_includes_today": true,
+    "today": "30 Oct 2026"
+  },
+  "llama_neutral_suffix_token_ids": [
+    128009,
+    128006,
+    78191,
+    128007,
+    271
+  ],
+  "llama_k_suffix": 5,
+  "llama_chat_template_sha256": "5816fce10444e03c2e9ee1ef8a4a1ea61ae7e69e438613f3b17b69d0426223a4",
+  "stop_reason": "Dynamic Llama template date requires owner-approved recovery before E3 jobs."
+}
