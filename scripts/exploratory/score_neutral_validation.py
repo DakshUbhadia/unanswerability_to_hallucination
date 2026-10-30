@@ -4,6 +4,11 @@ import argparse
 import csv
 import json
 import sys
+if __name__ == "__main__":
+    if "--legacy" not in sys.argv:
+        print("superseded by scripts/import_judge_labels.py; pass --legacy to run", file=sys.stderr)
+        raise SystemExit(2)
+    sys.argv.remove("--legacy")
 import warnings
 from pathlib import Path
 

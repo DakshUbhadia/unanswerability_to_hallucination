@@ -172,7 +172,8 @@ def main(argv=None):
             raise RuntimeError("--push-hf requires HF_TENSOR_REPO_ID")
         from huggingface_hub import upload_folder
         upload_folder(repo_id=repo, folder_path=str(out_dir), path_in_repo="exploratory/e1_features",
-                      token=os.environ.get("HF_TOKEN"), ignore_patterns=["e1_extract_checkpoint.pt"])
+                      repo_type="dataset", token=os.environ.get("HF_TOKEN"),
+                      ignore_patterns=["e1_extract_checkpoint.pt", "*checkpoint*"])
     print(f"Wrote E1 features to {out_dir}", flush=True)
     return 0
 

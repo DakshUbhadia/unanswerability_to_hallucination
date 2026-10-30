@@ -63,6 +63,8 @@ features/
 results/exploratory/**/*.npy
 results/exploratory/**/*.npz
 results/exploratory/**/*checkpoint*.pt
+results/exploratory/**/*_key.json
+!results/exploratory/e2_dom_11_suf-4.npy
 # One-off local agent instructions and task notes
 tier0_agent_instructions.md
 tier1_free_judge_backend.md

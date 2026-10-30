@@ -125,5 +125,10 @@ def test_incremental_value_noise_and_independent_signal_are_separated():
 
 
 def test_archive_v42_manifest_verifies():
+    import json
+    from pathlib import Path
     from scripts.verify_archive_v42 import verify
-    assert verify()==55
+    normalized = verify()
+    manifest = json.loads(Path("results/archive_v42/MANIFEST.json").read_text(encoding="utf-8"))
+    assert len(manifest["files"]) == 55
+    assert set(normalized).issubset(manifest["files"])

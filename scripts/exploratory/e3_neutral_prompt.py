@@ -3,6 +3,11 @@
 import argparse
 import json
 import sys
+if __name__ == "__main__":
+    if "--legacy" not in sys.argv:
+        print("superseded by scripts/exploratory/e3_generate_and_capture.py; pass --legacy to run", file=sys.stderr)
+        raise SystemExit(2)
+    sys.argv.remove("--legacy")
 import time
 from collections import Counter
 from pathlib import Path

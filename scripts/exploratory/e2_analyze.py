@@ -94,8 +94,10 @@ def _run_g(cache,directions):
       xa=np.asarray(cache["ans"][idx,0,layer,:],dtype=np.float64); da=fit_dom(xa,y); cross["ans_first"].append(float(np.dot(rhat,da)/(np.linalg.norm(rhat)*np.linalg.norm(da))))
     dom_path=assert_not_fresh(ROOT/"results/exploratory/e2_dom_11_suf-4.npy")
     dom_path.parent.mkdir(parents=True,exist_ok=True); np.save(dom_path,locked["dom"].astype(np.float32))
+    dom_sha=hashlib.sha256(dom_path.read_bytes()).hexdigest()
     return {"heatmaps":{k:v.tolist() for k,v in heat.items()},"outlier_dimensions":outliers.tolist(),"cross_position_alignment":cross,
-            "locked":{k:v for k,v in locked.items() if k!="dom"}}
+            "locked":{k:v for k,v in locked.items() if k!="dom"},"dom_vector_path":str(dom_path.relative_to(ROOT)),
+            "dom_vector_sha256":dom_sha}
 
 def _run_a(cache,directions,nboot,seed,contract):
     rows,y,groups,units,base=population(cache["meta"],"P1"); idx=rows.index.to_numpy(int)

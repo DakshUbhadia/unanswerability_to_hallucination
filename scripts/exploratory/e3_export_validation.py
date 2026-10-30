@@ -16,6 +16,8 @@ sys.path.insert(0, str(ROOT))
 from src.config import CFG
 from src.eval_common import read_jsonl
 from src.exploratory import assert_not_fresh, exploratory_payload
+from src.abstention_classifier import classify_texts
+from src.pilot_check import grade_popqa
 
 SEED = 20260409
 CONDITIONS = {"llama32_3b": "L_neut", "qwen25_3b": "Q_neut"}
@@ -32,10 +34,23 @@ def _conditions():
 def _rows(slug):
     path = assert_not_fresh(CFG.data_dir / "exploratory" / f"popqa_neutral_{slug}.jsonl")
     rows = read_jsonl(path)
-    if not rows or any(not (r.get("classifier") or {}).get("final_label") for r in rows):
-        raise RuntimeError(f"Neutral PopQA must be judged before E3 validation export: {path}")
-    if any(not r.get("grade_reason") for r in rows):
-        raise RuntimeError(f"Neutral PopQA must be graded before E3 validation export: {path}")
+    if not rows:
+        raise RuntimeError(f"Neutral PopQA file is empty: {path}")
+    # This export is deliberately usable before the Tier 1 grader gate. The
+    # E3 judge pass has already populated the shared cache; offline=True makes
+    # a missing cache entry a hard failure and never starts a judge model.
+    judged = classify_texts([{"uid": f"e3-export:{slug}:{r['popqa_id']}",
+                              "question": r["question"],
+                              "response": r.get("response", r.get("baseline_response", ""))}
+                             for r in rows], offline=True)
+    by_id = {str(x["uid"]).split(":")[-1]: x for x in judged}
+    for row in rows:
+        classifier = by_id[str(row["popqa_id"])]
+        grade = grade_popqa(row.get("response", row.get("baseline_response", "")),
+                            row.get("possible_answers", []), row.get("obj", ""), classifier)
+        row["classifier"] = classifier
+        row["baseline_partition"] = grade["grade"]
+        row["grade_reason"] = grade["reason"]
     return rows
 
 

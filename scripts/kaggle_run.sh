@@ -46,6 +46,8 @@ for stage in "${stages[@]}"; do
       for input in "${judge_inputs[@]}"; do judge_args+=(--input "$input"); done
     fi
     python -u scripts/judge_pass.py "${judge_args[@]}"
+    # WSL labeling steps consume the completed judge cache, so persist it here.
+    python scripts/kaggle_sync.py --action push --stage judge --hf-repo ""
     continue
   fi
   if [[ "$stage" == rescore6 ]]; then

@@ -58,7 +58,7 @@ def label_transition_table(instr, neutral):
     a, b = pd.DataFrame(instr), pd.DataFrame(neutral)
     joined = a[["popqa_id", "label"]].merge(b[["popqa_id", "label"]], on="popqa_id",
                                                suffixes=("_instr", "_neutral"), validate="one_to_one")
-    return pd.crosstab(joined.label_instr, joined.label_neutral, dropna=False).to_dict()
+    return pd.crosstab(joined.label_instr, joined.label_neutral, dropna=False).to_dict(orient="index")
 
 
 def e3_verdict(*, in_context_survives: bool, aligned_with_instructed: bool | None,
@@ -85,3 +85,76 @@ def e3_verdict(*, in_context_survives: bool, aligned_with_instructed: bool | Non
 def qwen_replication(llama_verdict: str, qwen_verdict: str) -> str:
     return ("replicates_llama_neutral_verdict" if qwen_verdict == llama_verdict
             else f"does_not_replicate: {qwen_verdict}")
+
+
+def direction_from_pairs(pair_activations, rows, *, split="train"):
+    """Fit mean unanswerable-minus-answerable directions by layer and suffix."""
+    acts = np.asarray(pair_activations)
+    if acts.ndim != 4:
+        raise ValueError("pair activations must have [prompts, suffix, layers, hidden] shape")
+    index = {(str(r["pair_id"]), str(r["part"])): i for i, r in enumerate(rows)
+             if str(r["split"]) == split}
+    pair_ids = sorted({pair for pair, _ in index})
+    if not pair_ids:
+        raise ValueError(f"No {split} pairs in E3 feature manifest")
+    ans = np.stack([acts[index[(pair, "ans")]] for pair in pair_ids])
+    unans = np.stack([acts[index[(pair, "unans")]] for pair in pair_ids])
+    diff = (unans.astype(np.float64).mean(0) - ans.astype(np.float64).mean(0)).transpose(1, 0, 2)
+    norm = np.linalg.norm(diff, axis=-1, keepdims=True)
+    if np.any(norm <= 1e-12):
+        raise ValueError("E3 train pairs produced a zero direction")
+    return diff, diff / norm, pair_ids
+
+
+def in_context_auroc(pair_activations, rows, direction, *, split="test"):
+    """Score answerable/unanswerable synthetic prompts on held-out pairs."""
+    acts = np.asarray(pair_activations)
+    selected = [(i, r) for i, r in enumerate(rows) if str(r["split"]) == split]
+    if not selected:
+        raise ValueError(f"No {split} pairs available")
+    y = np.asarray([str(r["part"]) == "unans" for _, r in selected], dtype=int)
+    x = np.stack([acts[i] for i, _ in selected]).astype(np.float64)
+    scores = np.einsum("npld,lpd->npl", x, direction)
+    from sklearn.metrics import roc_auc_score
+    aurocs = np.empty(direction.shape[:2], dtype=float)
+    for layer in range(direction.shape[0]):
+        for pos in range(direction.shape[1]):
+            aurocs[layer, pos] = roc_auc_score(y, scores[:, pos, layer])
+    return aurocs
+
+
+def bootstrap_train_direction_alignment(pair_activations, rows, reference, *, n_boot=1000, seed=20260407):
+    """Refit neutral DOM means over train-pair bootstrap samples for geometry CI."""
+    from src.exploratory.e2_analysis import _scale_equivariant_lw_covariance
+    acts = np.asarray(pair_activations)
+    lookup = {(str(r["pair_id"]), str(r["part"])): i for i, r in enumerate(rows)
+              if str(r["split"]) == "train"}
+    pair_ids = sorted({p for p, _ in lookup})
+    if not pair_ids:
+        raise ValueError("No E3 training pairs available for geometry bootstrap")
+    delta = np.stack([acts[lookup[(pid, "unans")], 1, 11].astype(np.float64) -
+                      acts[lookup[(pid, "ans")], 1, 11].astype(np.float64) for pid in pair_ids])
+    pool = np.asarray(acts[[i for i, r in enumerate(rows) if r["split"] == "train"] , 1, 11], dtype=np.float64)
+    covariance = _scale_equivariant_lw_covariance(pool)
+    vals, vecs = np.linalg.eigh((covariance + covariance.T) / 2)
+    floor = 1e-6 * np.trace(covariance) / covariance.shape[0]
+    invroot = (vecs * (1 / np.sqrt(np.maximum(vals, floor)))) @ vecs.T
+    refw = invroot @ np.asarray(reference, dtype=np.float64)
+    rng = np.random.default_rng(seed)
+    raw, white = [], []
+    for _ in range(int(n_boot)):
+        d = delta[rng.integers(0, len(delta), len(delta))].mean(0)
+        norm = np.linalg.norm(d)
+        if norm <= 1e-12:
+            continue
+        d /= norm
+        den = np.linalg.norm(d) * np.linalg.norm(reference)
+        raw.append(float(np.dot(reference, d) / den))
+        dw = invroot @ d
+        white.append(float(np.dot(refw, dw) / (np.linalg.norm(refw) * np.linalg.norm(dw))))
+    if not white:
+        raise ValueError("No valid direction bootstrap samples")
+    return {"n_boot": len(white), "seed": int(seed),
+            "raw_ci95": [float(x) for x in np.percentile(raw, [2.5, 97.5])],
+            "whitened_ci95": [float(x) for x in np.percentile(white, [2.5, 97.5])],
+            "resampling": "train_pairs_with_replacement"}

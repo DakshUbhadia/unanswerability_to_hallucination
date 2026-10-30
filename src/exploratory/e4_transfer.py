@@ -108,7 +108,28 @@ def load_source(name: str, condition: str = "registered", view: str | None = Non
         cached = Path(manifest["suf_path"])
         feat_path = assert_not_fresh(cached if cached.is_absolute() else ROOT / cached)
     if not feat_path.exists():
-        raise FileNotFoundError(feat_path)
+        expected = manifest.get("suf_sha256") or manifest.get("sha256", {}).get("suf.npy")
+        if not expected:
+            raise FileNotFoundError(f"{feat_path} is missing and the E4 manifest has no checksum")
+        source_path = Path(manifest.get("suf_path", ""))
+        if source_path.is_absolute():
+            try:
+                source_path = source_path.relative_to(ROOT)
+            except ValueError:
+                raise ValueError("E4 manifest tensor path is outside the repository root")
+        repo_path = source_path.as_posix()
+        if repo_path.startswith("results/"):
+            repo_path = repo_path[len("results/"):]
+        if not repo_path or repo_path == ".":
+            repo_path = f"exploratory/e4_features/{condition}/{name}/suf.npy"
+        from src.exploratory.tensor_io import download_verified
+        download_verified(feat_path, repo_path=repo_path, expected_sha256=expected)
+    else:
+        expected = manifest.get("suf_sha256") or manifest.get("sha256", {}).get("suf.npy")
+        if expected:
+            from src.exploratory.tensor_io import sha256_file
+            if sha256_file(feat_path) != expected:
+                raise ValueError(f"E4 tensor checksum mismatch: {feat_path}")
     meta = pd.read_parquet(meta_path)
     X = np.load(feat_path, mmap_mode="r")
     if len(meta) != X.shape[0]:

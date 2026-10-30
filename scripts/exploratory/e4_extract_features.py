@@ -224,9 +224,18 @@ def main(argv=None):
     parser.add_argument("--sources", default="syn,squad,selfaware")
     parser.add_argument("--condition", choices=("registered", "neutral"), default="registered")
     parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument("--push-hf", action="store_true", help="Upload extracted tensors to HF dataset storage")
     args = parser.parse_args(argv)
-    print(json.dumps(extract([s.strip() for s in args.sources.split(",") if s.strip()],
-                             args.condition, args.batch_size), indent=2))
+    sources = [s.strip() for s in args.sources.split(",") if s.strip()]
+    result = extract(sources, args.condition, args.batch_size)
+    if args.push_hf:
+        from src.exploratory.tensor_io import upload_folder
+        for source in sources:
+            folder = OUT / args.condition / source
+            if folder.exists():
+                upload_folder(folder, path_in_repo=f"exploratory/e4_features/{args.condition}/{source}",
+                              ignore_patterns=["*checkpoint*", "*.pt"])
+    print(json.dumps(result, indent=2))
     return 0
 
 

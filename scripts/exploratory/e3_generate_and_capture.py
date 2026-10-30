@@ -15,7 +15,7 @@ import numpy as np
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from src.abstention_classifier import classify_texts
+from src.abstention_classifier import classify_texts, release_local_judge
 from src.config import CFG
 from src.eval_common import ConditionCheckpoint, read_jsonl
 from src.exploratory import assert_not_fresh, exploratory_payload
@@ -112,8 +112,16 @@ def _pilot(model, tokenizer, contract, model_name, slug, checkpoint):
             checkpoint.put(key, {"response": response})
         responses.append(response)
     checkpoint.flush()
-    judged = classify_texts([{"uid": f"{slug}:pilot:{i}", "question": q, "response": r}
-                             for i, (q, r) in enumerate(zip(prompts, responses))])
+    # The T4 cannot safely hold the subject model and 7B judge simultaneously.
+    model.to("cpu")
+    torch.cuda.empty_cache()
+    try:
+        judged = classify_texts([{"uid": f"{slug}:pilot:{i}", "question": q, "response": r}
+                                 for i, (q, r) in enumerate(zip(prompts, responses))])
+    finally:
+        release_local_judge()
+        model.to("cuda:0")
+        torch.cuda.empty_cache()
     abstain = [r.get("final_label") == "ABSTAIN" for r in judged]
     unans_rate = float(np.mean([abstain[i] for i, y in enumerate(labels) if y == 1]))
     ans_rate = float(np.mean([abstain[i] for i, y in enumerate(labels) if y == 0]))
@@ -165,39 +173,115 @@ def _pairs(model, tokenizer, contract, model_name, slug):
         for part in ("ans", "unans"):
             prompts.append(pair[f"{part}_prompt"])
             meta.append({"pair_id": pair["pair_id"], "split": pair["split"], "part": part})
-    captured = capture_suffix_all_layers(model, tokenizer, contract, prompts, batch_size=8)
     path = OUT / "e3_features" / f"{slug}_neut"
     path.mkdir(parents=True, exist_ok=True)
-    array = captured["resid"].reshape(len(prompts), 5, contract["n_layers"], contract["d_model"])
-    np.save(path / "pairs_suf.npy", array)
+    shape = (len(prompts), 5, int(contract["n_layers"]), int(contract["d_model"]))
+    tensor_path = path / "pairs_suf.npy"
+    fingerprint = _fingerprint(model_name, tokenizer)
+    checkpoint_path = OUT / f"e3_pair_checkpoint_{slug}.pt"
+    if not tensor_path.exists() and checkpoint_path.exists():
+        checkpoint_path.unlink()
+    checkpoint = ConditionCheckpoint(checkpoint_path, fingerprint, every=1)
+    array = np.lib.format.open_memmap(tensor_path, mode="r+" if tensor_path.exists() else "w+",
+                                     dtype=np.float16, shape=shape)
+    for start in range(0, len(prompts), 64):
+        stop = min(len(prompts), start + 64)
+        key = f"pairs_{start}_{stop}"
+        if key in checkpoint:
+            continue
+        captured = capture_suffix_all_layers(model, tokenizer, contract, prompts[start:stop], batch_size=8)
+        array[start:stop] = captured["resid"]
+        array.flush()
+        checkpoint.put(key, {"rows": stop - start})
+        print(f"[E3:{slug}] captured pair rows {start}:{stop}/{len(prompts)}", flush=True)
+    checkpoint.flush()
+    if not np.isfinite(array).all():
+        raise RuntimeError("E3 synthetic pair features contain non-finite or incomplete values")
+    del array
+    array = np.load(tensor_path, mmap_mode="r")
     (path / "pairs_manifest.json").write_text(json.dumps(exploratory_payload({
         "model_name": model_name, "system_prompt_used": contract["system_prompt_used"],
-        "shape": list(array.shape), "dtype": str(array.dtype), "rows": meta}), indent=2) + "\n", encoding="utf-8")
+        "shape": list(array.shape), "dtype": str(array.dtype), "rows": meta,
+        "sha256": {"pairs_suf.npy": hashlib.sha256(tensor_path.read_bytes()).hexdigest()}}), indent=2) + "\n", encoding="utf-8")
 
 
 def _features(model, tokenizer, contract, model_name, slug):
     source = assert_not_fresh(CFG.data_dir / "exploratory" / f"popqa_neutral_{slug}.jsonl")
     rows = _read(source)
-    features = capture_suffix_all_layers(model, tokenizer, contract, [r["question"] for r in rows], batch_size=8)
-    answer = capture_answer_positions(model, tokenizer, contract, rows)
     path = OUT / "e3_features" / f"{slug}_neut"
     path.mkdir(parents=True, exist_ok=True)
-    np.save(path / "popqa_suf.npy", features["resid"])
-    np.savez(path / "popqa_confidence.npz", maxp=features["maxp"], entropy=features["entropy"],
-             abstention_set_log_odds=features["log_odds"], seq_logprob_mean=answer["seq_logprob_mean"],
-             greedy_consistent=answer["greedy_consistent"])
-    np.save(path / "popqa_ans.npy", answer["resid_ans"])
+    n, nl, d = len(rows), int(contract["n_layers"]), int(contract["d_model"])
+    suffix_path, answer_path = path / "popqa_suf.npy", path / "popqa_ans.npy"
+    suffix = np.lib.format.open_memmap(suffix_path, mode="r+" if suffix_path.exists() else "w+",
+                                       dtype=np.float16, shape=(n, 5, nl, d))
+    answer = np.lib.format.open_memmap(answer_path, mode="r+" if answer_path.exists() else "w+",
+                                       dtype=np.float16, shape=(n, 2, nl, d))
+    scalar_path = path / "popqa_confidence.npz"
+    if scalar_path.exists():
+        old = np.load(scalar_path)
+        scalar = {k: old[k].copy() for k in old.files}
+    else:
+        scalar = {k: np.full(n, np.nan, dtype=(bool if k == "greedy_consistent" else np.float32))
+                  for k in ("maxp", "entropy", "abstention_set_log_odds", "seq_logprob_mean", "greedy_consistent")}
+        scalar["n_answer_tokens"] = np.zeros(n, dtype=np.int32)
+    fingerprint = _fingerprint(model_name, tokenizer)
+    checkpoint_path = OUT / f"e3_feature_checkpoint_{slug}.pt"
+    if (not suffix_path.exists() or not answer_path.exists() or not scalar_path.exists()) and checkpoint_path.exists():
+        checkpoint_path.unlink()
+    checkpoint = ConditionCheckpoint(checkpoint_path, fingerprint, every=1)
+    for start in range(0, n, 100):
+        stop = min(n, start + 100)
+        key = f"features_{start}_{stop}"
+        if key in checkpoint:
+            continue
+        batch = rows[start:stop]
+        features = capture_suffix_all_layers(model, tokenizer, contract,
+                                             [r["question"] for r in batch], batch_size=8)
+        captured_answer = capture_answer_positions(model, tokenizer, contract, batch)
+        suffix[start:stop] = features["resid"]
+        answer[start:stop] = captured_answer["resid_ans"]
+        scalar["maxp"][start:stop] = features["maxp"]
+        scalar["entropy"][start:stop] = features["entropy"]
+        scalar["abstention_set_log_odds"][start:stop] = features["log_odds"]
+        scalar["seq_logprob_mean"][start:stop] = captured_answer["seq_logprob_mean"]
+        scalar["greedy_consistent"][start:stop] = captured_answer["greedy_consistent"]
+        scalar["n_answer_tokens"][start:stop] = captured_answer["n_answer_tokens"]
+        suffix.flush(); answer.flush()
+        np.savez(scalar_path, **scalar)
+        checkpoint.put(key, {"rows": stop - start})
+        print(f"[E3:{slug}] captured feature rows {start}:{stop}/{n}", flush=True)
+    checkpoint.flush()
+    if not np.isfinite(suffix).all():
+        raise RuntimeError("E3 PopQA feature tensors contain non-finite or incomplete values")
+    answer_valid = scalar["n_answer_tokens"] > 0
+    if answer_valid.any() and not np.isfinite(answer[answer_valid]).all():
+        raise RuntimeError("E3 teacher-forced answer features contain non-finite values")
+    if np.isnan(scalar["maxp"]).any() or np.isnan(scalar["seq_logprob_mean"][answer_valid]).any():
+        raise RuntimeError("E3 PopQA scalar features are incomplete")
+    pd = __import__("pandas")
+    pd.DataFrame(rows).to_parquet(path / "meta.parquet", index=False)
+    checksums = {name: hashlib.sha256((path / name).read_bytes()).hexdigest()
+                 for name in ("popqa_suf.npy", "popqa_confidence.npz", "popqa_ans.npy", "meta.parquet")}
     (path / "features_manifest.json").write_text(json.dumps(exploratory_payload({
         "model_name": model_name, "system_prompt_used": contract["system_prompt_used"],
-        "n_rows": len(rows), "suffix_shape": list(features["resid"].shape),
-        "answer_shape": list(answer["resid_ans"].shape),
-        "greedy_consistency_rate": float(np.mean(answer["greedy_consistent"]))}), indent=2) + "\n", encoding="utf-8")
+        "n_rows": len(rows), "row_order": [str(r["popqa_id"]) for r in rows],
+        "suffix_shape": [n, 5, nl, d], "answer_shape": [n, 2, nl, d],
+        "greedy_consistency_rate": float(np.mean(scalar["greedy_consistent"])),
+        "sha256": checksums}), indent=2) + "\n", encoding="utf-8")
+
+
+def _push_features(slug):
+    from src.exploratory.tensor_io import upload_folder
+    upload_folder(OUT / "e3_features" / f"{slug}_neut",
+                  path_in_repo=f"exploratory/e3_features/{slug}_neut",
+                  ignore_patterns=["*checkpoint*", "*.pt"])
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", required=True, choices=MODELS)
     parser.add_argument("--steps", default="pilot", help="comma-separated: pilot,popqa,pairs,features")
+    parser.add_argument("--push-hf", action="store_true", help="Upload feature tensors and manifests to the HF dataset repo")
     args = parser.parse_args()
     steps = [x.strip() for x in args.steps.split(",") if x.strip()]
     unknown = set(steps) - {"pilot", "popqa", "pairs", "features"}
@@ -218,8 +302,12 @@ def main():
             _popqa(model, tokenizer, contract, model_name, slug)
         elif step == "pairs":
             _pairs(model, tokenizer, contract, model_name, slug)
+            if args.push_hf:
+                _push_features(slug)
         elif step == "features":
             _features(model, tokenizer, contract, model_name, slug)
+            if args.push_hf:
+                _push_features(slug)
     return 0
 
 

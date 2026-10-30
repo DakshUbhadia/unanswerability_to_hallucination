@@ -36,6 +36,22 @@ _LOCAL_MODEL = None
 _LOCAL_TOKENIZER = None
 _LOCAL_SIGNATURE = None
 
+def release_local_judge() -> None:
+    """Release the cached local judge and its CUDA allocations between models."""
+    global _LOCAL_MODEL, _LOCAL_TOKENIZER, _LOCAL_SIGNATURE
+    model = _LOCAL_MODEL
+    _LOCAL_MODEL = _LOCAL_TOKENIZER = _LOCAL_SIGNATURE = None
+    if model is not None:
+        del model
+    try:
+        import gc
+        import torch
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    except ImportError:
+        pass
+
 def regex_label(response: str) -> str:
     clean = str(response).strip()
     return ABSTAIN if any(p.search(clean) for p in _REGEX_PATTERNS) else ANSWER

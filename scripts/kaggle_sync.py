@@ -11,6 +11,7 @@ from src.config import CONFIG
 
 
 STAGE_GIT_FILES = {
+    "judge": ["data/judge_cache.jsonl", "results/judge_pass_summary.json"],
     "5": ["results/stage5_selection.json", "tables/table2_sensitivity_grid.csv", "tables/table2_sensitivity_grid.md"],
     "6": ["results/stage6_test_h1_h2_h3.json", "results/stage6_generation_samples.jsonl",
           "tables/table1_main_results.csv", "tables/table1_main_results.md",
@@ -79,7 +80,21 @@ def push_git_artifacts(stage_label: str) -> None:
     )
     if status.stdout.strip():
         run_cmd(["git", "commit", "-m", f"Auto-save outputs after {stage_label}"])
-        run_cmd(["git", "push", "origin", "main"])
+        last_error = None
+        for attempt in range(3):
+            pull = subprocess.run(["git", "pull", "--rebase", "origin", "main"], cwd=CONFIG.root_dir)
+            if pull.returncode == 0:
+                push = subprocess.run(["git", "push", "origin", "main"], cwd=CONFIG.root_dir)
+                if push.returncode == 0:
+                    break
+                last_error = f"git push failed with status {push.returncode}"
+            else:
+                last_error = f"git pull --rebase failed with status {pull.returncode}"
+                subprocess.run(["git", "rebase", "--abort"], cwd=CONFIG.root_dir)
+            if attempt == 2:
+                raise RuntimeError(f"Could not push after three attempts: {last_error}")
+            import time
+            time.sleep(2 ** attempt)
     else:
         print("[Sync] No new Git changes to push.")
 
@@ -218,7 +233,11 @@ if __name__ == "__main__":
                         help="Commit and push only results/exploratory/features_manifest.json")
     parser.add_argument("--manifest-name", choices=("features_manifest.json", "features_manifest_neutral.json"),
                         default="features_manifest.json")
+    parser.add_argument("--legacy", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
+
+    if (args.exploratory_features or args.exploratory_manifest) and not args.legacy:
+        parser.error("--exploratory-* is superseded by e1_extract_features.py and e3/e4 --push-hf; pass --legacy to run")
 
     if args.exploratory_features:
         if not args.hf_repo:

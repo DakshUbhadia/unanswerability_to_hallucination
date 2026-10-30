@@ -4,6 +4,11 @@ import argparse
 import hashlib
 import json
 import sys
+if __name__ == "__main__":
+    if "--legacy" not in sys.argv:
+        print("superseded by scripts/exploratory/e1_extract_features.py; pass --legacy to run", file=sys.stderr)
+        raise SystemExit(2)
+    sys.argv.remove("--legacy")
 import time
 from pathlib import Path
 

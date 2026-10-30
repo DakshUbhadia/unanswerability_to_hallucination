@@ -117,7 +117,7 @@ def _write_report(e1, e2, e3, e3_human, e1_neutral_frozen, e1_neutral_direction,
     return path
 
 
-def main(argv=None):
+def _legacy_main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--results-dir", type=Path, default=CFG.results_dir / "exploratory")
     parser.add_argument("--output", type=Path, default=CFG.results_dir / "exploratory" / "REPORT.md")
@@ -134,6 +134,43 @@ def main(argv=None):
                            e1_neutral_direction, e2_neutral_frozen,
                            e2_neutral_direction, args.output)
     print(f"Wrote report to {output}")
+    return 0
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Build the canonical E1-E4 exploratory report.")
+    parser.add_argument("--results-dir", type=Path, default=CFG.results_dir / "exploratory")
+    parser.add_argument("--output", type=Path, default=CFG.results_dir / "exploratory" / "REPORT.md")
+    parser.add_argument("--legacy", action="store_true", help=argparse.SUPPRESS)
+    args = parser.parse_args(argv)
+    if args.legacy:
+        return _legacy_main(["--results-dir", str(args.results_dir), "--output", str(args.output)])
+    lines = ["# Exploratory analyses (post-registration)", "",
+             "These analyses do not replace or alter confirmatory Stage 9 results.", ""]
+    specs = (("E1 supervised probe", "e1_results.json"), ("E2 decomposition", "e2_results.json"),
+             ("E3 instruction ablation", "e3_results.json"), ("E4 transfer matrix", "e4_results.json"))
+    for title, filename in specs:
+        path = assert_not_fresh(args.results_dir / filename)
+        lines.extend([f"## {title}", ""])
+        if not path.exists():
+            lines.extend(["Pending required outputs.", ""])
+            continue
+        result = json.loads(path.read_text(encoding="utf-8"))
+        lines.extend([f"Source: [`{filename}`]({filename}).", ""])
+        if title.startswith("E3"):
+            for slug, condition in result.get("conditions", {}).items():
+                lines.append(f"- `{slug}`: {condition.get('verdict', condition.get('replication', 'pending'))}; "
+                             f"{condition.get('n_matched_pairs', 0)} matched pairs; provisional={condition.get('provisional', True)}.")
+            lines.append("")
+        elif title.startswith("E2"):
+            lines.append(f"Combined verdict: {result.get('combined_verdict', {}).get('verdict', 'pending')}.")
+            lines.append("")
+        else:
+            lines.extend(["See the JSON output for the complete analyses and uncertainty estimates.", ""])
+    output = assert_not_fresh(args.output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text("\n".join(lines), encoding="utf-8", newline="\n")
+    print(f"Wrote canonical report to {output}")
     return 0
 
 

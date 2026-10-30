@@ -17,6 +17,20 @@ def stage6_steer_kwargs(vectors, alpha):
     """Return the Stage 6 mode, raw learned_diff vector, layer and alpha convention."""
     return {"mode":"steer_layer","vec":vectors["learned_diff"],"target_layer":11,"alpha":float(alpha)}
 
+
+def verify_dom_vector(vector_path, results_path):
+    vector_path, results_path = Path(vector_path), Path(results_path)
+    if not vector_path.is_file():
+        raise FileNotFoundError(f"Missing PopQA geometry direction: {vector_path}")
+    if not results_path.is_file():
+        raise FileNotFoundError("Missing e2_results.json containing the Part G vector checksum")
+    results = json.loads(results_path.read_text(encoding="utf-8"))
+    expected = results.get("parts", {}).get("G", {}).get("dom_vector_sha256")
+    actual = hashlib.sha256(vector_path.read_bytes()).hexdigest()
+    if not expected or actual != expected:
+        raise ValueError(f"Part G DOM vector checksum mismatch: expected {expected}, got {actual}")
+    return actual
+
 def _run_one(model,batches,contract,base_logits,groups,name,vec,alpha,tokenizer):
     total=np.zeros(np.asarray(base_logits).shape[1],dtype=np.float64); total_n=0; kl_sum=0.; split_sums={}; offset=0
     for batch in batches:
@@ -44,7 +58,7 @@ def main(argv=None):
     ap=argparse.ArgumentParser(description=__doc__); ap.add_argument("--features-dir",type=Path,default=ROOT/"results/exploratory/e1_features"); ap.add_argument("--dom-vector",type=Path,required=True); ap.add_argument("--batch-size",type=int,default=16); ap.add_argument("--max-random",type=int,default=99); ap.add_argument("--output",type=Path,default=ROOT/"results/exploratory/e2_causal_vocab.json"); ap.add_argument("--mean-delta",type=Path,default=ROOT/"results/exploratory/e2_causal_vocab_meanDelta.npy"); ap.add_argument("--push-hf",action="store_true"); args=ap.parse_args(argv)
     assert_not_fresh(args.features_dir); assert_not_fresh(args.dom_vector); assert_not_fresh(args.output); require_tier1_complete(ROOT)
     if not 1<=args.max_random<=99: raise ValueError("--max-random must be 1..99")
-    if not args.dom_vector.exists(): raise FileNotFoundError(f"Missing PopQA geometry direction: {args.dom_vector}")
+    verify_dom_vector(args.dom_vector, ROOT/"results/exploratory/e2_results.json")
     cache=load_e1_cache(args.features_dir,dry_run=False); meta=cache["meta"]
     graded=meta[meta["is_popularity_matched"].astype(bool) & meta["matched_pair_id"].notna() & meta["baseline_partition"].isin(["wrong","correct"]) ]
     abstain=meta[meta["baseline_partition"]=="abstain"]

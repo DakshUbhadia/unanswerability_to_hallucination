@@ -16,6 +16,18 @@ def sha256(path):
     return digest.hexdigest()
 
 
+def manifest_bytes(path):
+    """Return stable LF bytes for UTF-8 text, raw bytes for binary files."""
+    raw = Path(path).read_bytes()
+    if b"\0" in raw:
+        return raw
+    try:
+        raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return raw
+    return raw.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+
+
 def build(root, name, files):
     root = Path(root).resolve()
     if not name or Path(name).name != name:
@@ -44,8 +56,10 @@ def build(root, name, files):
         rel = source.relative_to(root)
         target = archive / rel
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(source.read_bytes())
-        manifest_files[rel.as_posix()] = {"sha256": sha256(target), "size_bytes": target.stat().st_size}
+        stable = manifest_bytes(source)
+        target.write_bytes(stable)
+        manifest_files[rel.as_posix()] = {"sha256": hashlib.sha256(stable).hexdigest(),
+                                          "size_bytes": len(stable)}
     commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root, check=True,
                             capture_output=True, text=True).stdout.strip()
     manifest = {"source_git_commit": commit, "files": manifest_files}

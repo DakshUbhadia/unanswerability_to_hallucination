@@ -2,12 +2,17 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import numpy as np
 
 from src.config import CFG
 from src.exploratory import assert_not_fresh
+
+if __name__ == "__main__" and "--legacy" not in sys.argv:
+    print("superseded by src/exploratory/e4_transfer.py; pass --legacy to run", file=sys.stderr)
+    raise SystemExit(2)
 
 ROOT = Path(__file__).resolve().parents[2]
 FEATURES_DIR = ROOT / "features"
