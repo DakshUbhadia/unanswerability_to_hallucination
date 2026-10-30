@@ -11,8 +11,8 @@
   },
   "n_raw": 2488,
   "n_unique_available": 1585,
-  "n_unique_scored": 1500,
-  "n_unique_question_response": 1500,
+  "n_unique_scored": 1585,
+  "n_unique_question_response": 1585,
   "deduplicated": 903,
   "margin_summary_by_condition": {
     "baseline": {
@@ -81,31 +81,31 @@
       "low_margin_lt_1_nat": 0
     },
     "test_ans_steer_pos2_learned": {
-      "unique_items": 77,
-      "scored_items": 77,
+      "unique_items": 96,
+      "scored_items": 96,
       "low_margin_lt_1_nat": 0
     },
     "test_ans_steer_pos1_concept": {
-      "unique_items": 78,
-      "scored_items": 78,
-      "low_margin_lt_1_nat": 0
+      "unique_items": 96,
+      "scored_items": 96,
+      "low_margin_lt_1_nat": 1
     },
     "test_ans_ablate_learned": {
-      "unique_items": 92,
-      "scored_items": 92,
+      "unique_items": 96,
+      "scored_items": 96,
       "low_margin_lt_1_nat": 1
     },
     "b_ctrl_baseline": {
-      "unique_items": 0,
-      "scored_items": 0,
+      "unique_items": 48,
+      "scored_items": 48,
       "low_margin_lt_1_nat": 0
     }
   },
   "judge_cache_path": "/kaggle/working/repo/data/judge_cache.jsonl",
-  "judge_cache_sha256": "f5abc6864de58e918ee0a22ee9b608bed2ead1805ebbff6b1e1c9ce5c110defa",
+  "judge_cache_sha256": "38fa52cd89693be8f3510d4d815aaf41dcc45689fca0f06e4db793075c6c0c09",
   "batch_size_items": 1,
-  "elapsed_seconds": 411.1636148310008,
-  "items_per_second": 3.6481827151777853,
+  "elapsed_seconds": 88.55909943799998,
+  "items_per_second": 17.897652352058092,
   "torch": "2.11.0+cu128",
   "transformers": "4.46.3",
   "bitsandbytes": "0.46.1",
