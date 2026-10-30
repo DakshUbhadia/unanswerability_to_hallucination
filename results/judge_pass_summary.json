@@ -1,0 +1,124 @@
+{
+  "backend": "local",
+  "model_id": "Qwen/Qwen2.5-7B-Instruct",
+  "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+  "quantization": "nf4",
+  "prompt_version": "v1",
+  "prompt_sha256": "30c650eaa05882dc30a02ad76ce9b3d20d49c3e079d97bbc78c1f85900a5b9f2",
+  "raw_counts_by_file": {
+    "/kaggle/working/repo/data/popqa_sample.jsonl": 1000,
+    "/kaggle/working/repo/results/stage6_generation_samples.jsonl": 1488
+  },
+  "n_raw": 2488,
+  "n_unique_available": 1585,
+  "n_unique_scored": 500,
+  "n_unique_question_response": 500,
+  "deduplicated": 903,
+  "margin_summary_by_condition": {
+    "baseline": {
+      "unique_items": 500,
+      "scored_items": 500,
+      "low_margin_lt_1_nat": 14
+    },
+    "test_unans_baseline": {
+      "unique_items": 0,
+      "scored_items": 0,
+      "low_margin_lt_1_nat": 0
+    },
+    "test_unans_ablate_learned": {
+      "unique_items": 0,
+      "scored_items": 0,
+      "low_margin_lt_1_nat": 0
+    },
+    "test_unans_steer_neg0p5_learned": {
+      "unique_items": 0,
+      "scored_items": 0,
+      "low_margin_lt_1_nat": 0
+    },
+    "test_unans_steer_neg1_learned": {
+      "unique_items": 0,
+      "scored_items": 0,
+      "low_margin_lt_1_nat": 0
+    },
+    "test_unans_steer_neg1p5_learned": {
+      "unique_items": 0,
+      "scored_items": 0,
+      "low_margin_lt_1_nat": 0
+    },
+    "test_unans_steer_neg2_learned": {
+      "unique_items": 0,
+      "scored_items": 0,
+      "low_margin_lt_1_nat": 0
+    },
+    "test_unans_ablate_concept": {
+      "unique_items": 0,
+      "scored_items": 0,
+      "low_margin_lt_1_nat": 0
+    },
+    "test_unans_steer_neg1_concept": {
+      "unique_items": 0,
+      "scored_items": 0,
+      "low_margin_lt_1_nat": 0
+    },
+    "test_ans_baseline": {
+      "unique_items": 0,
+      "scored_items": 0,
+      "low_margin_lt_1_nat": 0
+    },
+    "test_ans_steer_pos0p5_learned": {
+      "unique_items": 0,
+      "scored_items": 0,
+      "low_margin_lt_1_nat": 0
+    },
+    "test_ans_steer_pos1_learned": {
+      "unique_items": 0,
+      "scored_items": 0,
+      "low_margin_lt_1_nat": 0
+    },
+    "test_ans_steer_pos1p5_learned": {
+      "unique_items": 0,
+      "scored_items": 0,
+      "low_margin_lt_1_nat": 0
+    },
+    "test_ans_steer_pos2_learned": {
+      "unique_items": 0,
+      "scored_items": 0,
+      "low_margin_lt_1_nat": 0
+    },
+    "test_ans_steer_pos1_concept": {
+      "unique_items": 0,
+      "scored_items": 0,
+      "low_margin_lt_1_nat": 0
+    },
+    "test_ans_ablate_learned": {
+      "unique_items": 0,
+      "scored_items": 0,
+      "low_margin_lt_1_nat": 0
+    },
+    "b_ctrl_baseline": {
+      "unique_items": 0,
+      "scored_items": 0,
+      "low_margin_lt_1_nat": 0
+    }
+  },
+  "judge_cache_path": "/kaggle/working/repo/data/judge_cache.jsonl",
+  "judge_cache_sha256": "e7e696acea560787fcda50fa21d12ac263e256996281c40c6a44cc47354a765a",
+  "batch_size_items": 1,
+  "elapsed_seconds": 380.59097612299956,
+  "items_per_second": 1.3137463285901623,
+  "torch": "2.11.0+cu128",
+  "transformers": "4.46.3",
+  "bitsandbytes": "0.46.1",
+  "cuda": {
+    "available": true,
+    "device_count": 1
+  },
+  "quantizations_in_cache": [
+    "nf4"
+  ],
+  "cuda_visible_devices": "0",
+  "n_answer_then_unknown": 2,
+  "answer_then_unknown_judge_label_distribution": {
+    "ABSTAIN": 2
+  }
+}
