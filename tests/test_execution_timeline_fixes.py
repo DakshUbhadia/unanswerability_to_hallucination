@@ -7,6 +7,38 @@ import types
 import pytest
 
 
+def test_kaggle_runner_binds_each_stage_to_one_canonical_entrypoint():
+    runner = open("scripts/kaggle_run.sh", encoding="utf-8").read()
+    expected = {
+        0: "stage0_env_check.py",
+        1: "stage1_build_dataset.py",
+        2: "stage2_pilot_gate.py",
+        3: "stage3_cache_activations.py",
+        4: "stage4_extract_directions.py",
+        5: "stage5_select_coordinate.py",
+        6: "stage6_test_evaluation.py",
+        7: "stage7_capability_eval.py",
+        8: "stage8_popqa_uncertainty.py",
+        9: "stage9_generate_figures_and_tables.py",
+        10: "stage10_popqa_steering.py",
+    }
+    for stage, filename in expected.items():
+        assert f"{stage}) echo scripts/{filename}" in runner
+    assert 'matches=(scripts/stage"${stage}"_*.py)' not in runner
+
+
+def test_kaggle_runner_fails_closed_when_stage_verification_fails():
+    runner = open("scripts/kaggle_run.sh", encoding="utf-8").read()
+    assert "artifact check failed" not in runner
+    assert 'pytest -q -p no:warnings "tests/test_stage${stage}.py" -m integration' in runner
+
+
+def test_kaggle_runner_numbered_judge_dependent_stages_are_explicitly_offline():
+    runner = open("scripts/kaggle_run.sh", encoding="utf-8").read()
+    assert '[[ "$stage" == 6 && "${STAGE6_GENERATION_ONLY:-0}" != 1 ]]' in runner
+    assert '[[ "$stage" == 10 && "${STAGE10_GENERATION_ONLY:-0}" != 1' in runner
+
+
 @pytest.mark.parametrize("archive_name, verifier", [
     ("archive_v42", "scripts.verify_archive_v42"),
     ("archive_v43", "scripts.verify_archive_v43"),

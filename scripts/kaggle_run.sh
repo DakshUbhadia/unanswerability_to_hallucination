@@ -25,6 +25,26 @@ done
 ((${#stages[@]})) || { echo "Usage: bash scripts/kaggle_run.sh <stage|a-b|all> ..." >&2; exit 2; }
 echo "[kaggle_run] stages: ${stages[*]}"
 
+# Keep numbered stages bound to their canonical entrypoints.  A glob such as
+# scripts/stage6_*.py also matches repair/rescore utilities, which have different
+# prerequisites and must only run through their explicit owner-facing commands.
+stage_script() {
+  case "$1" in
+    0) echo scripts/stage0_env_check.py ;;
+    1) echo scripts/stage1_build_dataset.py ;;
+    2) echo scripts/stage2_pilot_gate.py ;;
+    3) echo scripts/stage3_cache_activations.py ;;
+    4) echo scripts/stage4_extract_directions.py ;;
+    5) echo scripts/stage5_select_coordinate.py ;;
+    6) echo scripts/stage6_test_evaluation.py ;;
+    7) echo scripts/stage7_capability_eval.py ;;
+    8) echo scripts/stage8_popqa_uncertainty.py ;;
+    9) echo scripts/stage9_generate_figures_and_tables.py ;;
+    10) echo scripts/stage10_popqa_steering.py ;;
+    *) return 1 ;;
+  esac
+}
+
 tensor_stage_requested=0
 for stage in "${stages[@]}"; do
   case "$stage" in 3|4|5|6|7|8|10|stage10gen) tensor_stage_requested=1 ;; esac
@@ -63,8 +83,8 @@ for stage in "${stages[@]}"; do
     STAGE10_GENERATION_ONLY=1 python -u scripts/stage10_popqa_steering.py --generation-only
     continue
   fi
-  matches=(scripts/stage"${stage}"_*.py)
-  ((${#matches[@]})) || { echo "No script for stage $stage" >&2; exit 2; }
+  script="$(stage_script "$stage")" || { echo "Unknown stage $stage" >&2; exit 2; }
+  [[ -f "$script" ]] || { echo "Missing canonical script for stage $stage: $script" >&2; exit 2; }
   if [[ "$stage" =~ ^[0-9]+$ ]] && (( stage > 2 )); then
     [[ -f results/stage2_pilot.json ]] || { echo "Missing results/stage2_pilot.json; run Stage 2 first." >&2; exit 2; }
     locked_model="$(python -c 'from src.stage_contract import resolve_downstream_model_name; print(resolve_downstream_model_name())')"
@@ -72,23 +92,25 @@ for stage in "${stages[@]}"; do
     export STAGE2_MODEL_NAME="$locked_model"
   fi
   echo "================ Stage $stage ================"
-  for script in "${matches[@]}"; do
-    args=()
-    help="$(python "$script" --help 2>&1)"
-    [[ "$help" == *--allow-kaggle-env* ]] && args+=(--allow-kaggle-env)
-    [[ "${FORCE:-0}" == 1 && "$help" == *--force* ]] && args+=(--force)
-    if [[ "$stage" =~ ^[0-9]+$ ]] && (( stage > 2 )) && [[ "$help" == *--model-name* ]]; then
-      args+=(--model-name "$STAGE2_MODEL_NAME")
-    fi
-    if [[ "$stage" == 7 && "${SKIP_MMLU:-0}" == 1 ]]; then args+=(--skip-mmlu); fi
-    if [[ "$stage" == 2 && "${STAGE2_POPQA_REGENERATE:-0}" == 1 ]]; then args+=(--regenerate-popqa-canonical); fi
-    if [[ "$stage" == 2 && "${STAGE2_POPQA_REGRADE:-0}" == 1 ]]; then args+=(--regrade-saved-popqa-only --offline); fi
-    if [[ "$stage" == 2 && "${STAGE2_POPQA_REMATCH:-0}" == 1 ]]; then args+=(--rematch-only --offline); fi
-    if [[ "$stage" == 6 && "${STAGE6_GENERATION_ONLY:-0}" == 1 ]]; then args+=(--generation-only); fi
-    if [[ "$stage" == 10 && "${STAGE10_GENERATION_ONLY:-0}" == 1 ]]; then args+=(--generation-only); fi
-    if [[ "$stage" == 10 && "${STAGE10_ANALYZE_ONLY:-0}" == 1 ]]; then args+=(--analyze-only --offline); fi
-    python -u "$script" "${args[@]}"
-  done
+  args=()
+  help="$(python "$script" --help 2>&1)"
+  [[ "$help" == *--allow-kaggle-env* ]] && args+=(--allow-kaggle-env)
+  [[ "${FORCE:-0}" == 1 && "$help" == *--force* ]] && args+=(--force)
+  if [[ "$stage" =~ ^[0-9]+$ ]] && (( stage > 2 )) && [[ "$help" == *--model-name* ]]; then
+    args+=(--model-name "$STAGE2_MODEL_NAME")
+  fi
+  if [[ "$stage" == 7 && "${SKIP_MMLU:-0}" == 1 ]]; then args+=(--skip-mmlu); fi
+  if [[ "$stage" == 2 && "${STAGE2_POPQA_REGENERATE:-0}" == 1 ]]; then args+=(--regenerate-popqa-canonical); fi
+  if [[ "$stage" == 2 && "${STAGE2_POPQA_REGRADE:-0}" == 1 ]]; then args+=(--regrade-saved-popqa-only --offline); fi
+  if [[ "$stage" == 2 && "${STAGE2_POPQA_REMATCH:-0}" == 1 ]]; then args+=(--rematch-only --offline); fi
+  if [[ "$stage" == 6 && "${STAGE6_GENERATION_ONLY:-0}" == 1 ]]; then args+=(--generation-only); fi
+  if [[ "$stage" == 6 && "${STAGE6_GENERATION_ONLY:-0}" != 1 ]]; then args+=(--offline); fi
+  if [[ "$stage" == 10 && "${STAGE10_GENERATION_ONLY:-0}" == 1 ]]; then args+=(--generation-only); fi
+  if [[ "$stage" == 10 && "${STAGE10_ANALYZE_ONLY:-0}" == 1 ]]; then args+=(--analyze-only --offline); fi
+  if [[ "$stage" == 10 && "${STAGE10_GENERATION_ONLY:-0}" != 1 && "${STAGE10_ANALYZE_ONLY:-0}" != 1 ]]; then
+    args+=(--offline)
+  fi
+  python -u "$script" "${args[@]}"
   if [[ "$stage" == 2 ]]; then
     python scripts/measure_stage2_tokenizer_parity.py
   fi
@@ -99,8 +121,8 @@ for stage in "${stages[@]}"; do
   [[ "$stage" == 6 && "${STAGE6_GENERATION_ONLY:-0}" == 1 ]] && skip_artifact_tests=1
   [[ "$stage" == 10 && "${STAGE10_GENERATION_ONLY:-0}" == 1 ]] && skip_artifact_tests=1
   if [[ "$stage" =~ ^[0-9]+$ ]] && (( stage >= 5 )) && (( ! skip_artifact_tests )); then
-    pytest -q -p no:warnings "tests/test_stage${stage}.py" -m "not integration" || echo "[kaggle_run] WARNING: Stage $stage unit tests failed" >&2
-    pytest -q -p no:warnings "tests/test_stage${stage}.py" -m integration || echo "[kaggle_run] WARNING: Stage $stage artifact check failed" >&2
+    pytest -q -p no:warnings "tests/test_stage${stage}.py" -m "not integration"
+    pytest -q -p no:warnings "tests/test_stage${stage}.py" -m integration
     python scripts/kaggle_sync.py --action push --stage "$stage"
   fi
 done
