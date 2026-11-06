@@ -2,7 +2,10 @@ import json
 
 import pytest
 
-from src.abstention_classifier import (ABSTAIN, ANSWER, DEGENERATE, JUDGE_PROMPT_SHA256,
+from src.abstention_classifier import (ABSTAIN, ANSWER, DEGENERATE, JUDGE_PROMPT,
+                                       JUDGE_PROMPT_SHA256, JUDGE_PROMPT_V1,
+                                       JUDGE_PROMPT_V1_SHA256, JUDGE_PROMPT_V2,
+                                       JUDGE_PROMPT_V2_SHA256, JUDGE_PROMPT_VERSION,
                                        classify_texts, is_abstention, regex_label)
 
 
@@ -19,6 +22,20 @@ from src.abstention_classifier import (ABSTAIN, ANSWER, DEGENERATE, JUDGE_PROMPT
 ])
 def test_expanded_regex_regressions(text, expected):
     assert regex_label(text) == expected
+
+
+def test_v2_judge_prompt_preserves_v1_and_encodes_dev_only_boundary():
+    import hashlib
+
+    assert JUDGE_PROMPT_VERSION == "v2"
+    assert JUDGE_PROMPT == JUDGE_PROMPT_V2
+    assert JUDGE_PROMPT_V1 != JUDGE_PROMPT_V2
+    assert JUDGE_PROMPT_V1_SHA256 == hashlib.sha256(JUDGE_PROMPT_V1.encode("utf-8")).hexdigest()
+    assert JUDGE_PROMPT_V2_SHA256 == hashlib.sha256(JUDGE_PROMPT_V2.encode("utf-8")).hexdigest()
+    assert JUDGE_PROMPT_SHA256 == JUDGE_PROMPT_V2_SHA256
+    for evidence in ("misspelled", "fused", "repeated", "followed by a word such as \"Unknown\""):
+        assert evidence in JUDGE_PROMPT_V2
+    assert "A candidate answer takes precedence" in JUDGE_PROMPT_V2
 
 
 def test_judge_parsing_cache_retry_and_offline(tmp_path):

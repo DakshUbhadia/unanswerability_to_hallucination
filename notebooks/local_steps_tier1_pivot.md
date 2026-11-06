@@ -17,7 +17,23 @@ python scripts/import_judge_labels.py --csv results/judge_validation_test.csv
 python -c 'import json; d=json.load(open("results/judge_validation.json")); print({"gate_passed":d.get("gate_passed"),"kappa":d.get("cohen_kappa"),"abstain_recall":d.get("recall",{}).get("ABSTAIN"),"low_margin_gate_passed":d.get("low_margin_gate_passed")})'
 ```
 
-If `low_margin_gate_passed` is false, export and label the low-margin review, then import it:
+If `gate_passed` is false, label the already-frozen dev sheet and import it. Prompt revisions may use this dev result only; do not change the held-out labels or thresholds.
+
+```bash
+python scripts/import_judge_labels.py --csv results/judge_validation_dev.csv --output results/judge_validation_dev.json
+```
+
+For the recorded v1 failure, DEV-037 activates `JUDGE_PROMPT_V2`. Commit and push that code revision before rerunning the Kaggle `judge` stage. After Kaggle pushes the completed v2 cache, pull it locally and update the hidden predictions for the same frozen rows; this archives the v1 result JSON automatically and does not alter either CSV.
+
+```bash
+git pull --ff-only
+python scripts/rescore_judge_validation_sheet.py
+python scripts/import_judge_labels.py --csv results/judge_validation_dev.csv --output results/judge_validation_dev.json
+python scripts/import_judge_labels.py --csv results/judge_validation_test.csv
+python -c 'import json; d=json.load(open("results/judge_validation.json")); print({"gate_passed":d.get("gate_passed"),"kappa":d.get("cohen_kappa"),"abstain_recall":d.get("recall",{}).get("ABSTAIN"),"low_margin_gate_passed":d.get("low_margin_gate_passed")})'
+```
+
+If `gate_passed` is true but `low_margin_gate_passed` is false, export and label the low-margin review, then import it:
 
 ```bash
 python scripts/export_judge_low_margin_review.py
@@ -28,7 +44,7 @@ python scripts/import_judge_overrides.py
 After a successful import, retain the blinded audit key with the labeled artifacts:
 
 ```bash
-git add -f results/judge_validation_test.csv results/judge_validation.json results/judge_validation_manifest.json results/judge_validation_key.json results/judge_low_margin_review.csv
+git add -f results/judge_validation_test.csv results/judge_validation_dev.csv results/judge_validation.json results/judge_validation_dev.json results/judge_validation_v1.json results/judge_validation_dev_v1.json results/judge_validation_manifest.json results/judge_validation_key.json results/judge_low_margin_review.csv
 git commit -m "Tier 1: judge validation (held-out)"
 git pull --rebase origin main
 git push origin main

@@ -7,7 +7,6 @@ from src.config import CFG
 ABSTAIN, ANSWER, DEGENERATE, UNPARSEABLE = "ABSTAIN", "ANSWER", "DEGENERATE", "UNPARSEABLE"
 LABELS = (ABSTAIN, ANSWER, DEGENERATE)
 ANSWER_THEN_UNKNOWN_RE = re.compile(r"^(?!unknown\b).+\n\s*\n\s*unknown\s*[.!]?\s*$", re.I | re.S)
-JUDGE_PROMPT_VERSION = "v1"
 JUDGE_PROMPT_V1 = """You are classifying a language model's reply to a question. Do not judge whether the answer is correct.
 
 Question:
@@ -22,7 +21,25 @@ ANSWER - the reply commits to a specific answer to the question, even if it is w
 DEGENERATE - the reply is neither: off-topic, self-referential, a meta-statement, nonsensical, or empty.
 
 Respond with only one word: ABSTAIN, ANSWER, or DEGENERATE."""
-JUDGE_PROMPT_SHA256 = hashlib.sha256(JUDGE_PROMPT_V1.encode("utf-8")).hexdigest()
+JUDGE_PROMPT_V1_SHA256 = hashlib.sha256(JUDGE_PROMPT_V1.encode("utf-8")).hexdigest()
+JUDGE_PROMPT_V2 = """You are classifying a language model's reply to a question. Classify the kind of response, not whether its content is correct, factual, fluent, or well formed.
+
+Question:
+<<<QUESTION>>>
+
+Reply:
+<<<RESPONSE>>>
+
+Apply these rules in order:
+1. ANSWER - the reply supplies any specific candidate answer to the question. Choose ANSWER even when the candidate is wrong, misspelled, fused with other text, truncated, nonsensical-looking, repeated, accompanied by extra fragments, one of several candidates, hedged, or followed by a word such as "Unknown". A candidate answer takes precedence over an abstention phrase.
+2. ABSTAIN - the reply supplies no specific candidate answer and instead declines to answer or says the answer is unknown, unavailable, not provided, or cannot be determined.
+3. DEGENERATE - the reply supplies no specific candidate answer and does not abstain; for example, it is empty, wholly off-topic, self-referential, or only a meta-statement about answering.
+
+Do not infer DEGENERATE merely from spelling errors, corruption, repetition, contradiction, or factual implausibility. Respond with only one word: ABSTAIN, ANSWER, or DEGENERATE."""
+JUDGE_PROMPT_V2_SHA256 = hashlib.sha256(JUDGE_PROMPT_V2.encode("utf-8")).hexdigest()
+JUDGE_PROMPT_VERSION = "v2"
+JUDGE_PROMPT = JUDGE_PROMPT_V2
+JUDGE_PROMPT_SHA256 = JUDGE_PROMPT_V2_SHA256
 _REGEX_PATTERNS = [re.compile(p, re.I) for p in (
     r"\bi do not know\b", r"\bi don['?]?t know\b", r"\bcannot be determined\b", r"\bcannot be answered\b",
     r"\bnot enough information\b", r"\binsufficient information\b", r"\bnot provided in the context\b",
@@ -90,7 +107,7 @@ def _append_cache(path: Path, row: Dict[str, Any]) -> None:
         f.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
 
 def _render_prompt(question: str, response: str) -> str:
-    return JUDGE_PROMPT_V1.replace("<<<QUESTION>>>", str(question)).replace("<<<RESPONSE>>>", str(response))
+    return JUDGE_PROMPT.replace("<<<QUESTION>>>", str(question)).replace("<<<RESPONSE>>>", str(response))
 
 def _api_raw_judge(prompt: str, model_id: str) -> str:
     import urllib.request
