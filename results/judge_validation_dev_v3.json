@@ -1,0 +1,59 @@
+{
+  "split": "dev",
+  "n": 100,
+  "labels": [
+    "ANSWER",
+    "ABSTAIN",
+    "DEGENERATE"
+  ],
+  "judge_model_id": "Qwen/Qwen2.5-7B-Instruct",
+  "judge_model_revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+  "judge_prompt_version": "v3",
+  "judge_prompt_sha256": "09484587c7f1d18271e0d0b64434419be74f89fd22b342386087839a50c893a1",
+  "cohen_kappa": 0.0,
+  "kappa_bootstrap_ci": [
+    0.0,
+    0.0
+  ],
+  "precision": {
+    "ANSWER": 1.0,
+    "ABSTAIN": 0.0,
+    "DEGENERATE": 0.0
+  },
+  "recall": {
+    "ANSWER": 0.45,
+    "ABSTAIN": 0.0,
+    "DEGENERATE": 0.0
+  },
+  "confusion_matrix_rows_human_cols_judge": [
+    [
+      45,
+      47,
+      8
+    ],
+    [
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0
+    ]
+  ],
+  "regex_human_agreement": 1.0,
+  "margin_threshold_nat": 1.0,
+  "low_margin": {
+    "n": 36,
+    "cohen_kappa": 0.0,
+    "abstain_recall": 0.0
+  },
+  "high_margin": {
+    "n": 64,
+    "cohen_kappa": 0.0,
+    "abstain_recall": 0.0
+  },
+  "gate_passed": false,
+  "low_margin_gate_passed": false
+}

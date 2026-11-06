@@ -55,5 +55,21 @@
     "abstain_recall": 1.0
   },
   "gate_passed": false,
-  "low_margin_gate_passed": false
+  "low_margin_gate_passed": false,
+  "validation_status": "failed_after_max_prompt_versions",
+  "generation_rate_claims": "provisional",
+  "judge_dependent_stages_blocked": true,
+  "attempted_prompt_versions": [
+    "v1",
+    "v2",
+    "v3"
+  ],
+  "retained_best_prompt_version": "v2",
+  "held_out_kappa_by_version": {
+    "v1": 0.71082788904359,
+    "v2": 0.8025124801141039,
+    "v3": 0.7572413793103449
+  },
+  "registered_kappa_threshold": 0.9,
+  "stop_reason": "No prompt version passed the frozen held-out kappa gate within the registered three-version limit."
 }

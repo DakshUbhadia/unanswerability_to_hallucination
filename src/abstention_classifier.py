@@ -62,9 +62,12 @@ Question: Who directed it? Reply: I can confirm that the answer exists. Label: D
 
 Respond with only one word: ABSTAIN, ANSWER, or DEGENERATE."""
 JUDGE_PROMPT_V3_SHA256 = hashlib.sha256(JUDGE_PROMPT_V3.encode("utf-8")).hexdigest()
-JUDGE_PROMPT_VERSION = "v3"
-JUDGE_PROMPT = JUDGE_PROMPT_V3
-JUDGE_PROMPT_SHA256 = JUDGE_PROMPT_V3_SHA256
+# All three registered attempts failed the frozen held-out gate.  V2 had the
+# highest held-out kappa and is retained without another tuning or GPU pass.
+JUDGE_PROMPT_ATTEMPTED_VERSIONS = ("v1", "v2", "v3")
+JUDGE_PROMPT_VERSION = "v2"
+JUDGE_PROMPT = JUDGE_PROMPT_V2
+JUDGE_PROMPT_SHA256 = JUDGE_PROMPT_V2_SHA256
 _REGEX_PATTERNS = [re.compile(p, re.I) for p in (
     r"\bi do not know\b", r"\bi don['?]?t know\b", r"\bcannot be determined\b", r"\bcannot be answered\b",
     r"\bnot enough information\b", r"\binsufficient information\b", r"\bnot provided in the context\b",

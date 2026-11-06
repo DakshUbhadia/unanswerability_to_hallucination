@@ -17,6 +17,8 @@ python scripts/import_judge_labels.py --csv results/judge_validation_test.csv
 python -c 'import json; d=json.load(open("results/judge_validation.json")); print({"gate_passed":d.get("gate_passed"),"kappa":d.get("cohen_kappa"),"abstain_recall":d.get("recall",{}).get("ABSTAIN"),"low_margin_gate_passed":d.get("low_margin_gate_passed")})'
 ```
 
+The frozen gate failed for all three registered versions. DEV-056 retains v2 as the best version and marks generation-rate claims provisional. Do not create v4, change thresholds, run the low-margin override path, or continue to L2; judge-dependent stages remain fail-closed pending an explicit owner decision.
+
 If `gate_passed` is false, label the already-frozen dev sheet and import it. Prompt revisions may use this dev result only; do not change the held-out labels or thresholds.
 
 ```bash
@@ -44,7 +46,7 @@ python scripts/import_judge_overrides.py
 After a successful import, retain the blinded audit key with the labeled artifacts:
 
 ```bash
-git add -f results/judge_validation_test.csv results/judge_validation_dev.csv results/judge_validation.json results/judge_validation_dev.json results/judge_validation_v1.json results/judge_validation_dev_v1.json results/judge_validation_manifest.json results/judge_validation_key.json results/judge_low_margin_review.csv
+git add -f results/judge_validation_test.csv results/judge_validation_dev.csv results/judge_validation.json results/judge_validation_dev.json results/judge_validation_v1.json results/judge_validation_dev_v1.json results/judge_validation_v2.json results/judge_validation_dev_v2.json results/judge_validation_v3.json results/judge_validation_dev_v3.json results/judge_validation_manifest.json results/judge_validation_key.json
 git commit -m "Tier 1: judge validation (held-out)"
 git pull --rebase origin main
 git push origin main

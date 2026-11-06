@@ -49,12 +49,14 @@ def update_readme(readme_path=CFG.readme_path, results_dir=CFG.results_dir):
     recall = judge.get("recall", {}).get("ABSTAIN")
     resolution_count = sum(ambiguous.get("human_ambiguous_resolutions", {}).values())
     sensitivity_pairs = ambiguous.get("n_pairs", 0)
+    judge_status = ("passed" if judge.get("gate_passed") is True else
+                    "failed after the registered prompt revisions; generation-rate claims are provisional")
 
     summary_lines = [
         "## Summary of findings",
         "",
         f"- **Corrected post-hoc results (Addendum B; not confirmatory):** on {current.get('n_matched_per_group', current.get('n_matched', 'the rematched'))} matched pairs, H4 projection AUROC is {corrected_h4} and H5 max-probability AUROC is {corrected_h5}. The archived v4 values were H4 {v4_h4} and H5 {v4_h5}.",
-        f"- **Open measurement issues (Tier 1 correction):** judge held-out κ={judge['cohen_kappa']:.3f}, ABSTAIN recall={recall:.3f}, low-margin gate={judge.get('low_margin_gate_passed')}; grader correct precision={grader['precision_correct']:.3f}, recall={grader['recall_correct']:.3f}; judge quantization={quant}; ambiguous sensitivity used {resolution_count} available human resolutions across {sensitivity_pairs} prior matched pairs and does not replace the primary analysis.",
+        f"- **Open measurement issues (Tier 1 correction):** judge held-out κ={judge['cohen_kappa']:.3f}, ABSTAIN recall={recall:.3f}, status={judge_status}, low-margin gate={judge.get('low_margin_gate_passed')}; grader correct precision={grader['precision_correct']:.3f}, recall={grader['recall_correct']:.3f}; judge quantization={quant}; ambiguous sensitivity used {resolution_count} available human resolutions across {sensitivity_pairs} prior matched pairs and does not replace the primary analysis.",
         f"- **Stage 10:** {stage10_status}.",
         "",
         "## Status",

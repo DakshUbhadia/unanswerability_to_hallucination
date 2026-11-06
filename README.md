@@ -12,7 +12,8 @@ The frozen research protocol is in [documentation.md](documentation.md). Impleme
 - **Verdict:** Neither hypothesis is supported. H1–H3 (causal necessity, sufficiency, private-detail control) pass but are prerequisites that both hypotheses predict. Of the two discriminating tests, H4 points toward internal uncertainty and H5 points toward an input-property detector. Earlier versions of this README reported Hypothesis B; that verdict came from an aggregation rule that ignored H5 (DEV-013).
 - **Specificity:** The learned direction ranks 1/100 against random directions on H4 but only 4/20 against label-shuffled directions; the shuffled null is not valid for this design (DEV-014).
 - **Selective abstention:** Steering does not make abstention more selective. Learned steering is dominated by max-probability thresholding at every comparable coverage, and the orthogonal concept control achieves a higher selective-abstention gain than the learned direction.
-- **Open measurement issues (Tier 1, not yet fixed):** PopQA correctness labels were produced under a different tokenization than the Stage 8 features (DEV-007, DEV-012), which likely inflates H4; the abstention regex misses phrasings such as 'There is no information available…', which affects α ≥ 1.5 steering results.
+- **Judge validation failed; generation-rate claims are provisional:** the three frozen held-out attempts achieved κ=0.711 (v1), 0.803 (v2), and 0.757 (v3), all below the registered κ≥0.90 gate. V2 is retained as the best version, but judge-dependent stages remain fail-closed and every generated abstention-rate claim must be treated as provisional (DEV-056).
+- **Open measurement issues (Tier 1):** PopQA correctness labels were produced under a different tokenization than the Stage 8 features (DEV-007, DEV-012), which likely inflates H4; the abstention judge did not clear its held-out reliability gate after the maximum three prompt versions.
 
 ## Status
 
@@ -21,6 +22,7 @@ The frozen research protocol is in [documentation.md](documentation.md). Impleme
 | Stages 0-4 | Passed (Stage 2 fallback to `meta-llama/Llama-3.2-3B-Instruct`, see DEV-004) |
 | Stages 5-10 | Implemented; run on Kaggle with `notebooks/kaggle_stages_5_to_10.ipynb` |
 | Tier 0 claims and interpretation fixes | Done (DEV-013 to DEV-015) |
+| Tier 1 judge validation | Failed after v1–v3; v2 retained; generation-rate claims provisional (DEV-056) |
 
 ## Kaggle setup
 

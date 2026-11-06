@@ -3,6 +3,7 @@ import json
 import pytest
 
 from src.abstention_classifier import (ABSTAIN, ANSWER, DEGENERATE, JUDGE_PROMPT,
+                                       JUDGE_PROMPT_ATTEMPTED_VERSIONS,
                                        JUDGE_PROMPT_SHA256, JUDGE_PROMPT_V1,
                                        JUDGE_PROMPT_V1_SHA256, JUDGE_PROMPT_V2,
                                        JUDGE_PROMPT_V2_SHA256, JUDGE_PROMPT_V3,
@@ -25,18 +26,17 @@ def test_expanded_regex_regressions(text, expected):
     assert regex_label(text) == expected
 
 
-def test_v3_judge_prompt_preserves_prior_versions_and_encodes_dev_only_boundary():
+def test_best_v2_prompt_is_retained_after_three_attempts():
     import hashlib
 
-    assert JUDGE_PROMPT_VERSION == "v3"
-    assert JUDGE_PROMPT == JUDGE_PROMPT_V3
+    assert JUDGE_PROMPT_ATTEMPTED_VERSIONS == ("v1", "v2", "v3")
+    assert JUDGE_PROMPT_VERSION == "v2"
+    assert JUDGE_PROMPT == JUDGE_PROMPT_V2
     assert JUDGE_PROMPT_V1 != JUDGE_PROMPT_V2
     assert JUDGE_PROMPT_V1_SHA256 == hashlib.sha256(JUDGE_PROMPT_V1.encode("utf-8")).hexdigest()
     assert JUDGE_PROMPT_V2_SHA256 == hashlib.sha256(JUDGE_PROMPT_V2.encode("utf-8")).hexdigest()
     assert JUDGE_PROMPT_V3_SHA256 == hashlib.sha256(JUDGE_PROMPT_V3.encode("utf-8")).hexdigest()
-    assert JUDGE_PROMPT_SHA256 == JUDGE_PROMPT_V3_SHA256
-    for evidence in ("misspelled", "fused", "repeated", 'followed by "Unknown"'):
-        assert evidence in JUDGE_PROMPT_V3
+    assert JUDGE_PROMPT_SHA256 == JUDGE_PROMPT_V2_SHA256
     assert "could fill the requested slot" in JUDGE_PROMPT_V3
 
 

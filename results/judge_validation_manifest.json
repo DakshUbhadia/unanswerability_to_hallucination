@@ -338,6 +338,18 @@
       "judge_prompt_sha256": "30c650eaa05882dc30a02ad76ce9b3d20d49c3e079d97bbc78c1f85900a5b9f2",
       "judge_model_revision": "a09a35458c702b33eeacc393d103063234e8bc28",
       "judge_quantization": "nf4"
+    },
+    {
+      "judge_prompt_version": "v2",
+      "judge_prompt_sha256": "c235d6ee549ac1ce3e837eb06f417c48eafc5aa1e005a358c4dd15e3a23b26d7",
+      "judge_model_revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+      "judge_quantization": "nf4"
+    },
+    {
+      "judge_prompt_version": "v3",
+      "judge_prompt_sha256": "09484587c7f1d18271e0d0b64434419be74f89fd22b342386087839a50c893a1",
+      "judge_model_revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+      "judge_quantization": "nf4"
     }
   ]
 }
