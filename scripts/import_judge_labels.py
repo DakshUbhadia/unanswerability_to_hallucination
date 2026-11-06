@@ -1,17 +1,25 @@
 #!/usr/bin/env python3
 """Score a completed blinded held-out judge-validation sheet."""
-import argparse, csv, json
+import argparse, csv, json, sys, warnings
 from pathlib import Path
+ROOT=Path(__file__).resolve().parent.parent
+sys.path.insert(0,str(ROOT))
 import numpy as np
 from sklearn.metrics import cohen_kappa_score, confusion_matrix, precision_recall_fscore_support
 from src.config import CFG
 LABELS=["ANSWER","ABSTAIN","DEGENERATE"]
 
+def _safe_kappa(human, pred):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        value=cohen_kappa_score(human,pred,labels=LABELS)
+    return float(value) if np.isfinite(value) else None
+
 def _group_stats(ix, human, pred):
     if not ix: return {"n":0,"cohen_kappa":None,"abstain_recall":None}
     h=np.asarray(human)[ix]; q=np.asarray(pred)[ix]
     recall=precision_recall_fscore_support(h,q,labels=LABELS,zero_division=0)[1]
-    return {"n":len(ix),"cohen_kappa":float(cohen_kappa_score(h,q,labels=LABELS)),
+    return {"n":len(ix),"cohen_kappa":_safe_kappa(h,q),
             "abstain_recall":float(recall[LABELS.index("ABSTAIN")])}
 
 def main():
@@ -45,9 +53,10 @@ def main():
     pred=[key[r["uid"]]["final_label"] for r in rows]; human=[r["human_label"] for r in rows]
     margins=[key[r["uid"]].get("judge_margin") for r in rows]
     if any(x not in LABELS for x in pred): raise ValueError("Judge labels contain invalid values")
-    k=cohen_kappa_score(human,pred,labels=LABELS); rng=np.random.default_rng(CFG.judge_validation_seed); boots=[]
+    k=_safe_kappa(human,pred); rng=np.random.default_rng(CFG.judge_validation_seed); boots=[]
     for _ in range(1000):
-        ix=rng.integers(0,len(rows),len(rows)); boots.append(cohen_kappa_score(np.array(human)[ix],np.array(pred)[ix],labels=LABELS))
+        ix=rng.integers(0,len(rows),len(rows)); value=_safe_kappa(np.array(human)[ix],np.array(pred)[ix])
+        if value is not None: boots.append(value)
     pr,rc,_,_=precision_recall_fscore_support(human,pred,labels=LABELS,zero_division=0)
     regex=[key[r["uid"]]["regex_label"] for r in rows]
     low=[i for i,m in enumerate(margins) if m is not None and float(m)<1.0]
@@ -56,14 +65,14 @@ def main():
     split="dev" if "dev" in a.csv.stem.lower() else "test"
     out={"split":split,"n":len(rows),"labels":LABELS,"judge_model_id":manifest.get("judge_model_id"),
          "judge_model_revision":manifest.get("judge_model_revision"),"judge_prompt_version":manifest.get("judge_prompt_version"),
-         "judge_prompt_sha256":manifest.get("judge_prompt_sha256"),"cohen_kappa":float(k),
-         "kappa_bootstrap_ci":[float(x) for x in np.percentile(boots,[2.5,97.5])],
+         "judge_prompt_sha256":manifest.get("judge_prompt_sha256"),"cohen_kappa":k,
+         "kappa_bootstrap_ci":([float(x) for x in np.percentile(boots,[2.5,97.5])] if boots else [None,None]),
          "precision":dict(zip(LABELS,map(float,pr))),"recall":dict(zip(LABELS,map(float,rc))),
          "confusion_matrix_rows_human_cols_judge":confusion_matrix(human,pred,labels=LABELS).tolist(),
          "regex_human_agreement":float(np.mean(np.array(regex)==np.array(human))),
          "margin_threshold_nat":1.0,"low_margin":low_stats,"high_margin":high_stats,
-         "gate_passed":bool(split=="test" and k>=.90 and rc[LABELS.index("ABSTAIN")]>=.95),
-         "low_margin_gate_passed":(None if low_stats["n"]==0 else bool(low_stats["cohen_kappa"]>=.90 and low_stats["abstain_recall"]>=.95))}
+         "gate_passed":bool(split=="test" and k is not None and k>=.90 and rc[LABELS.index("ABSTAIN")]>=.95),
+         "low_margin_gate_passed":(None if low_stats["n"]==0 or low_stats["cohen_kappa"] is None else bool(low_stats["cohen_kappa"]>=.90 and low_stats["abstain_recall"]>=.95))}
     a.output.parent.mkdir(parents=True,exist_ok=True); a.output.write_text(json.dumps(out,indent=2)+"\n",encoding="utf-8")
     print(json.dumps(out,indent=2))
 if __name__=="__main__":main()

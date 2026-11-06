@@ -23,7 +23,7 @@ If `gate_passed` is false, label the already-frozen dev sheet and import it. Pro
 python scripts/import_judge_labels.py --csv results/judge_validation_dev.csv --output results/judge_validation_dev.json
 ```
 
-For the recorded v1 failure, DEV-037 activates `JUDGE_PROMPT_V2`. Commit and push that code revision before rerunning the Kaggle `judge` stage. After Kaggle pushes the completed v2 cache, pull it locally and update the hidden predictions for the same frozen rows; this archives the v1 result JSON automatically and does not alter either CSV.
+For the recorded v1 and v2 failures, DEV-037 and DEV-055 activate `JUDGE_PROMPT_V2` and then the final allowed `JUDGE_PROMPT_V3`. Commit and push the active code revision before rerunning the Kaggle `judge` stage. After Kaggle pushes the completed cache, pull it locally and update the hidden predictions for the same frozen rows; this archives the prior result JSON automatically and does not alter either CSV.
 
 ```bash
 git pull --ff-only

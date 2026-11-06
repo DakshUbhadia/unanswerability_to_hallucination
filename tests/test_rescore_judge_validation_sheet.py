@@ -17,7 +17,7 @@ def _write_csv(path, rows):
 
 
 def _fixture(tmp_path):
-    test = {"uid": "Jtest", "question": "Who?", "response": "A malformed name", "human_label": "ANSWER", "notes": ""}
+    test = {"uid": "Jtest", "question": "Context.\r\nQuestion: Who?", "response": "A malformed name", "human_label": "ANSWER", "notes": ""}
     dev = {"uid": "Jdev", "question": "Where?", "response": "Somewhere", "human_label": "ANSWER", "notes": ""}
     _write_csv(tmp_path / "judge_validation_test.csv", [test])
     _write_csv(tmp_path / "judge_validation_dev.csv", [dev])
@@ -46,6 +46,8 @@ def test_rescore_updates_only_predictions_and_archives_v1(tmp_path, monkeypatch)
     def fake_classify(items, offline, cache_path):
         assert offline is True
         assert [item["uid"] for item in items] == ["Jtest", "Jdev"]
+        assert items[0]["question"] == "Context.\nQuestion: Who?"
+        assert "\r" not in items[0]["question"]
         return [
             {
                 **item,
@@ -68,7 +70,7 @@ def test_rescore_updates_only_predictions_and_archives_v1(tmp_path, monkeypatch)
     key = json.loads((tmp_path / "judge_validation_key.json").read_text(encoding="utf-8"))
     assert all(row["final_label"] == "ANSWER" and row["judge_margin"] == 3.0 for row in key.values())
     manifest = json.loads((tmp_path / "judge_validation_manifest.json").read_text(encoding="utf-8"))
-    assert manifest["judge_prompt_version"] == "v2"
+    assert manifest["judge_prompt_version"] == rescore.JUDGE_PROMPT_VERSION
     assert manifest["judge_model_revision"] == "new-revision"
     assert manifest["judge_rescore_history"][0]["judge_prompt_version"] == "v1"
     assert json.loads((tmp_path / "judge_validation_v1.json").read_text())["cohen_kappa"] == 0.0

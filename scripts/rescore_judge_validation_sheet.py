@@ -42,6 +42,17 @@ def _read_sheet(path: Path):
     return rows
 
 
+def _canonicalize_embedded_newlines(text: str) -> str:
+    """Match source prompts after spreadsheet/editor CRLF conversion.
+
+    CSV readers preserve CRLF sequences inside quoted fields when opened with
+    ``newline=''``.  The judge cache was built from repository JSON/JSONL text,
+    whose embedded prompt newlines are LF.  Human editing must not change the
+    logical cache identity solely because an editor rewrote line endings.
+    """
+    return str(text).replace("\r\n", "\n").replace("\r", "\n")
+
+
 def _write_json_atomic(path: Path, payload) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(
@@ -98,7 +109,11 @@ def rescore_frozen_sheets(
         raise ValueError(f"Frozen sheets/key UID mismatch; missing={missing}, extra={extra}")
 
     items = [
-        {"uid": row["uid"], "question": row["question"], "response": row["response"]}
+        {
+            "uid": row["uid"],
+            "question": _canonicalize_embedded_newlines(row["question"]),
+            "response": _canonicalize_embedded_newlines(row["response"]),
+        }
         for _split, row in sheet_rows
     ]
     records = classify_texts(items, offline=True, cache_path=cache_path)

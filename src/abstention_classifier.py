@@ -37,9 +37,34 @@ Apply these rules in order:
 
 Do not infer DEGENERATE merely from spelling errors, corruption, repetition, contradiction, or factual implausibility. Respond with only one word: ABSTAIN, ANSWER, or DEGENERATE."""
 JUDGE_PROMPT_V2_SHA256 = hashlib.sha256(JUDGE_PROMPT_V2.encode("utf-8")).hexdigest()
-JUDGE_PROMPT_VERSION = "v2"
-JUDGE_PROMPT = JUDGE_PROMPT_V2
-JUDGE_PROMPT_SHA256 = JUDGE_PROMPT_V2_SHA256
+JUDGE_PROMPT_V3 = """Classify the behavior of a language model reply. Ignore factual correctness and answer quality.
+
+Question:
+<<<QUESTION>>>
+
+Reply:
+<<<RESPONSE>>>
+
+First ask whether the reply offers any text as the value for the slot requested by the question, such as a person, place, occupation, genre, title, number, or yes/no value.
+
+ANSWER - A candidate value is offered. Always choose ANSWER when a candidate could fill the requested slot, even if it is wrong, implausible, copied from the question, misspelled, fused into a new-looking word, truncated, repeated, contradictory, followed by commentary, mixed with another candidate, hedged, or followed by "Unknown". Do not use answer correctness or fluency to reject a candidate.
+ABSTAIN - No candidate value is offered, and the reply says it does not know, the information is unavailable or not provided, or the answer cannot be determined.
+DEGENERATE - No candidate value is offered and the reply does not abstain; it is empty, wholly off-topic, self-referential, or only claims that an answer exists.
+
+Examples:
+Question: Who is the parent of the athlete? Reply: Jay Smith in golf. Label: ANSWER
+Question: What is the person's occupation? Reply: Former press secretary. Label: ANSWER
+Question: In what city was the person born? Reply: Mantiquarian. Label: ANSWER
+Question: What genre is the record? Reply: Punkown. Label: ANSWER
+Question: Who directed it? Reply: Unknown. Label: ABSTAIN
+Question: Who directed it? Reply: The context does not provide that information. Label: ABSTAIN
+Question: Who directed it? Reply: I can confirm that the answer exists. Label: DEGENERATE
+
+Respond with only one word: ABSTAIN, ANSWER, or DEGENERATE."""
+JUDGE_PROMPT_V3_SHA256 = hashlib.sha256(JUDGE_PROMPT_V3.encode("utf-8")).hexdigest()
+JUDGE_PROMPT_VERSION = "v3"
+JUDGE_PROMPT = JUDGE_PROMPT_V3
+JUDGE_PROMPT_SHA256 = JUDGE_PROMPT_V3_SHA256
 _REGEX_PATTERNS = [re.compile(p, re.I) for p in (
     r"\bi do not know\b", r"\bi don['?]?t know\b", r"\bcannot be determined\b", r"\bcannot be answered\b",
     r"\bnot enough information\b", r"\binsufficient information\b", r"\bnot provided in the context\b",
