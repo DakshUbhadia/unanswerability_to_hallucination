@@ -3,8 +3,8 @@
   "model_id": "Qwen/Qwen2.5-7B-Instruct",
   "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
   "quantization": "nf4",
-  "prompt_version": "v2",
-  "prompt_sha256": "c235d6ee549ac1ce3e837eb06f417c48eafc5aa1e005a358c4dd15e3a23b26d7",
+  "prompt_version": "v3",
+  "prompt_sha256": "09484587c7f1d18271e0d0b64434419be74f89fd22b342386087839a50c893a1",
   "raw_counts_by_file": {
     "/kaggle/working/repo/data/popqa_sample.jsonl": 1000,
     "/kaggle/working/repo/results/stage6_generation_samples.jsonl": 1488
@@ -18,7 +18,7 @@
     "baseline": {
       "unique_items": 989,
       "scored_items": 989,
-      "low_margin_lt_1_nat": 6
+      "low_margin_lt_1_nat": 78
     },
     "test_unans_baseline": {
       "unique_items": 96,
@@ -28,27 +28,27 @@
     "test_unans_ablate_learned": {
       "unique_items": 96,
       "scored_items": 96,
-      "low_margin_lt_1_nat": 8
+      "low_margin_lt_1_nat": 5
     },
     "test_unans_steer_neg0p5_learned": {
       "unique_items": 96,
       "scored_items": 96,
-      "low_margin_lt_1_nat": 4
+      "low_margin_lt_1_nat": 1
     },
     "test_unans_steer_neg1_learned": {
       "unique_items": 96,
       "scored_items": 96,
-      "low_margin_lt_1_nat": 7
+      "low_margin_lt_1_nat": 1
     },
     "test_unans_steer_neg1p5_learned": {
       "unique_items": 96,
       "scored_items": 96,
-      "low_margin_lt_1_nat": 10
+      "low_margin_lt_1_nat": 4
     },
     "test_unans_steer_neg2_learned": {
       "unique_items": 96,
       "scored_items": 96,
-      "low_margin_lt_1_nat": 24
+      "low_margin_lt_1_nat": 28
     },
     "test_unans_ablate_concept": {
       "unique_items": 96,
@@ -68,27 +68,27 @@
     "test_ans_steer_pos0p5_learned": {
       "unique_items": 96,
       "scored_items": 96,
-      "low_margin_lt_1_nat": 1
+      "low_margin_lt_1_nat": 0
     },
     "test_ans_steer_pos1_learned": {
       "unique_items": 96,
       "scored_items": 96,
-      "low_margin_lt_1_nat": 1
+      "low_margin_lt_1_nat": 0
     },
     "test_ans_steer_pos1p5_learned": {
       "unique_items": 96,
       "scored_items": 96,
-      "low_margin_lt_1_nat": 1
+      "low_margin_lt_1_nat": 0
     },
     "test_ans_steer_pos2_learned": {
       "unique_items": 96,
       "scored_items": 96,
-      "low_margin_lt_1_nat": 0
+      "low_margin_lt_1_nat": 6
     },
     "test_ans_steer_pos1_concept": {
       "unique_items": 96,
       "scored_items": 96,
-      "low_margin_lt_1_nat": 0
+      "low_margin_lt_1_nat": 1
     },
     "test_ans_ablate_learned": {
       "unique_items": 96,
@@ -98,14 +98,14 @@
     "b_ctrl_baseline": {
       "unique_items": 48,
       "scored_items": 48,
-      "low_margin_lt_1_nat": 3
+      "low_margin_lt_1_nat": 1
     }
   },
   "judge_cache_path": "/kaggle/working/repo/data/judge_cache.jsonl",
-  "judge_cache_sha256": "10cf3057d1b7b4d58c4cd9ec51aa1d37d43643b87620ce8ebe50dcf4c174ecdd",
+  "judge_cache_sha256": "365800560753740526a00d80007e8809f7ce966a00b65c8218119ece3d2f95bf",
   "batch_size_items": 8,
-  "elapsed_seconds": 1329.352739504,
-  "items_per_second": 1.1923095737863187,
+  "elapsed_seconds": 2146.749885134,
+  "items_per_second": 0.738325414461054,
   "torch": "2.11.0+cu128",
   "transformers": "4.46.3",
   "bitsandbytes": "0.46.1",
@@ -119,6 +119,7 @@
   "cuda_visible_devices": "0",
   "n_answer_then_unknown": 6,
   "answer_then_unknown_judge_label_distribution": {
-    "ANSWER": 6
+    "ABSTAIN": 5,
+    "ANSWER": 1
   }
 }
